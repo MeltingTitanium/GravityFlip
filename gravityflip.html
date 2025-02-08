@@ -1,0 +1,2233 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Metadata and page title for the Gravity Flipper game -->
+    <meta charset="UTF-8" />
+    <title>Gravity Flip</title>
+    <style>
+      /* ======================================================
+         Basic Page and Element Styling
+         ====================================================== */
+      /* The body is styled to have no margin, hide any overflow (so no scrollbars appear),
+         and have a dark background. It also sets a sans-serif font for consistency. */
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #222;
+        font-family: sans-serif;
+      }
+      /* The canvas is set to display as a block-level element so it fills its container */
+      canvas {
+        display: block;
+      }
+      
+      /* ======================================================
+         Overlay Styles for Menus and Popups
+         ====================================================== */
+      /* The .overlay class creates a full-screen fixed overlay with a nearly opaque black background,
+         white text, centered content using flexbox, and padding. */
+      .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.95);
+        color: #fff;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      /* The .hidden class is used to hide overlays when not in use */
+      .hidden {
+        display: none;
+      }
+      
+      /* ======================================================
+         Button Styles
+         ====================================================== */
+      /* Styling for large buttons used in overlays (e.g., Play, Level Selector) */
+      .bigButton {
+        margin: 20px;
+        padding: 20px 40px;
+        background-color: #444;
+        border: 3px solid #fff;
+        border-radius: 15px;
+        font-size: 28px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      /* Hover effect for big buttons: slight scale-up and color change */
+      .bigButton:hover {
+        background-color: #666;
+        transform: scale(1.05);
+      }
+      /* Style for locked level buttons (when a level is not yet unlocked) */
+      .bigButton.locked {
+        background-color: #222;
+        border-color: #888;
+        color: #888;
+        cursor: not-allowed;
+      }
+      
+      /* ======================================================
+         Mode Selection Button Styles (Easy, Normal, Hard)
+         ====================================================== */
+      .modeButton {
+        display: inline-block;
+        margin: 0 10px;
+        padding: 10px 20px;
+        background-color: #444;
+        border: 3px solid #fff;
+        border-radius: 15px;
+        font-size: 24px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .modeButton:hover {
+        background-color: #666;
+        transform: scale(1.05);
+      }
+      /* Indicates the currently selected difficulty mode */
+      .modeButton.selected {
+        background-color: blue;
+      }
+      
+      /* ======================================================
+         Gimmick and Teleport Popups Styling
+         ====================================================== */
+      /* Popup style for showing instructions (gimmicks) on certain levels */
+      .popup {
+        position: absolute;
+        top: 20%;
+        left: 10%;
+        width: 80%;
+        padding: 40px;
+        background-color: rgba(0, 0, 0, 0.8);
+        color: #fff;
+        font-size: 24px;
+        text-align: center;
+        border: 2px solid #fff;
+        border-radius: 10px;
+        display: none;
+      }
+      /* Highlights text within popups */
+      .popup strong {
+        color: #ff0;
+      }
+      
+      /* ======================================================
+         Stage Selector Arrow Buttons Styling
+         ====================================================== */
+      .stageArrow {
+        position: absolute;
+        top: 20px;
+        font-size: 40px;
+        color: #fff;
+        cursor: pointer;
+        user-select: none;
+        z-index: 11;
+      }
+      /* Left arrow positioned near the left edge */
+      #stageLeft {
+        left: 10px;
+      }
+      /* Right arrow positioned near the right edge */
+      #stageRight {
+        right: 10px;
+      }
+      
+      /* ======================================================
+         Z-index Overrides for Main Menu and Clear Storage Prompt
+         ====================================================== */
+      /* Main Menu should be above many elements */
+      #mainMenu {
+        z-index: 20;
+      }
+      /* Clear Storage Prompt should be on top of everything else */
+      #clearStoragePrompt {
+        z-index: 30;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ======================================================
+         Canvas Element: The main drawing surface for the game.
+         ====================================================== -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- ======================================================
+         Main Menu Overlay: Displays the game title and options.
+         ====================================================== -->
+    <div id="mainMenu" class="overlay">
+      <h1 style="font-size:64px; margin-bottom:40px;">Gravity Flipper</h1>
+      <!-- Button to start the game -->
+      <div id="playButton" class="bigButton">Play</div>
+      <!-- Button to open the level selector overlay -->
+      <div id="menuLevelSelectorButton" class="bigButton">Level Selector</div>
+      <!-- Difficulty selection buttons positioned at the bottom of the main menu -->
+      <div style="position: absolute; bottom: 20px;">
+        <div id="easyModeButton" class="modeButton">Easy Mode</div>
+        <div id="normalModeButton" class="modeButton">Normal Mode</div>
+        <div id="hardModeButton" class="modeButton">Hard Mode</div>
+      </div>
+    </div>
+
+    <!-- ======================================================
+         Clear Storage Prompt Overlay: Asks the player for confirmation
+         when clearing local storage (e.g., resetting unlocked levels).
+         ====================================================== -->
+    <div id="clearStoragePrompt" class="overlay hidden">
+      <div style="background: #333; padding: 20px; border: 2px solid #fff; border-radius: 10px; text-align: center;">
+        <p style="font-size:24px;">Are you sure you want to clear all local storage?</p>
+        <div style="margin-top:20px;">
+          <button id="clearYes" class="bigButton">Yes</button>
+          <button id="clearNo" class="bigButton">No</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================
+         Gimmick Popup: Provides instructions for Level 8’s dash gimmick.
+         ====================================================== -->
+    <div id="gimmickPopup" class="popup">
+      <h2>Gimmicks</h2>
+      <p>
+        Gimmicks are abilities you have on certain levels.<br>
+        <strong>Level 8’s Gimmick:</strong> Press <strong>Space</strong> to dash forward.<br>
+        You’ll turn blue while dashing. If you collide with a hazard, you die as soon as you reach it.<br>
+        The dash has a 2-second cooldown (top-left). After death, the dash cooldown resets.
+      </p>
+      <p><em>Press Enter to continue...</em></p>
+    </div>
+
+    <!-- ======================================================
+         Teleport Gimmick Popup: Provides instructions for the teleport ability
+         (used in Stage 2 Level 1).
+         ====================================================== -->
+    <div id="teleportPopup" class="popup">
+      <h2>New Gimmick</h2>
+      <p>
+        <strong>Teleport:</strong> Press <strong>Space</strong> to instantly teleport all the way in the direction you’re facing.<br>
+        Teleport will work as long as there are no red blocks blocking the way.<br>
+        It can teleport through purple blocks, but it stops when it reaches a platform or the edge.<br>
+        Additionally, if your teleport path hits a green block (the target), the stage is immediately completed.<br>
+        The teleport has a 4-second cooldown.
+      </p>
+      <p><em>Press Enter to continue...</em></p>
+    </div>
+
+    <!-- ======================================================
+         Full-Screen Level Selector Overlay: Allows players to choose a level.
+         ====================================================== -->
+    <div id="levelSelectorOverlay" class="overlay hidden">
+      <h2 id="stageHeader" style="font-size:48px; margin-bottom:30px;">Stage 1 - Select Level</h2>
+      <!-- Container that will be populated with level selection buttons -->
+      <div id="levelSelectorContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; width: 80%;"></div>
+      <div style="margin-top: 30px;">
+        <!-- Resume button to exit the level selector and return to the game -->
+        <div id="resumeButton" class="bigButton">Resume</div>
+      </div>
+      <!-- Arrow buttons for navigating between different stages -->
+      <div id="stageLeft" class="stageArrow">◀</div>
+      <div id="stageRight" class="stageArrow">▶</div>
+    </div>
+
+    <!-- ======================================================
+         Win Screen Overlay: Displays when the player wins the game.
+         Contains only a Replay button.
+         ====================================================== -->
+    <div id="winScreen" class="overlay hidden">
+      <h1 style="font-size:64px; margin-bottom:40px;">You Win!</h1>
+      <div class="bigButton" id="replayButton">Replay?</div>
+    </div>
+
+    <!-- ======================================================
+         JavaScript Section: Contains all game logic and functionality.
+         ====================================================== -->
+    <script>
+      // -------------------------------------------------
+      // 0. Mode and Parameter Settings
+      // -------------------------------------------------
+      // Variable to store the current difficulty mode (default: "normal")
+      let currentMode = "normal";
+
+      // Parameters for normal mode gameplay
+      const normalParams = {
+        acceleration: 0.5,
+        dashDistance: 400,
+        dashDuration: 150,
+        hazardSpeed: 2,
+        orangeDx: -3,
+        fallingBlockSpeed: 1.95,
+        fallingOrangeDy: 5,
+        pillarDx: 1.8,
+        pillarDy: 0.495,
+        dashCooldown: 2000
+      };
+      // Parameters for easy mode (easier, slower gameplay)
+      const easyParams = {
+        acceleration: 0.3, // 40% slower than normal (0.5 * 0.6)
+        dashDistance: 200,
+        dashDuration: 300,
+        hazardSpeed: 1,         // 50% slower
+        orangeDx: -1.5,
+        fallingBlockSpeed: 0.975,
+        fallingOrangeDy: 2.5,
+        pillarDx: 0.9,
+        pillarDy: 0.2475,
+        dashCooldown: 1500      // 1.5 seconds
+      };
+      // Parameters for hard mode (more challenging, faster gameplay)
+      const hardParams = {
+        acceleration: 0.675, // 35% faster than normal (0.5 * 1.35)
+        dashDistance: 400,
+        dashDuration: 100,
+        hazardSpeed: 2.9,         // 45% faster than normal (2 * 1.45)
+        orangeDx: -4.35,          // -3 * 1.45
+        fallingBlockSpeed: 2.8275, // 1.95 * 1.45
+        fallingOrangeDy: 7.25,     // 5 * 1.45
+        pillarDx: 2.61,           // 1.8 * 1.45
+        pillarDy: 0.71775,        // 0.495 * 1.45
+        dashCooldown: 1580        // Approximately 1.58 seconds
+      };
+
+      // Variables to hold current parameter values based on the selected difficulty
+      let currentAcceleration, currentDashDistance, currentDashDuration, currentHazardSpeed,
+          currentOrangeDx, currentFallingBlockSpeed, currentFallingOrangeDy,
+          currentPillarDx, currentPillarDy, currentDashCooldown;
+      // Teleport cooldown (default 4000ms, but overridden in easy/hard modes)
+      let currentTeleportCooldown = 4000;
+
+      // Function to update the current game parameters based on the selected mode
+      function updateModeParameters() {
+        if (currentMode === "easy") {
+          currentAcceleration      = easyParams.acceleration;
+          currentDashDistance      = easyParams.dashDistance;
+          currentDashDuration      = easyParams.dashDuration;
+          currentHazardSpeed       = easyParams.hazardSpeed;
+          currentOrangeDx          = easyParams.orangeDx;
+          currentFallingBlockSpeed = easyParams.fallingBlockSpeed;
+          currentFallingOrangeDy   = easyParams.fallingOrangeDy;
+          currentPillarDx          = easyParams.pillarDx;
+          currentPillarDy          = easyParams.pillarDy;
+          currentDashCooldown      = easyParams.dashCooldown;
+          currentTeleportCooldown  = 2000; // Teleport cooldown is 2 seconds in easy mode
+        } else if (currentMode === "hard") {
+          currentAcceleration      = hardParams.acceleration;
+          currentDashDistance      = hardParams.dashDistance;
+          currentDashDuration      = hardParams.dashDuration;
+          currentHazardSpeed       = hardParams.hazardSpeed;
+          currentOrangeDx          = hardParams.orangeDx;
+          currentFallingBlockSpeed = hardParams.fallingBlockSpeed;
+          currentFallingOrangeDy   = hardParams.fallingOrangeDy;
+          currentPillarDx          = hardParams.pillarDx;
+          currentPillarDy          = hardParams.pillarDy;
+          currentDashCooldown      = hardParams.dashCooldown;
+          currentTeleportCooldown  = 2000; // Teleport cooldown is 2 seconds in hard mode
+        } else {
+          // Normal mode parameters
+          currentAcceleration      = normalParams.acceleration;
+          currentDashDistance      = normalParams.dashDistance;
+          currentDashDuration      = normalParams.dashDuration;
+          currentHazardSpeed       = normalParams.hazardSpeed;
+          currentOrangeDx          = normalParams.orangeDx;
+          currentFallingBlockSpeed = normalParams.fallingBlockSpeed;
+          currentFallingOrangeDy   = normalParams.fallingOrangeDy;
+          currentPillarDx          = normalParams.pillarDx;
+          currentPillarDy          = normalParams.pillarDy;
+          currentDashCooldown      = normalParams.dashCooldown;
+          currentTeleportCooldown  = 4000; // Teleport cooldown is 4 seconds in normal mode
+        }
+      }
+      // Initialize game parameters with the default mode
+      updateModeParameters();
+
+      // -------------------------------
+      // SOUND SETUP
+      // -------------------------------
+      const winSound = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/sounds/sd_0.wav");
+      const dashSound = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/sounds/tir.mp3");
+      const deathSound = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/sounds/death%20sound.wav");
+      const teleportSound = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/sounds/teleport%20sound.wav");
+
+      const bgEasyNormalMusic = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/sounds/completion_nes_2a03.ogg");
+      bgEasyNormalMusic.volume = 0.5;
+      bgEasyNormalMusic.loop = true;
+
+      const bgHardMusic = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/sounds/hard%20mode%20theme.mp3");
+      bgHardMusic.volume = 0.38;
+      bgHardMusic.loop = true;
+
+      // -------------------------------------------------
+      // 0.1 Global Variables for Level Unlocking and Cheat Flag
+      // -------------------------------------------------
+      let currentLevel = 0; // Index of the current level (starting from 0)
+      // Retrieve maximum unlocked level from localStorage, or default to 0
+      let maxUnlockedLevel = parseInt(localStorage.getItem('maxUnlockedLevel')) || 0;
+      // Flag that indicates whether all levels are unlocked (for cheat mode)
+      let allLevelsUnlocked = false;
+
+      // Flag to indicate if the level selector was accessed from the main menu
+      let levelSelectorFromMainMenu = false;
+
+      // -------------------------------------------------
+      // 0.5 Teleport Parameters (for Stage 2 Level 1 and beyond)
+      // -------------------------------------------------
+      // Variables controlling teleport ability state
+      let isTeleporting = false;
+      let teleportReadyTime = 0;
+      // A grace period similar to dash for teleporting
+      let teleportGraceUntil = 0;
+
+      // -------------------------------------------------
+      // 1. Canvas Setup
+      // -------------------------------------------------
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+
+      // Function to resize the canvas to fill the entire window
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      // Listen for window resize events to update canvas dimensions
+      window.addEventListener("resize", onResize);
+      function onResize() {
+        resizeCanvas();
+        recalcLevelElements(); // Recalculate level element positions/sizes after resize
+      }
+      resizeCanvas(); // Initial resize
+
+      // -------------------------------------------------
+      // 1.5 Global Variables for Level 13 Special Behavior
+      // -------------------------------------------------
+      let level13Stage = 0; // Tracks the sub-stage within level 13
+      let level13PillarsSpawned = false; // Flag to indicate if the moving pillars have been spawned
+      let level13Pillars = []; // Array to hold pillar objects for level 13
+      // Predefined target positions for level 13 stages (as percentages of canvas dimensions)
+      const level13TargetPositions = [
+        { x: 0.5, y: 0.5 },
+        { x: 0.9, y: 0.9 },
+        { x: 0.1, y: 0.9 },
+        { x: 0.1, y: 0.1 },
+        { x: 0.9, y: 0.1 },
+        { x: 0.5, y: 0.5 }
+      ];
+
+      // -------------------------------------------------
+      // Global Variables for Falling Brown Level (Level 14) and Beyond
+      // -------------------------------------------------
+      let fallingBrownBlocks = []; // Array to store falling brown block objects
+      let fallingBrownTextStart = 0; // Timestamp for when falling brown block text should start
+      let lastBrownSpawnTime = 0; // Timestamp for when the last brown block was spawned
+
+      // -------------------------------------------------
+      // NEW GLOBALS FOR THE CHALLENGE LEVEL (after level 17)
+      // -------------------------------------------------
+      let challengeStartTime = 0; // When the challenge level starts
+      const challengeDuration = 60000; // Duration of the challenge in milliseconds (1 minute)
+      let lastChallengeLineSpawn = 0; // Timestamp for last spawned challenge line
+      let challengeLines = []; // Array to store moving challenge line objects
+      // Challenge lines move 20% slower than level 15’s orange blocks
+      let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
+      // For falling red blocks (similar to brown blocks but drawn in red)
+      let fallingRedBlocks = [];
+      let fallingRedTextStart = 0;
+      let lastRedSpawnTime = 0;
+      // When the challenge timer finishes, a giant green block appears to complete the level
+      let challengeGreenBlock = null;
+
+      // -------------------------------------------------
+      // 2. Player (Cube) + Movement (No Diagonals)
+      // -------------------------------------------------
+      // Define the player cube with initial properties
+      const cube = {
+        x: 0,
+        y: 0,
+        size: 80,
+        vx: 0,
+        vy: 0
+      };
+
+      // Variable to store the last movement direction to prevent diagonal movement
+      let lastDirection = null;
+
+      // -------------------------------------------------
+      // 3. Dash and Teleport Gimmicks
+      // -------------------------------------------------
+      // Variables for managing dash behavior
+      let isDashing = false;
+      let dashStartTime = 0;
+      let dashStartX = 0, dashStartY = 0;
+      let dashTargetX = 0, dashTargetY = 0;
+      let dashReadyTime = Date.now(); // Time when the dash can be used again
+      let dashGraceUntil = 0; // Grace period after a dash is finished
+      let showGimmickPopup = false; // Whether a gimmick popup (instructions) should be shown
+      let gamePaused = true; // Game starts paused until the main menu is dismissed
+      let levelSelectorActive = false; // Flag indicating if the level selector is active
+
+      // -------------------------------------------------
+      // 4. Arrow Direction for Drawing the Triangle (Indicates Movement Direction)
+      // -------------------------------------------------
+      let arrowDirX = 0;
+      let arrowDirY = -1;
+
+      // -------------------------------------------------
+      // 5. Display Cooldown (Displayed at the Top-Left Corner)
+      // -------------------------------------------------
+      // Function to draw the dash or teleport cooldown timer
+      function drawCooldown() {
+        const now = Date.now();
+        let text = "";
+        // Check if the level uses teleporting or dashing to set the appropriate text
+        if (levels[currentLevel].teleportLevel) {
+          const remaining = teleportReadyTime - now;
+          text = remaining > 0 ? "Teleport (" + (remaining / 1000).toFixed(1) + "s)" : "Teleport Ready";
+        } else if (currentLevel >= 7) {
+          const remaining = dashReadyTime - now;
+          text = remaining > 0 ? "Dash (" + (remaining / 1000).toFixed(1) + "s)" : "Dash Ready";
+        }
+        ctx.fillStyle = "#fff";
+        ctx.font = "20px sans-serif";
+        ctx.textAlign = "left";
+        // Adjust y-position for the cooldown text based on current level
+        let yPos = (currentLevel === 13) ? 120 : 80;
+        ctx.fillText(text, 10, yPos);
+      }
+
+      // -------------------------------------------------
+      // 6. Particles for Broken Brown Obstacles
+      // -------------------------------------------------
+      let brownParticles = []; // Array to hold particle objects
+
+      // Function to spawn particles when a brown block is broken
+      function spawnBrownParticles(obstacle) {
+        const centerX = obstacle.x + obstacle.width / 2;
+        const centerY = obstacle.y + obstacle.height / 2;
+        // Generate 12 particles with random velocities and fading transparency
+        for (let i = 0; i < 12; i++) {
+          brownParticles.push({
+            x: centerX,
+            y: centerY,
+            vx: (Math.random() - 0.5) * 4,
+            vy: -Math.random() * 3,
+            alpha: 1.0,
+            size: 5
+          });
+        }
+      }
+
+      // Function to update the particles' positions and fade them out over time
+      function updateBrownParticles() {
+        for (let i = brownParticles.length - 1; i >= 0; i--) {
+          const p = brownParticles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.2; // Simulate gravity on particles
+          p.alpha -= 0.02; // Gradually reduce opacity
+          if (p.alpha <= 0) {
+            brownParticles.splice(i, 1); // Remove particle when fully faded
+          }
+        }
+      }
+
+      // Function to draw the brown particles on the canvas
+      function drawBrownParticles() {
+        ctx.fillStyle = "brown";
+        brownParticles.forEach(p => {
+          ctx.globalAlpha = p.alpha;
+          ctx.fillRect(p.x, p.y, p.size, p.size);
+        });
+        ctx.globalAlpha = 1.0; // Reset global alpha after drawing particles
+      }
+
+      // -------------------------------------------------
+      // 7. Level Definitions with Comments (Each Level is Explained)
+      // -------------------------------------------------
+      // Array of level objects. Each object contains spawn point, target, platforms, hazards, and special properties.
+      const levels = [
+        {
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.5 },
+          platforms: []
+        },
+        {
+          spawn:  { x: 0.1, y: 0.9 },
+          target: { x: 0.9, y: 0.1 },
+          platforms: [
+            { x: 0.1, y: 0.75, w: 0.7, h: 0.03 },
+            { x: 0.2, y: 0.55, w: 0.7, h: 0.03 },
+            { x: 0.1, y: 0.35, w: 0.7, h: 0.03 },
+            { x: 0.5, y: 0.35, w: 0.03, h: 0.4 }
+          ]
+        },
+        {
+          spawn:  { x: 0.05, y: 0.95 },
+          target: { x: 0.95, y: 0.05 },
+          platforms: [
+            { x: 0.0, y: 0.8, w: 0.45, h: 0.02 },
+            { x: 0.7, y: 0.8, w: 0.3, h: 0.02 },
+            { x: 0.0, y: 0.6, w: 0.15, h: 0.02 },
+            { x: 0.35, y: 0.6, w: 0.65, h: 0.02 },
+            { x: 0.0, y: 0.4, w: 0.3, h: 0.02 },
+            { x: 0.6, y: 0.4, w: 0.35, h: 0.02 },
+            { x: 0.0, y: 0.2, w: 0.1, h: 0.02 },
+            { x: 0.4, y: 0.2, w: 0.6, h: 0.02 }
+          ],
+          hazards: []
+        },
+        {
+          spawn: { x: 0.1, y: 0.95 },
+          target: { x: 0.9, y: 0.05 },
+          platforms: [
+            { x: 0.2, y: 0.7, w: 0.25, h: 0.03 },
+            { x: 0.55, y: 0.4, w: 0.3, h: 0.03 }
+          ],
+          hazards: [
+            { x: 0.4, y: 0.6, w: 0.1, h: 0.1 },
+            { x: 0.7, y: 0.3, w: 0.1, h: 0.1 }
+          ]
+        },
+        {
+          spawn:  { x: 0.05, y: 0.1 },
+          target: { x: 0.95, y: 0.9 },
+          platforms: [
+            { x: 0.0, y: 0.0, w: 1.0, h: 0.02 },
+            { x: 0.0, y: 0.98, w: 1.0, h: 0.02 },
+            { x: 0.0, y: 0.0, w: 0.02, h: 1.0 },
+            { x: 0.98, y: 0.0, w: 0.02, h: 1.0 },
+            { x: 0.1, y: 0.3, w: 0.6, h: 0.02 },
+            { x: 0.2, y: 0.6, w: 0.6, h: 0.02 },
+            { x: 0.5, y: 0.3, w: 0.02, h: 0.3 }
+          ],
+          hazards: [
+            { x: 0.25, y: 0.45, w: 0.05, h: 0.05 },
+            { x: 0.65, y: 0.55, w: 0.05, h: 0.05 },
+            { x: 0.40, y: 0.20, w: 0.05, h: 0.05 },
+            { x: 0.70, y: 0.75, w: 0.05, h: 0.05 },
+            { x: 0.15, y: 0.70, w: 0.05, h: 0.05 }
+          ]
+        },
+        {
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.05 },
+          platforms: [],
+          hazards: [
+            { x: 0.1, y: 0.15, w: 0.05, h: 0.05 },
+            { x: 0.3, y: 0.35, w: 0.05, h: 0.05 },
+            { x: 0.5, y: 0.55, w: 0.05, h: 0.05 },
+            { x: 0.7, y: 0.75, w: 0.05, h: 0.05 },
+            { x: 0.2, y: 0.45, w: 0.05, h: 0.05 },
+            { x: 0.8, y: 0.25, w: 0.05, h: 0.05 },
+            { x: 0.15, y: 0.65, w: 0.05, h: 0.05 },
+            { x: 0.35, y: 0.85, w: 0.05, h: 0.05 },
+            { x: 0.65, y: 0.15, w: 0.05, h: 0.05 },
+            { x: 0.85, y: 0.35, w: 0.05, h: 0.05 }
+          ]
+        },
+        {
+          spawn: { x: 0.05, y: 0.95 },
+          target: { x: 0.95, y: 0.05 },
+          platforms: [
+            { x: 0.1, y: 0.80, w: 0.35, h: 0.03 },
+            { x: 0.55, y: 0.80, w: 0.35, h: 0.03 },
+            { x: 0.1, y: 0.65, w: 0.25, h: 0.03 },
+            { x: 0.45, y: 0.65, w: 0.20, h: 0.03 },
+            { x: 0.75, y: 0.65, w: 0.20, h: 0.03 },
+            { x: 0.1, y: 0.50, w: 0.20, h: 0.03 },
+            { x: 0.40, y: 0.50, w: 0.30, h: 0.03 },
+            { x: 0.75, y: 0.50, w: 0.20, h: 0.03 },
+            { x: 0.30, y: 0.35, w: 0.40, h: 0.03 },
+            { x: 0.1, y: 0.20, w: 0.25, h: 0.03 },
+            { x: 0.65, y: 0.20, w: 0.30, h: 0.03 }
+          ],
+          hazards: [
+            { x: 0.35, y: 0.78, w: 0.05, h: 0.05 },
+            { x: 0.60, y: 0.63, w: 0.05, h: 0.05 },
+            { x: 0.45, y: 0.48, w: 0.05, h: 0.05 },
+            { x: 0.70, y: 0.23, w: 0.05, h: 0.05 }
+          ]
+        },
+        {
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.05 },
+          platforms: [],
+          hazards: [],
+          oranges: [
+            { x: 0, y: 0.5, w: 1, h: 0.02 }
+          ]
+        },
+        {
+          spawn: { x: 0.1, y: 0.9 },
+          target: { x: 0.9, y: 0.1 },
+          platforms: [],
+          hazards: [
+            { x: 0, y: 0.7, w: 0.2, h: 0.02 },
+            { x: 0.3, y: 0.7, w: 0.7, h: 0.02 },
+            { x: 0, y: 0.5, w: 0.7, h: 0.02 },
+            { x: 0.8, y: 0.5, w: 0.2, h: 0.02 }
+          ],
+          oranges: [
+            { x: 0, y: 0.3, w: 1, h: 0.02 }
+          ]
+        },
+        {
+          spawn: { x: 0.05, y: 0.95 },
+          target: { x: 0.95, y: 0.05 },
+          platforms: [
+            { x: 0.0, y: 0.8, w: 0.45, h: 0.02 },
+            { x: 0.7, y: 0.8, w: 0.3, h: 0.02 },
+            { x: 0.0, y: 0.6, w: 0.15, h: 0.02 },
+            { x: 0.35, y: 0.6, w: 0.65, h: 0.02 },
+            { x: 0.0, y: 0.4, w: 0.3, h: 0.02 },
+            { x: 0.6, y: 0.4, w: 0.35, h: 0.02 },
+            { x: 0.0, y: 0.2, w: 0.1, h: 0.02 },
+            { x: 0.4, y: 0.2, w: 0.6, h: 0.02 }
+          ],
+          hazards: [],
+          oranges: [
+            { x: 1, y: 0, w: 0.02, h: 1, dx: 0, moving: true }
+          ]
+        },
+        {
+          spawn: { x: 0.5, y: 0.9 },
+          target: { x: 0.5, y: 0.5 },
+          platforms: [],
+          hazards: [],
+          oranges: [],
+          browns: [
+            { x: 0.35, y: 0.35, w: 0.1, h: 0.1 },
+            { x: 0.45, y: 0.35, w: 0.1, h: 0.1 },
+            { x: 0.55, y: 0.35, w: 0.1, h: 0.1 },
+            { x: 0.35, y: 0.45, w: 0.1, h: 0.1 },
+            { x: 0.55, y: 0.45, w: 0.1, h: 0.1 },
+            { x: 0.35, y: 0.55, w: 0.1, h: 0.1 },
+            { x: 0.45, y: 0.55, w: 0.1, h: 0.1 },
+            { x: 0.55, y: 0.55, w: 0.1, h: 0.1 }
+          ]
+        },
+        {
+          spawn: { x: 0.1, y: 0.5 },
+          target: { x: 0.9, y: 0.5 },
+          platforms: [],
+          hazards: [],
+          oranges: [],
+          browns: [
+            { x: 0.0, y: 0.0, w: 0.05, h: 1.0 },
+            { x: 0.2, y: 0.0, w: 0.05, h: 1.0 },
+            { x: 0.4, y: 0.0, w: 0.05, h: 1.0 },
+            { x: 0.6, y: 0.0, w: 0.05, h: 1.0 },
+            { x: 0.8, y: 0.0, w: 0.05, h: 1.0 },
+            { x: 1.0, y: 0.0, w: 0.05, h: 1.0 }
+          ]
+        },
+        {
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.5 },
+          level13: true,
+          platforms: [],
+          hazards: [],
+          oranges: [],
+          browns: []
+        },
+        {
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: -100, y: -100 },
+          fallingBrownLevel: true,
+          platforms: [],
+          hazards: [],
+          oranges: [],
+          browns: []
+        },
+        {
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.05 },
+          platforms: [
+            { x: 0.0, y: 0.8, w: 0.45, h: 0.02 },
+            { x: 0.7, y: 0.8, w: 0.3, h: 0.02 },
+            { x: 0.0, y: 0.6, w: 0.15, h: 0.02 },
+            { x: 0.35, y: 0.6, w: 0.65, h: 0.02 },
+            { x: 0.0, y: 0.4, w: 0.3, h: 0.02 },
+            { x: 0.6, y: 0.4, w: 0.35, h: 0.02 },
+            { x: 0.0, y: 0.2, w: 0.1, h: 0.02 },
+            { x: 0.4, y: 0.2, w: 0.6, h: 0.02 }
+          ],
+          hazards: [],
+          oranges: [
+            { x: 0, y: 0, w: 0.02, h: 1, dx: 1.92, moving: true },
+            { x: 0.98, y: 0, w: 0.02, h: 1, dx: -1.92, moving: true }
+          ],
+          browns: []
+        },
+        {
+          spawn: { x: 0.0, y: 0.95 },
+          target: { x: -100, y: -100 },
+          fallingBrownLevel: true,
+          platforms: [],
+          hazards: [],
+          oranges: [
+            { x: 1, y: 0, w: 0.02, h: 1, dx: currentOrangeDx * 0.5, moving: true }
+          ],
+          browns: []
+        },
+        {
+          spawn:  { x: 0.5, y: 0.05 },
+          target: { x: 0.5, y: 0.95 },
+          platforms: [],
+          hazards: [],
+          oranges: [
+            {
+              x: 0.0,
+              y: 0.2,
+              w: 1.0,
+              h: 0.02,
+              moving: true,
+              verticalMovement: true,
+              dy: 1.056
+            }
+          ],
+          browns: [
+            { x: 0.0, y: 0.60, w: 1.0, h: 0.02 },
+            { x: 0.0, y: 0.65, w: 1.0, h: 0.02 },
+            { x: 0.0, y: 0.70, w: 1.0, h: 0.02 },
+            { x: 0.0, y: 0.75, w: 1.0, h: 0.02 }
+          ]
+        },
+        {
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.05 },
+          challengeDashingLevel: true,
+          platforms: [],
+          hazards: [],
+          oranges: [],
+          browns: []
+        },
+        {
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.05 },
+          teleportLevel: true,
+          stage: 2,
+          platforms: [],
+          hazards: [],
+          oranges: [
+            { x: 0, y: 0.5, w: 1, h: 0.02 }
+          ]
+        },
+        // -------------------------------
+        // NEW LEVEL: Stage 2 Level 2
+        // -------------------------------
+        {
+          spawn: { x: 0.5, y: 0.95 },         // Spawn in the middle bottom
+          target: { x: 0.95, y: 0.1 },          // Moving green block starts at the right
+          teleportLevel: true,                 // Uses stage 2 gimmick (teleportation and teleporting through purple blocks)
+          stage: 2,
+          movingTarget: true,                  // Custom flag to update the target’s horizontal movement
+          platforms: [],                       // No platforms for this level
+          hazards: [                           // Red block line at the top
+            { x: 0, y: 0, w: 1, h: 0.02 }
+          ],
+          oranges: [                           // Purple block line moved higher (y value changed from 0.85 to 0.8)
+            { x: 0, y: 0.65, w: 1, h: 0.02 }
+          ]
+        }
+      ];
+
+      // -------------------------------------------------
+      // 8. Update maxUnlockedLevel if currentLevel exceeds it
+      // -------------------------------------------------
+      function updateUnlockedProgress() {
+        if (currentLevel > maxUnlockedLevel) {
+          maxUnlockedLevel = currentLevel;
+          localStorage.setItem('maxUnlockedLevel', maxUnlockedLevel);
+        }
+      }
+
+      // Variables to hold current level elements
+      let platforms = [];
+      let hazards = [];
+      let oranges = [];
+      let browns = [];
+      // Target object representing the level’s goal (if applicable)
+      let target = { x: 0, y: 0, size: cube.size };
+
+      // Variables for falling oranges (Level 11)
+      let lastFallingOrangeSpawn = 0;
+      let fallingOranges = [];
+
+      // -------------------------------------------------
+      // 8. Stage Selector: Current Stage Variable (Default Stage 1)
+      // -------------------------------------------------
+      let currentStage = 1;
+
+      // -------------------------------------------------
+      // 9. Load / Recalc Levels
+      // -------------------------------------------------
+      // Function to load a level based on its index
+      function loadLevel(index) {
+        currentLevel = index;
+        updateUnlockedProgress();
+        const lvl = levels[index];
+
+        // Set player spawn position based on percentages of canvas size
+        cube.x = lvl.spawn.x * canvas.width;
+        cube.y = lvl.spawn.y * canvas.height;
+        cube.vx = 0;
+        cube.vy = 0;
+
+        // Reset dash and teleport state variables
+        isDashing = false;
+        dashReadyTime = Date.now();
+        dashGraceUntil = 0;
+        isTeleporting = false;
+        teleportReadyTime = Date.now();
+
+        // Reset arrow direction and movement direction
+        arrowDirX = 0;
+        arrowDirY = -1;
+        lastDirection = null;
+
+        // Clear particles and falling objects from previous level
+        brownParticles = [];
+        fallingOranges = [];
+        lastFallingOrangeSpawn = Date.now();
+
+        // Special handling for challenge levels or levels with unique behavior
+        if (lvl.challengeDashingLevel) {
+          target = null;
+          challengeStartTime = Date.now();
+          lastChallengeLineSpawn = Date.now();
+          challengeLines = [];
+          fallingRedBlocks = [];
+          fallingRedTextStart = Date.now();
+          lastRedSpawnTime = Date.now();
+          challengeGreenBlock = null;
+        } else if (lvl.level13) {
+          level13Stage = 0;
+          level13PillarsSpawned = false;
+          level13Pillars = [];
+          target = {
+            x: level13TargetPositions[0].x * canvas.width,
+            y: level13TargetPositions[0].y * canvas.height,
+            size: cube.size
+          };
+        } else if (lvl.fallingBrownLevel) {
+          fallingBrownBlocks = [];
+          fallingBrownTextStart = Date.now();
+          lastBrownSpawnTime = fallingBrownTextStart;
+          target = null;
+        } else {
+          target = {
+            x: lvl.target.x * canvas.width,
+            y: lvl.target.y * canvas.height,
+            size: cube.size
+          };
+        }
+
+        // If the level has the movingTarget flag, initialize the target’s horizontal velocity.
+        if (lvl.movingTarget) {
+          target.dx = -5; // Start moving left from the right edge.
+        }
+
+        // Map platform definitions (from percentage values to pixel values)
+        platforms = (lvl.platforms || []).map(p => ({
+          x: p.x * canvas.width,
+          y: p.y * canvas.height,
+          width: p.w * canvas.width,
+          height: p.h * canvas.height
+        }));
+        // Map hazard definitions to actual pixel values
+        hazards = (lvl.hazards || []).map(h => ({
+          x: h.x * canvas.width,
+          y: h.y * canvas.height,
+          width: h.w * canvas.width,
+          height: h.h * canvas.height
+        }));
+        // Map orange (moving obstacles) definitions and set movement properties
+        oranges = (lvl.oranges || []).map(o => ({
+          x: o.x * canvas.width,
+          y: o.y * canvas.height,
+          width: o.w * canvas.width,
+          height: o.h * canvas.height,
+          dx: (o.moving && currentLevel === 9) ? currentOrangeDx : (o.dx || 0),
+          dy: o.dy || 0,
+          moving: o.moving || false,
+          verticalMovement: o.verticalMovement || false
+        }));
+        // Map brown block definitions to pixel values
+        browns = (lvl.browns || []).map(b => ({
+          x: b.x * canvas.width,
+          y: b.y * canvas.height,
+          width: b.w * canvas.width,
+          height: b.h * canvas.height
+        }));
+
+        // For specific levels (2 through 6), set up horizontal movement for hazards
+        if ([2, 3, 4, 5, 6].includes(index)) {
+          hazards.forEach(h => {
+            h.vx = currentHazardSpeed;
+            h.minX = 0;
+            h.maxX = canvas.width - h.width;
+          });
+        }
+
+        // -------------------------------
+        // NEW: Only show teleport popup for Stage 2 Level 1
+        // (i.e. if teleportLevel is true and movingTarget flag is not set)
+        // -------------------------------
+        if (lvl.teleportLevel && !lvl.movingTarget) {
+          gamePaused = true;
+          document.getElementById("teleportPopup").style.display = "block";
+        } else if (index === 7) {
+          showGimmickPopup = true;
+          gamePaused = true;
+          document.getElementById("gimmickPopup").style.display = "block";
+        } else {
+          showGimmickPopup = false;
+          document.getElementById("gimmickPopup").style.display = "none";
+          document.getElementById("teleportPopup").style.display = "none";
+        }
+      }
+
+      // Function to recalculate level element positions on canvas resize
+      function recalcLevelElements() {
+        const lvl = levels[currentLevel];
+        if (lvl.level13) {
+          target = {
+            x: level13TargetPositions[level13Stage].x * canvas.width,
+            y: level13TargetPositions[level13Stage].y * canvas.height,
+            size: cube.size
+          };
+        } else if (!lvl.fallingBrownLevel && !lvl.challengeDashingLevel) {
+          target = {
+            x: lvl.target.x * canvas.width,
+            y: lvl.target.y * canvas.height,
+            size: cube.size
+          };
+        }
+        platforms = (lvl.platforms || []).map(p => ({
+          x: p.x * canvas.width,
+          y: p.y * canvas.height,
+          width: p.w * canvas.width,
+          height: p.h * canvas.height
+        }));
+        hazards = (lvl.hazards || []).map(h => ({
+          x: h.x * canvas.width,
+          y: h.y * canvas.height,
+          width: h.w * canvas.width,
+          height: h.h * canvas.height
+        }));
+        oranges = (lvl.oranges || []).map(o => ({
+          x: o.x * canvas.width,
+          y: o.y * canvas.height,
+          width: o.w * canvas.width,
+          height: o.h * canvas.height,
+          dx: (o.moving && currentLevel === 9) ? currentOrangeDx : (o.dx || 0),
+          dy: o.dy || 0,
+          moving: o.moving || false,
+          verticalMovement: o.verticalMovement || false
+        }));
+        browns = (lvl.browns || []).map(b => ({
+          x: b.x * canvas.width,
+          y: b.y * canvas.height,
+          width: b.w * canvas.width,
+          height: b.h * canvas.height
+        }));
+
+        if ([2, 3, 4, 5, 6].includes(currentLevel)) {
+          hazards.forEach(h => {
+            h.vx = currentHazardSpeed;
+            h.minX = 0;
+            h.maxX = canvas.width - h.width;
+          });
+        }
+      }
+
+      // -------------------------------------------------
+      // 10. Key Handling (No Diagonals) + Special Keys for Level Selector and Clearing Storage
+      // -------------------------------------------------
+      // Primary keydown event listener for game controls
+      document.addEventListener("keydown", e => {
+        // When the level selector is active, allow escape to close it and Numpad5 to unlock all levels
+        if (levelSelectorActive) {
+          if (e.key === "Escape") {
+            hideLevelSelector();
+            return;
+          }
+          if (e.code === "Numpad5") {
+            allLevelsUnlocked = true;
+            populateLevelSelector();
+            return;
+          }
+        }
+        // If the main menu is still visible, ignore key presses
+        if (!document.getElementById("mainMenu").classList.contains("hidden")) {
+          return;
+        }
+        // If a gimmick popup is visible, only allow Enter to dismiss it
+        if (showGimmickPopup || document.getElementById("teleportPopup").style.display === "block") {
+          if (e.key === "Enter") {
+            showGimmickPopup = false;
+            gamePaused = false;
+            document.getElementById("gimmickPopup").style.display = "none";
+            document.getElementById("teleportPopup").style.display = "none";
+          }
+          return;
+        }
+        // If the level selector is not active and Numpad5 is pressed, show the level selector
+        if (!levelSelectorActive && e.code === "Numpad5") {
+          showLevelSelector(true, false);
+          e.preventDefault();
+          return;
+        }
+        // For levels with teleport ability, attempt teleport when space is pressed
+        if (levels[currentLevel].teleportLevel && e.key === " " && !isTeleporting) {
+          attemptTeleport();
+        }
+        // For levels with dash ability (level 7 and above), attempt dash when space is pressed
+        else if (currentLevel >= 7 && e.key === " " && !isDashing) {
+          attemptDash();
+        } else {
+          // Otherwise, handle arrow key presses to set the movement direction
+          switch (e.key) {
+            case "ArrowUp":
+              lastDirection = "up";
+              break;
+            case "ArrowDown":
+              lastDirection = "down";
+              break;
+            case "ArrowLeft":
+              lastDirection = "left";
+              break;
+            case "ArrowRight":
+              lastDirection = "right";
+              break;
+          }
+        }
+      });
+
+      // Additional keydown listener for clearing storage using Numpad7
+      document.addEventListener("keydown", e => {
+        if (e.code === "Numpad7") {
+          e.preventDefault();
+          showClearStoragePrompt();
+        }
+      });
+
+      // -------------------------------------------------
+      // 11. Dashing
+      // -------------------------------------------------
+      // Function to attempt initiating a dash
+      function attemptDash() {
+        const now = Date.now();
+        if (now >= dashReadyTime) {
+          startDash(now);
+          dashReadyTime = now + currentDashCooldown;
+        }
+      }
+
+      // Function to start the dash movement
+      function startDash(now) {
+        // Play dash sound
+        dashSound.currentTime = 0;
+        dashSound.play();
+        isDashing = true;
+        dashStartTime = now;
+        dashStartX = cube.x;
+        dashStartY = cube.y;
+
+        let vx = cube.vx;
+        let vy = cube.vy;
+        let mag = Math.hypot(vx, vy);
+
+        // Determine the dash direction based on current velocity or default arrow direction
+        let dirX = arrowDirX;
+        let dirY = arrowDirY;
+        if (mag > 0.01) {
+          dirX = vx / mag;
+          dirY = vy / mag;
+          arrowDirX = dirX;
+          arrowDirY = dirY;
+        }
+
+        // Calculate the dash target position
+        dashTargetX = cube.x + dirX * currentDashDistance;
+        dashTargetY = cube.y + dirY * currentDashDistance;
+
+        // Clamp the dash target so the cube does not leave the canvas bounds
+        if (dashTargetX - cube.size / 2 < 0) {
+          dashTargetX = cube.size / 2;
+        }
+        if (dashTargetX + cube.size / 2 > canvas.width) {
+          dashTargetX = canvas.width - cube.size / 2;
+        }
+        if (dashTargetY - cube.size / 2 < 0) {
+          dashTargetY = cube.size / 2;
+        }
+        if (dashTargetY + cube.size / 2 > canvas.height) {
+          dashTargetY = canvas.height - cube.size / 2;
+        }
+      }
+
+      // -------------------------------------------------
+      // 12. Teleport Gimmick
+      // -------------------------------------------------
+      // Function to attempt teleporting the cube
+      function attemptTeleport() {
+        const now = Date.now();
+        if (now < teleportReadyTime) return;
+        let dirX = arrowDirX, dirY = arrowDirY;
+        let mag = Math.hypot(dirX, dirY);
+        if (mag === 0) { dirX = 0; dirY = -1; }
+        const step = 10; // Step size for checking collision along the teleport path
+        let currentX = cube.x;
+        let currentY = cube.y;
+        let lastSafeX = cube.x;
+        let lastSafeY = cube.y;
+        let hitRed = false;
+        // Loop to simulate moving the cube along the teleport path until an obstacle is encountered
+        while (true) {
+          let nextX = currentX + dirX * step;
+          let nextY = currentY + dirY * step;
+          let candidate = {
+            x: nextX - cube.size / 2,
+            y: nextY - cube.size / 2,
+            width: cube.size,
+            height: cube.size
+          };
+          // If the candidate position intersects the target, complete the level
+          if (target) {
+            let targetRect = {
+              x: target.x - target.size / 2,
+              y: target.y - target.size / 2,
+              width: target.size,
+              height: target.size
+            };
+            if (rectIntersect(candidate, targetRect)) {
+              // Play win sound when collecting green block (target)
+              winSound.currentTime = 0;
+              winSound.play();
+              currentLevel++;
+              if (currentLevel < levels.length) {
+                loadLevel(currentLevel);
+              } else {
+                showWinScreen();
+              }
+              teleportReadyTime = now + currentTeleportCooldown;
+              return;
+            }
+          }
+          // Check for collision with any platforms
+          let hitPlatform = platforms.some(p => {
+            let pRect = { x: p.x, y: p.y, width: p.width, height: p.height };
+            return rectIntersect(candidate, pRect);
+          });
+          if (hitPlatform) break;
+          // Check for collision with red hazards; if found, mark hitRed and break out
+          hitRed = hazards.some(h => {
+            let hRect = { x: h.x, y: h.y, width: h.width, height: h.height };
+            return rectIntersect(candidate, hRect);
+          });
+          if (hitRed) break;
+          // Check if the candidate is out of bounds; if so, clamp to last safe position
+          if (nextX - cube.size / 2 < 0 || nextX + cube.size / 2 > canvas.width ||
+              nextY - cube.size / 2 < 0 || nextY + cube.size / 2 > canvas.height) {
+            lastSafeX = Math.max(cube.size / 2, Math.min(nextX, canvas.width - cube.size / 2));
+            lastSafeY = Math.max(cube.size / 2, Math.min(nextY, canvas.height - cube.size / 2));
+            break;
+          }
+          lastSafeX = nextX;
+          lastSafeY = nextY;
+          currentX = nextX;
+          currentY = nextY;
+        }
+        // If a red block was encountered during teleportation, the player dies.
+        if (hitRed) {
+          deathSound.currentTime = 0;
+          deathSound.play();
+          loadLevel(currentLevel);
+          return;
+        } else {
+          cube.x = lastSafeX;
+          cube.y = lastSafeY;
+          teleportReadyTime = now + currentTeleportCooldown;
+          // Play teleport sound after a successful teleport
+          teleportSound.currentTime = 0;
+          teleportSound.play();
+        }
+      }
+
+      // -------------------------------------------------
+      // 13. Collision Helpers
+      // -------------------------------------------------
+      // Helper function to determine if two rectangles intersect
+      function rectIntersect(r1, r2) {
+        return !(
+          r2.x > r1.x + r1.width ||
+          r2.x + r2.width < r1.x ||
+          r2.y > r1.y + r1.height ||
+          r2.y + r2.height < r1.y
+        );
+      }
+
+      // -------------------------------------------------
+      // 14. Update
+      // -------------------------------------------------
+      // Main update function called each frame to update game state
+      function update() {
+        if (gamePaused) return;
+        const now = Date.now();
+        let obstacles = [...platforms, ...browns];
+        if (levels[currentLevel].fallingBrownLevel) {
+          obstacles = obstacles.concat(fallingBrownBlocks);
+        }
+        if (isDashing) {
+          let prevX = cube.x, prevY = cube.y;
+          let t = (now - dashStartTime) / currentDashDuration;
+          if (t >= 1) {
+            t = 1;
+            isDashing = false;
+            dashGraceUntil = now + 200;
+          }
+          cube.x = dashStartX + (dashTargetX - dashStartX) * t;
+          cube.y = dashStartY + (dashTargetY - dashStartY) * t;
+          const cubeRect = {
+            x: cube.x - cube.size / 2,
+            y: cube.y - cube.size / 2,
+            width: cube.size,
+            height: cube.size
+          };
+          // Check collisions with brown blocks during dash to destroy them
+          for (let i = 0; i < browns.length; i++) {
+            let b = browns[i];
+            let bRect = { x: b.x, y: b.y, width: b.width, height: b.height };
+            if (rectIntersect(cubeRect, bRect)) {
+              browns.splice(i, 1);
+              spawnBrownParticles(b);
+              isDashing = false;
+              cube.x = prevX;
+              cube.y = prevY;
+              break;
+            }
+          }
+          // For falling brown levels, check collisions with falling brown blocks
+          if (isDashing && levels[currentLevel].fallingBrownLevel) {
+            for (let i = 0; i < fallingBrownBlocks.length; i++) {
+              let block = fallingBrownBlocks[i];
+              let blockRect = { x: block.x, y: block.y, width: block.width, height: block.height };
+              if (rectIntersect(cubeRect, blockRect)) {
+                spawnBrownParticles(block);
+                const spawnX = block.x;
+                const spawnY = block.y;
+                fallingBrownBlocks.splice(i, 1);
+                if (Math.random() < 0.33) {
+                  target = {
+                    x: spawnX + cube.size / 2,
+                    y: spawnY + cube.size / 2,
+                    size: cube.size,
+                    spawnTime: Date.now()
+                  };
+                }
+                isDashing = false;
+                cube.x = prevX;
+                cube.y = prevY;
+                break;
+              }
+            }
+          }
+          if (isDashing) {
+            if (platforms.some(p => {
+              const pRect = { x: p.x, y: p.y, width: p.width, height: p.height };
+              return rectIntersect(cubeRect, pRect);
+            })) {
+              cube.x = prevX;
+              cube.y = prevY;
+              isDashing = false;
+              dashGraceUntil = now + 200;
+            }
+          }
+        } else {
+          // Normal movement based on last pressed arrow key (no diagonal movement)
+          if (lastDirection === "up") {
+            cube.vy -= currentAcceleration;
+            cube.vx = 0;
+            arrowDirX = 0;
+            arrowDirY = -1;
+          } else if (lastDirection === "down") {
+            cube.vy += currentAcceleration;
+            cube.vx = 0;
+            arrowDirX = 0;
+            arrowDirY = 1;
+          } else if (lastDirection === "left") {
+            cube.vx -= currentAcceleration;
+            cube.vy = 0;
+            arrowDirX = -1;
+            arrowDirY = 0;
+          } else if (lastDirection === "right") {
+            cube.vx += currentAcceleration;
+            cube.vy = 0;
+            arrowDirX = 1;
+            arrowDirY = 0;
+          }
+          cube.vx *= 0.88;
+          cube.vy *= 0.88;
+          let newX = cube.x + cube.vx;
+          let candidateX = {
+            x: newX - cube.size / 2,
+            y: cube.y - cube.size / 2,
+            width: cube.size,
+            height: cube.size
+          };
+          if (!obstacles.some(p => {
+            if (p.baseVy !== undefined && p.vy === 0) return false;
+            let pRect = { x: p.x, y: p.y, width: p.width, height: p.height };
+            return rectIntersect(candidateX, pRect);
+          })) {
+            cube.x = newX;
+          } else {
+            cube.vx = 0;
+          }
+          let newY = cube.y + cube.vy;
+          let candidateY = {
+            x: cube.x - cube.size / 2,
+            y: newY - cube.size / 2,
+            width: cube.size,
+            height: cube.size
+          };
+          if (!obstacles.some(p => {
+            let pRect = { x: p.x, y: p.y, width: p.width, height: p.height };
+            return rectIntersect(candidateY, pRect);
+          })) {
+            cube.y = newY;
+          } else {
+            cube.vy = 0;
+          }
+        }
+        // Keep the cube within canvas boundaries (left/right)
+        if (cube.x - cube.size / 2 < 0) {
+          cube.x = cube.size / 2;
+          cube.vx = 0;
+        } else if (cube.x + cube.size / 2 > canvas.width) {
+          cube.x = canvas.width - cube.size / 2;
+          cube.vx = 0;
+        }
+        // Keep the cube within canvas boundaries (top/bottom)
+        if (cube.y - cube.size / 2 < 0) {
+          cube.y = cube.size / 2;
+          cube.vy = 0;
+        } else if (cube.y + cube.size / 2 > canvas.height) {
+          cube.y = canvas.height - cube.size / 2;
+          cube.vy = 0;
+        }
+        if ([2, 3, 4, 5, 6].includes(currentLevel)) {
+          hazards.forEach(h => {
+            h.x += h.vx;
+            if (h.x < h.minX || h.x > canvas.width) {
+              h.vx = -h.vx;
+            }
+          });
+        }
+        if (currentLevel === 9 || currentLevel === 10 || currentLevel === 14 ||
+            currentLevel === 15 || currentLevel === 16) {
+          oranges.forEach(o => {
+            if (o.moving) {
+              if (o.verticalMovement) {
+                o.y += o.dy;
+                if (o.y < 0) {
+                  o.y = 0;
+                  o.dy = -o.dy;
+                } else if (o.y + o.height > canvas.height) {
+                  o.y = canvas.height - o.height;
+                  o.dy = -o.dy;
+                }
+              } else {
+                o.x += o.dx;
+                if (o.x < 0) {
+                  o.x = 0;
+                  o.dx = -o.dx;
+                } else if (o.x + o.width > canvas.width) {
+                  o.x = canvas.width - o.width;
+                  o.dx = -o.dx;
+                }
+              }
+            }
+          });
+        }
+        if (currentLevel === 11) {
+          if (now - lastFallingOrangeSpawn >= 5000) {
+            fallingOranges.push({
+              x: 0,
+              y: -0.02 * canvas.height,
+              width: canvas.width,
+              height: 0.02 * canvas.height,
+              dy: currentFallingOrangeDy
+            });
+            lastFallingOrangeSpawn = now;
+          }
+          for (let i = fallingOranges.length - 1; i >= 0; i--) {
+            let fo = fallingOranges[i];
+            fo.y += fo.dy;
+            if (fo.y > canvas.height) {
+              fallingOranges.splice(i, 1);
+            }
+          }
+        }
+        if (levels[currentLevel].fallingBrownLevel) {
+          if (now >= fallingBrownTextStart + 1500 && now - lastBrownSpawnTime >= 1500) {
+            fallingBrownBlocks.push({
+              x: Math.random() * (canvas.width - cube.size),
+              y: -cube.size,
+              width: cube.size,
+              height: cube.size,
+              baseVy: currentFallingBlockSpeed,
+              vy: currentFallingBlockSpeed
+            });
+            lastBrownSpawnTime = now;
+          }
+          for (let i = fallingBrownBlocks.length - 1; i >= 0; i--) {
+            let block = fallingBrownBlocks[i];
+            block.y += block.vy;
+            if (block.y > canvas.height) {
+              fallingBrownBlocks.splice(i, 1);
+              continue;
+            }
+            let blockRect = { x: block.x, y: block.y, width: block.width, height: block.height };
+            let cubeRect = { x: cube.x - cube.size / 2, y: cube.y - cube.size / 2, width: cube.size, height: cube.size };
+            let noOverlap = (cubeRect.x + cubeRect.width < blockRect.x || cubeRect.x > blockRect.x + blockRect.width);
+            if (!noOverlap) {
+              let blockBottom = blockRect.y + blockRect.height;
+              let playerTop = cubeRect.y;
+              if (blockBottom > playerTop && blockRect.y < (cubeRect.y + cubeRect.height)) {
+                block.vy = 0;
+                cube.y += 4;
+                if (cube.y + cube.size / 2 > canvas.height) {
+                  cube.y = canvas.height - cube.size / 2;
+                }
+              } else {
+                if (block.vy === 0) {
+                  block.vy = block.baseVy;
+                }
+              }
+            } else {
+              if (block.vy === 0) {
+                block.vy = block.baseVy;
+              }
+            }
+          }
+        }
+        // -------------------------------
+        // NEW: Update moving target (Stage 2 Level 2)
+        // -------------------------------
+        if (levels[currentLevel].movingTarget && target) {
+          target.x += target.dx;
+          if (target.x - target.size / 2 < 0) {
+            target.x = target.size / 2;
+            target.dx = -target.dx;
+          }
+          if (target.x + target.size / 2 > canvas.width) {
+            target.x = canvas.width - target.size / 2;
+            target.dx = -target.dx;
+          }
+        }
+        const cubeRect = { x: cube.x - cube.size / 2, y: cube.y - cube.size / 2, width: cube.size, height: cube.size };
+        for (let hz of hazards) {
+          const hazardRect = { x: hz.x, y: hz.y, width: hz.width, height: hz.height };
+          if (rectIntersect(cubeRect, hazardRect)) {
+            dashReadyTime = Date.now();
+            deathSound.currentTime = 0;
+            deathSound.play();
+            loadLevel(currentLevel);
+            return;
+          }
+        }
+        for (let o of oranges) {
+          const orangeRect = { x: o.x, y: o.y, width: o.width, height: o.height };
+          if (rectIntersect(cubeRect, orangeRect)) {
+            if (!(isDashing || now < dashGraceUntil)) {
+              dashReadyTime = Date.now();
+              deathSound.currentTime = 0;
+              deathSound.play();
+              loadLevel(currentLevel);
+              return;
+            }
+          }
+        }
+        if (currentLevel === 11) {
+          for (let fo of fallingOranges) {
+            const foRect = { x: fo.x, y: fo.y, width: fo.width, height: fo.height };
+            if (rectIntersect(cubeRect, foRect)) {
+              if (!(isDashing || now < dashGraceUntil)) {
+                dashReadyTime = Date.now();
+                deathSound.currentTime = 0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
+            }
+          }
+        }
+        if (levels[currentLevel].level13) {
+          if (!level13PillarsSpawned && level13Stage >= 1) {
+            spawnLevel13Pillars();
+          }
+          if (level13PillarsSpawned) {
+            for (let pillar of level13Pillars) {
+              if (pillar.dx !== undefined) {
+                pillar.x += pillar.dx;
+                if (pillar.x < 0) {
+                  pillar.x = 0;
+                  pillar.dx = -pillar.dx;
+                } else if (pillar.x + pillar.width > canvas.width) {
+                  pillar.x = canvas.width - pillar.width;
+                  pillar.dx = -pillar.dx;
+                }
+              }
+              if (pillar.dy !== undefined) {
+                pillar.y += pillar.dy;
+                if (pillar.y < 0) {
+                  pillar.y = 0;
+                  pillar.dy = -pillar.dy;
+                } else if (pillar.y + pillar.height > canvas.height) {
+                  pillar.y = canvas.height - pillar.height;
+                  pillar.dy = -pillar.dy;
+                }
+              }
+            }
+            for (let pillar of level13Pillars) {
+              let pillarRect = { x: pillar.x, y: pillar.y, width: pillar.width, height: pillar.height };
+              if (!(isDashing || now < dashGraceUntil)) {
+                if (rectIntersect(cubeRect, pillarRect)) {
+                  deathSound.currentTime = 0;
+                  deathSound.play();
+                  loadLevel(currentLevel);
+                  return;
+                }
+              }
+            }
+          }
+          if (rectIntersect(cubeRect, {
+            x: target.x - target.size / 2,
+            y: target.y - target.size / 2,
+            width: target.size,
+            height: target.size
+          })) {
+            if (level13Stage < 5) {
+              level13Stage++;
+              target.x = level13TargetPositions[level13Stage].x * canvas.width;
+              target.y = level13TargetPositions[level13Stage].y * canvas.height;
+              return;
+            } else {
+              // Play win sound when target is collected
+              winSound.currentTime = 0;
+              winSound.play();
+              currentLevel++;
+              if (currentLevel < levels.length) {
+                loadLevel(currentLevel);
+              } else {
+                showWinScreen();
+                return;
+              }
+              return;
+            }
+          }
+        } else {
+          if (target) {
+            let targetRect = {
+              x: target.x - target.size / 2,
+              y: target.y - target.size / 2,
+              width: target.size,
+              height: target.size
+            };
+            if (levels[currentLevel].fallingBrownLevel && (now - target.spawnTime < 500)) {
+            } else if (currentLevel === 9 && rectIntersect(cubeRect, targetRect)) {
+              if (!(target.x < 50 && target.y > canvas.height - 50)) {
+                target.x = cube.size / 2;
+                target.y = canvas.height - cube.size / 2;
+                return;
+              } else {
+                // Play win sound when target is collected
+                winSound.currentTime = 0;
+                winSound.play();
+                currentLevel++;
+                if (currentLevel < levels.length) {
+                  loadLevel(currentLevel);
+                } else {
+                  showWinScreen();
+                  return;
+                }
+                teleportReadyTime = now + currentTeleportCooldown;
+                return;
+              }
+            } else if (rectIntersect(cubeRect, targetRect)) {
+              // Play win sound when target is collected
+              winSound.currentTime = 0;
+              winSound.play();
+              currentLevel++;
+              if (currentLevel < levels.length) {
+                loadLevel(currentLevel);
+              } else {
+                showWinScreen();
+                return;
+              }
+            }
+          }
+        }
+        updateBrownParticles();
+        if (levels[currentLevel].challengeDashingLevel) {
+          let elapsed = now - challengeStartTime;
+          let remaining = challengeDuration - elapsed;
+          let spawnInterval = 7000;
+          if (remaining <= 45 * 1000 && remaining > 37 * 1000) {
+            spawnInterval = 5000;
+          } else if (remaining <= 37 * 1000 && remaining > 30 * 1000) {
+            spawnInterval = 4000;
+          } else if (remaining <= 30 * 1000 && remaining > 10 * 1000) {
+            spawnInterval = 3000;
+          } else if (remaining <= 10 * 1000) {
+            spawnInterval = 2500;
+          }
+          if (now - lastChallengeLineSpawn >= spawnInterval) {
+            let directions = ["up", "down", "left", "right"];
+            let dir = directions[Math.floor(Math.random() * directions.length)];
+            let lineThickness = 20;
+            let line = { direction: dir, vx: 0, vy: 0, x: 0, y: 0, width: 0, height: 0 };
+            if (dir === "up") {
+              line.x = Math.random() * (canvas.width - lineThickness);
+              line.y = -canvas.height;
+              line.width = lineThickness;
+              line.height = canvas.height;
+              line.vy = challengeLineSpeed;
+            } else if (dir === "down") {
+              line.x = Math.random() * (canvas.width - lineThickness);
+              line.y = canvas.height;
+              line.width = lineThickness;
+              line.height = canvas.height;
+              line.vy = -challengeLineSpeed;
+            } else if (dir === "left") {
+              line.y = Math.random() * (canvas.height - lineThickness);
+              line.x = -canvas.width;
+              line.width = canvas.width;
+              line.height = lineThickness;
+              line.vx = challengeLineSpeed;
+            } else if (dir === "right") {
+              line.y = Math.random() * (canvas.height - lineThickness);
+              line.x = canvas.width;
+              line.width = canvas.width;
+              line.height = lineThickness;
+              line.vx = -challengeLineSpeed;
+            }
+            challengeLines.push(line);
+            lastChallengeLineSpawn = now;
+          }
+          for (let i = challengeLines.length - 1; i >= 0; i--) {
+            let line = challengeLines[i];
+            line.x += line.vx;
+            line.y += line.vy;
+            if (line.direction === "up" && line.y > canvas.height) {
+              challengeLines.splice(i, 1);
+            } else if (line.direction === "down" && line.y + line.height < 0) {
+              challengeLines.splice(i, 1);
+            } else if (line.direction === "left" && line.x > canvas.width) {
+              challengeLines.splice(i, 1);
+            } else if (line.direction === "right" && line.x + line.width < 0) {
+              challengeLines.splice(i, 1);
+            }
+          }
+          if (now >= fallingRedTextStart + 1500 && now - lastRedSpawnTime >= 1500) {
+            fallingRedBlocks.push({
+              x: Math.random() * (canvas.width - cube.size),
+              y: -cube.size,
+              width: cube.size,
+              height: cube.size,
+              baseVy: currentFallingBlockSpeed,
+              vy: currentFallingBlockSpeed
+            });
+            lastRedSpawnTime = now;
+          }
+          for (let i = fallingRedBlocks.length - 1; i >= 0; i--) {
+            let block = fallingRedBlocks[i];
+            block.y += block.vy;
+            if (block.y > canvas.height) {
+              fallingRedBlocks.splice(i, 1);
+              continue;
+            }
+            let blockRect = { x: block.x, y: block.y, width: block.width, height: block.height };
+            if (rectIntersect(cubeRect, blockRect)) {
+              deathSound.currentTime = 0;
+              deathSound.play();
+              loadLevel(currentLevel);
+              return;
+            }
+          }
+          if (elapsed >= challengeDuration && !challengeGreenBlock) {
+            challengeGreenBlock = {
+              x: canvas.width / 2,
+              y: canvas.height / 2,
+              size: 200
+            };
+          }
+          for (let line of challengeLines) {
+            let lineRect = { x: line.x, y: line.y, width: line.width, height: line.height };
+            if (rectIntersect(cubeRect, lineRect)) {
+              if (!(isDashing || now < dashGraceUntil)) {
+                deathSound.currentTime = 0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
+            }
+          }
+          if (challengeGreenBlock) {
+            let greenRect = { 
+              x: challengeGreenBlock.x - challengeGreenBlock.size / 2, 
+              y: challengeGreenBlock.y - challengeGreenBlock.size / 2, 
+              width: challengeGreenBlock.size, 
+              height: challengeGreenBlock.size 
+            };
+            if (rectIntersect(cubeRect, greenRect)) {
+              // Play win sound when target is collected
+              winSound.currentTime = 0;
+              winSound.play();
+              currentLevel++;
+              if (currentLevel < levels.length) {
+                loadLevel(currentLevel);
+              } else {
+                showWinScreen();
+              }
+              return;
+            }
+          }
+          return;
+        }
+      }
+
+      // -------------------------------------------------
+      // 15. Drawing Functions
+      // -------------------------------------------------
+      // Draw the target object (goal) as a green square
+      function drawTarget() {
+        if (target) {
+          ctx.fillStyle = "green";
+          ctx.fillRect(target.x - target.size / 2, target.y - target.size / 2, target.size, target.size);
+        }
+      }
+      // Draw platforms as grey rectangles
+      function drawPlatforms() {
+        ctx.fillStyle = "#555";
+        for (let p of platforms) {
+          ctx.fillRect(p.x, p.y, p.width, p.height);
+        }
+      }
+      // Draw hazards (red blocks) on the canvas
+      function drawHazards() {
+        ctx.fillStyle = "red";
+        for (let h of hazards) {
+          ctx.fillRect(h.x, h.y, h.width, h.height);
+        }
+      }
+      // Draw orange obstacles or teleport blocks (color changes if teleport level)
+      function drawOranges() {
+        ctx.fillStyle = levels[currentLevel].teleportLevel ? "purple" : "orange";
+        for (let o of oranges) {
+          ctx.fillRect(o.x, o.y, o.width, o.height);
+        }
+        if (currentLevel === 12 && level13PillarsSpawned) {
+          for (let pillar of level13Pillars) {
+            ctx.fillRect(pillar.x, pillar.y, pillar.width, pillar.height);
+          }
+        }
+        if (currentLevel === 11) {
+          for (let fo of fallingOranges) {
+            ctx.fillRect(fo.x, fo.y, fo.width, fo.height);
+          }
+        }
+      }
+      // Draw brown blocks (static obstacles)
+      function drawBrowns() {
+        ctx.fillStyle = "saddlebrown";
+        for (let b of browns) {
+          ctx.fillRect(b.x, b.y, b.width, b.height);
+        }
+      }
+      // Draw falling brown blocks (for falling brown levels)
+      function drawFallingBrownBlocks() {
+        if (levels[currentLevel].fallingBrownLevel) {
+          ctx.fillStyle = "saddlebrown";
+          for (let block of fallingBrownBlocks) {
+            ctx.fillRect(block.x, block.y, block.width, block.height);
+          }
+        }
+      }
+      // Draw falling red blocks in the challenge level
+      function drawFallingRedBlocks() {
+        if (levels[currentLevel].challengeDashingLevel) {
+          ctx.fillStyle = "red";
+          for (let block of fallingRedBlocks) {
+            ctx.fillRect(block.x, block.y, block.width, block.height);
+          }
+        }
+      }
+      // Draw moving challenge lines (orange lines) in the challenge level
+      function drawChallengeLines() {
+        if (levels[currentLevel].challengeDashingLevel) {
+          ctx.fillStyle = "orange";
+          for (let line of challengeLines) {
+            ctx.fillRect(line.x, line.y, line.width, line.height);
+          }
+        }
+      }
+      // Draw the giant green block (target) in the challenge level if present
+      function drawChallengeGreenBlock() {
+        if (levels[currentLevel].challengeDashingLevel && challengeGreenBlock) {
+          ctx.fillStyle = "green";
+          ctx.fillRect(challengeGreenBlock.x - challengeGreenBlock.size / 2, challengeGreenBlock.y - challengeGreenBlock.size / 2, challengeGreenBlock.size, challengeGreenBlock.size);
+        }
+      }
+      // Draw level text (e.g., level number, stage, challenge timer)
+      function drawLevelText() {
+        ctx.fillStyle = "#fff";
+        ctx.font = "30px sans-serif";
+        ctx.textAlign = "left";
+        if (levels[currentLevel].challengeDashingLevel) {
+          ctx.fillText("Challenge Of Dashing", 10, 40);
+          let elapsed = Date.now() - challengeStartTime;
+          let remainingSec = Math.max(0, Math.ceil((challengeDuration - elapsed) / 1000));
+          ctx.textAlign = "center";
+          ctx.fillText(remainingSec + "s", canvas.width / 2, 40);
+          ctx.textAlign = "left";
+        } else {
+          let stage = levels[currentLevel].stage || 1;
+          let levelNumInStage = 1;
+          if (stage > 1) {
+            let count = 0;
+            for (let i = 0; i < currentLevel; i++) {
+              if ((levels[i].stage || 1) === stage) {
+                count++;
+              }
+            }
+            levelNumInStage = count + 1;
+            ctx.fillText("Stage " + stage + " Level " + levelNumInStage, 10, 40);
+          } else {
+            ctx.fillText("Level: " + (currentLevel + 1), 10, 40);
+          }
+        }
+        if (currentLevel === 10) {
+          ctx.textAlign = "center";
+          ctx.fillText("Dash into brown blocks to destroy them", canvas.width / 2, 80);
+        }
+        if (currentLevel === 13) {
+          ctx.textAlign = "center";
+          ctx.fillText("One of these brown blocks hides a green block", canvas.width / 2, 80);
+        }
+      }
+      // Draw the player cube and its directional arrow
+      function drawCube() {
+        ctx.fillStyle = (isDashing || isTeleporting) ? "blue" : "#fff";
+        ctx.fillRect(cube.x - cube.size / 2, cube.y - cube.size / 2, cube.size, cube.size);
+        let arrowColor = "#000";
+        if (currentMode === "easy") {
+          arrowColor = "green";
+        } else if (currentMode === "hard") {
+          arrowColor = "red";
+        }
+        ctx.fillStyle = arrowColor;
+        let mag = Math.hypot(arrowDirX, arrowDirY);
+        let uX = arrowDirX, uY = arrowDirY;
+        if (mag === 0) { uX = 0; uY = -1; }
+        const angle = Math.atan2(uY, uX);
+        const a = cube.size * 0.3;
+        const b = cube.size * 0.15;
+        const cVal = cube.size * 0.3;
+        // Helper function to rotate a point around the origin by a given angle
+        function rotPt(x, y, ang) {
+          return { x: x * Math.cos(ang) - y * Math.sin(ang), y: x * Math.sin(ang) + y * Math.cos(ang) };
+        }
+        let tipLocal = { x: a, y: 0 };
+        let baseLeft = { x: -b, y: cVal };
+        let baseRight = { x: -b, y: -cVal };
+        let tipRot = rotPt(tipLocal.x, tipLocal.y, angle);
+        let blRot = rotPt(baseLeft.x, baseLeft.y, angle);
+        let brRot = rotPt(baseRight.x, baseRight.y, angle);
+        const tipX = cube.x + tipRot.x;
+        const tipY = cube.y + tipRot.y;
+        const blX  = cube.x + blRot.x;
+        const blY  = cube.y + blRot.y;
+        const brX  = cube.x + brRot.x;
+        const brY  = cube.y + brRot.y;
+        ctx.beginPath();
+        ctx.moveTo(tipX, tipY);
+        ctx.lineTo(blX, blY);
+        ctx.lineTo(brX, brY);
+        ctx.closePath();
+        ctx.fill();
+      }
+      // Spawn pillars for level 13 (special level behavior)
+      function spawnLevel13Pillars() {
+        level13PillarsSpawned = true;
+        let verticalPillarWidth = 0.02 * canvas.width;
+        let verticalPillarHeight = canvas.height;
+        let verticalPillar = {
+          x: 0,
+          y: 0,
+          width: verticalPillarWidth,
+          height: verticalPillarHeight,
+          dx: currentPillarDx
+        };
+        let horizontalPillarHeight = 0.02 * canvas.height;
+        let horizontalPillarWidth = canvas.width;
+        let horizontalPillar = {
+          x: 0,
+          y: 0,
+          width: horizontalPillarWidth,
+          height: horizontalPillarHeight,
+          dy: currentPillarDy
+        };
+        level13Pillars.push(verticalPillar);
+        level13Pillars.push(horizontalPillar);
+      }
+      // -------------------------------------------------
+      // 16. Game Loop
+      // -------------------------------------------------
+      // Main game loop function; clears the canvas, updates game state, and redraws elements
+      function gameLoop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        update();
+        drawTarget();
+        drawPlatforms();
+        drawHazards();
+        drawOranges();
+        drawBrowns();
+        drawFallingBrownBlocks();
+        drawCube();
+        drawBrownParticles();
+        drawLevelText();
+        drawCooldown();
+        if (levels[currentLevel].challengeDashingLevel) {
+          drawFallingRedBlocks();
+          drawChallengeLines();
+          drawChallengeGreenBlock();
+        }
+        requestAnimationFrame(gameLoop);
+      }
+      // -------------------------------------------------
+      // 17. Full-Screen Level Selector Functions
+      // -------------------------------------------------
+      const levelSelectorOverlay = document.getElementById("levelSelectorOverlay");
+      const levelSelectorContainer = document.getElementById("levelSelectorContainer");
+      const resumeButton = document.getElementById("resumeButton");
+
+      // Populate the level selector with buttons for each level in the current stage
+      function populateLevelSelector() {
+        levelSelectorContainer.innerHTML = "";
+        levels.forEach((lvl, index) => {
+          let lvlStage = lvl.stage || 1;
+          if (lvlStage === currentStage) {
+            const btn = document.createElement("div");
+            btn.className = "bigButton";
+            let count = 0;
+            for (let j = 0; j < index; j++) {
+              if ((levels[j].stage || 1) === lvlStage) {
+                count++;
+              }
+            }
+            btn.textContent = "Level " + (count + 1);
+            if (!allLevelsUnlocked && index > maxUnlockedLevel) {
+              btn.textContent += " 🔒";
+              btn.classList.add("locked");
+            } else {
+              btn.addEventListener("click", () => {
+                hideLevelSelector();
+                loadLevel(index);
+                gamePaused = false;
+                // Added code to play background music when level is loaded from level selector.
+                if (currentMode === "hard") {
+                  bgHardMusic.play();
+                  bgEasyNormalMusic.pause();
+                  bgEasyNormalMusic.currentTime = 0;
+                } else {
+                  bgEasyNormalMusic.play();
+                  bgHardMusic.pause();
+                  bgHardMusic.currentTime = 0;
+                }
+              });
+            }
+            levelSelectorContainer.appendChild(btn);
+          }
+        });
+        document.getElementById("stageHeader").textContent = "Stage " + currentStage + " - Select Level";
+      }
+
+      // Function to return to the main menu from the level selector
+      function backToMainMenu() {
+        hideLevelSelector();
+        mainMenu.classList.remove("hidden");
+        gamePaused = true;
+      }
+
+      // Display the level selector overlay
+      function showLevelSelector(unlockAll = false, fromMainMenu = false) {
+        allLevelsUnlocked = unlockAll;
+        levelSelectorFromMainMenu = fromMainMenu;
+        levelSelectorActive = true;
+        gamePaused = true;
+        populateLevelSelector();
+        resumeButton.style.display = (currentLevel >= levels.length) ? "none" : "block";
+        if (levelSelectorFromMainMenu) {
+          resumeButton.textContent = "Back";
+          resumeButton.onclick = backToMainMenu;
+        } else {
+          resumeButton.textContent = "Resume";
+          resumeButton.onclick = hideLevelSelector;
+        }
+        levelSelectorOverlay.classList.remove("hidden");
+      }
+
+      // Hide the level selector overlay
+      function hideLevelSelector() {
+        levelSelectorActive = false;
+        gamePaused = false;
+        levelSelectorOverlay.classList.add("hidden");
+      }
+
+      // Event listeners for stage navigation arrows in the level selector
+      document.getElementById("stageLeft").addEventListener("click", () => {
+        currentStage = Math.max(1, currentStage - 1);
+        populateLevelSelector();
+      });
+      document.getElementById("stageRight").addEventListener("click", () => {
+        currentStage++;
+        populateLevelSelector();
+      });
+
+      // -------------------------------------------------
+      // 18. Win Screen Functions (Modified: Only Replay Button)
+      // -------------------------------------------------
+      const winScreen = document.getElementById("winScreen");
+      const replayButton = document.getElementById("replayButton");
+
+      // Show the win screen overlay when the game is won
+      function showWinScreen() {
+        gamePaused = true;
+        winScreen.classList.remove("hidden");
+      }
+
+      // Hide the win screen overlay
+      function hideWinScreen() {
+        winScreen.classList.add("hidden");
+        gamePaused = false;
+      }
+
+      // Replay button reloads the page to restart the game
+      replayButton.addEventListener("click", () => {
+        window.location.reload();
+      });
+
+      // -------------------------------------------------
+      // 19. Main Menu and Clear Storage Prompt Functions
+      // -------------------------------------------------
+      const mainMenu = document.getElementById("mainMenu");
+      const playButton = document.getElementById("playButton");
+      const menuLevelSelectorButton = document.getElementById("menuLevelSelectorButton");
+      const clearStoragePrompt = document.getElementById("clearStoragePrompt");
+      const clearYes = document.getElementById("clearYes");
+      const clearNo = document.getElementById("clearNo");
+
+      // Play button: Hide the main menu and start the game, and start background music based on difficulty
+      playButton.addEventListener("click", () => {
+        mainMenu.classList.add("hidden");
+        gamePaused = false;
+        loadLevel(currentLevel);
+        if (currentMode === "hard") {
+          bgHardMusic.play();
+          bgEasyNormalMusic.pause();
+          bgEasyNormalMusic.currentTime = 0;
+        } else {
+          bgEasyNormalMusic.play();
+          bgHardMusic.pause();
+          bgHardMusic.currentTime = 0;
+        }
+      });
+
+      // Level selector button from main menu: Show the level selector overlay
+      menuLevelSelectorButton.addEventListener("click", () => {
+        mainMenu.classList.add("hidden");
+        showLevelSelector(false, true);
+      });
+
+      // Show the clear storage prompt overlay
+      function showClearStoragePrompt() {
+        gamePaused = true;
+        clearStoragePrompt.classList.remove("hidden");
+      }
+
+      // Hide the clear storage prompt overlay
+      function hideClearStoragePrompt() {
+        gamePaused = false;
+        clearStoragePrompt.classList.add("hidden");
+      }
+
+      // Clear storage confirmation: Clear localStorage and reset max unlocked level
+      clearYes.addEventListener("click", () => {
+        localStorage.clear();
+        maxUnlockedLevel = 0;
+        hideClearStoragePrompt();
+      });
+
+      // Cancel clearing storage
+      clearNo.addEventListener("click", hideClearStoragePrompt);
+
+      // -------------------------------------------------
+      // 20. Difficulty Selection Buttons (At the Bottom of Main Menu)
+      // -------------------------------------------------
+      const easyModeButton = document.getElementById("easyModeButton");
+      const normalModeButton = document.getElementById("normalModeButton");
+      const hardModeButton = document.getElementById("hardModeButton");
+
+      // Update the visual state of difficulty mode buttons
+      function updateModeButtons() {
+        easyModeButton.classList.remove("selected");
+        normalModeButton.classList.remove("selected");
+        hardModeButton.classList.remove("selected");
+        if (currentMode === "easy") {
+          easyModeButton.classList.add("selected");
+        } else if (currentMode === "normal") {
+          normalModeButton.classList.add("selected");
+        } else if (currentMode === "hard") {
+          hardModeButton.classList.add("selected");
+        }
+      }
+
+      // Event listeners for changing difficulty mode
+      easyModeButton.addEventListener("click", () => {
+        currentMode = "easy";
+        updateModeParameters();
+        updateModeButtons();
+        console.log("Easy mode activated!");
+      });
+      normalModeButton.addEventListener("click", () => {
+        currentMode = "normal";
+        updateModeParameters();
+        updateModeButtons();
+        console.log("Normal mode activated!");
+      });
+      hardModeButton.addEventListener("click", () => {
+        currentMode = "hard";
+        updateModeParameters();
+        updateModeButtons();
+        console.log("Hard mode activated!");
+      });
+
+      updateModeButtons();
+
+      // -------------------------------------------------
+      // 21. Start the Game Loop
+      // -------------------------------------------------
+      gameLoop();
+    </script>
+  </body>
+</html
