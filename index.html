@@ -1,8 +1,9 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
   <head>
     <!-- Metadata and page title for the Gravity Flipper game -->
     <meta charset="UTF-8" />
+    <link rel="icon" href="https://raw.githubusercontent.com/MeltingTitanium/GravityFlip/refs/heads/main/assets/Screenshot%202025-02-10%20214627.png" />
     <title>Gravity Flip</title>
     <style>
       /* ======================================================
@@ -282,6 +283,13 @@
          JavaScript Section: Contains all game logic and functionality.
          ====================================================== -->
     <script>
+      // -------------------------------------------------
+      // FIXED TIMESTEP VARIABLES FOR 60 FPS
+      // -------------------------------------------------
+      let lastTime = 0;
+      let accumulator = 0;
+      const step = 1000 / 240;  	
+
       // -------------------------------------------------
       // 0. Mode and Parameter Settings
       // -------------------------------------------------
@@ -631,6 +639,8 @@
           target: { x: 0.5, y: 0.5 },
           platforms: []
         },
+        // Level 1: A simple level with the player spawning at the bottom center and the target centered; no platforms.
+        
         {
           spawn:  { x: 0.1, y: 0.9 },
           target: { x: 0.9, y: 0.1 },
@@ -641,6 +651,8 @@
             { x: 0.5, y: 0.35, w: 0.03, h: 0.4 }
           ]
         },
+        // Level 2: Diagonal layout with multiple platforms creating a slanted path and a vertical barrier.
+        
         {
           spawn:  { x: 0.05, y: 0.95 },
           target: { x: 0.95, y: 0.05 },
@@ -656,6 +668,8 @@
           ],
           hazards: []
         },
+        // Level 3: Long horizontal platforms forming layered paths across the screen.
+        
         {
           spawn: { x: 0.1, y: 0.95 },
           target: { x: 0.9, y: 0.05 },
@@ -668,6 +682,8 @@
             { x: 0.7, y: 0.3, w: 0.1, h: 0.1 }
           ]
         },
+        // Level 4: Minimal platforms with strategically placed hazards that challenge the player.
+        
         {
           spawn:  { x: 0.05, y: 0.1 },
           target: { x: 0.95, y: 0.9 },
@@ -688,6 +704,8 @@
             { x: 0.15, y: 0.70, w: 0.05, h: 0.05 }
           ]
         },
+        // Level 5: A bordered level with platforms outlining the edges and additional central obstacles.
+        
         {
           spawn: { x: 0.5, y: 0.95 },
           target: { x: 0.5, y: 0.05 },
@@ -705,6 +723,8 @@
             { x: 0.85, y: 0.35, w: 0.05, h: 0.05 }
           ]
         },
+        // Level 6: A level with no platforms, featuring a symmetric pattern of hazards.
+        
         {
           spawn: { x: 0.05, y: 0.95 },
           target: { x: 0.95, y: 0.05 },
@@ -728,6 +748,8 @@
             { x: 0.70, y: 0.23, w: 0.05, h: 0.05 }
           ]
         },
+        // Level 7: A platform-rich level with many paths and hazards for increased complexity.
+        
         {
           spawn: { x: 0.5, y: 0.95 },
           target: { x: 0.5, y: 0.05 },
@@ -737,6 +759,8 @@
             { x: 0, y: 0.5, w: 1, h: 0.02 }
           ]
         },
+        // Level 8: Features a single long orange block across the screen acting as an obstacle.
+        
         {
           spawn: { x: 0.1, y: 0.9 },
           target: { x: 0.9, y: 0.1 },
@@ -751,6 +775,8 @@
             { x: 0, y: 0.3, w: 1, h: 0.02 }
           ]
         },
+        // Level 9: Combines red hazards with a full-width orange block near the top.
+        
         {
           spawn: { x: 0.05, y: 0.95 },
           target: { x: 0.95, y: 0.05 },
@@ -769,6 +795,8 @@
             { x: 1, y: 0, w: 0.02, h: 1, dx: 0, moving: true }
           ]
         },
+        // Level 10: Similar to earlier platform levels but with a moving vertical orange wall on the right.
+        
         {
           spawn: { x: 0.5, y: 0.9 },
           target: { x: 0.5, y: 0.5 },
@@ -786,6 +814,8 @@
             { x: 0.55, y: 0.55, w: 0.1, h: 0.1 }
           ]
         },
+        // Level 11: A grid of brown blocks forming a central obstacle.
+        
         {
           spawn: { x: 0.1, y: 0.5 },
           target: { x: 0.9, y: 0.5 },
@@ -801,6 +831,8 @@
             { x: 1.0, y: 0.0, w: 0.05, h: 1.0 }
           ]
         },
+        // Level 12: Tall vertical brown block barriers arranged like a maze.
+        
         {
           spawn: { x: 0.5, y: 0.95 },
           target: { x: 0.5, y: 0.5 },
@@ -810,6 +842,8 @@
           oranges: [],
           browns: []
         },
+        // Level 13: A special "level13" flagged stage with dynamic pillars and a shifting target.
+        
         {
           spawn: { x: 0.5, y: 0.95 },
           target: { x: -100, y: -100 },
@@ -819,6 +853,8 @@
           oranges: [],
           browns: []
         },
+        // Level 14: A falling brown blocks level with the target positioned off-screen.
+        
         {
           spawn: { x: 0.5, y: 0.95 },
           target: { x: 0.5, y: 0.05 },
@@ -839,8 +875,10 @@
           ],
           browns: []
         },
+        // Level 15: Platforms with two moving orange walls acting as obstacles.
+        
         {
-          spawn: { x: 0.0, y: 0.95 },
+          spawn: { x: 0.5, y: 0.95 },
           target: { x: -100, y: -100 },
           fallingBrownLevel: true,
           platforms: [],
@@ -850,6 +888,8 @@
           ],
           browns: []
         },
+        // Level 16: A falling brown blocks level featuring a moving orange wall on the right.
+        
         {
           spawn:  { x: 0.5, y: 0.05 },
           target: { x: 0.5, y: 0.95 },
@@ -873,6 +913,8 @@
             { x: 0.0, y: 0.75, w: 1.0, h: 0.02 }
           ]
         },
+        // Level 17: A level with a moving horizontal orange platform and multiple brown blocks below.
+        
         {
           spawn: { x: 0.5, y: 0.95 },
           target: { x: 0.5, y: 0.05 },
@@ -882,6 +924,8 @@
           oranges: [],
           browns: []
         },
+        // Level 18: A challenge level emphasizing dashing with special obstacles.
+        
         {
           spawn: { x: 0.5, y: 0.95 },
           target: { x: 0.5, y: 0.05 },
@@ -893,10 +937,12 @@
             { x: 0, y: 0.5, w: 1, h: 0.02 }
           ]
         },
-        // -------------------------------
-        // NEW LEVEL: Stage 2 Level 2
-        // -------------------------------
+        // Level 19: A Stage 2 level using teleport mechanics with a single long orange block.
+        
         {
+          // -------------------------------
+          // NEW LEVEL: Stage 2 Level 2
+          // -------------------------------
           spawn: { x: 0.5, y: 0.95 },         // Spawn in the middle bottom
           target: { x: 0.95, y: 0.1 },        // Moving green block starts at the right
           teleportLevel: true,                // Uses stage 2 gimmick (teleport)
@@ -910,6 +956,7 @@
             { x: 0, y: 0.65, w: 1, h: 0.02 }  // Purple block line
           ]
         }
+        // Level 20: A Stage 2 level with a moving target, red hazards at the top, and purple obstacles.
       ];
 
       // -------------------------------------------------
@@ -1336,7 +1383,7 @@
       }
 
       // -------------------------------------------------
-      // 14. Update
+      // 14. The Core UPDATE Logic
       // -------------------------------------------------
       function update() {
         if (gamePaused) return;
@@ -2067,10 +2114,27 @@
       }
 
       // -------------------------------------------------
-      // 16. Game Loop
+      // 16. FIXED GAME LOOP (ENFORCE 60 FPS LOGIC SPEED)
       // -------------------------------------------------
-      function gameLoop() {
-        // If light mode is on, fill with a lighter background
+      function gameLoop(timestamp) {
+        if (!timestamp) timestamp = 0;
+        if (!lastTime) lastTime = timestamp;
+
+        // Time since last frame
+        let delta = timestamp - lastTime;
+        lastTime = timestamp;
+        accumulator += delta;
+
+        // NOTE: We comment out the original direct call to update(), to avoid double updates:
+        // update();
+
+        // Run the update() logic in fixed 60 FPS steps
+        while (accumulator >= step) {
+          update();
+          accumulator -= step;
+        }
+
+        // Now do the drawing
         if (settings.lightMode) {
           ctx.fillStyle = "#CFCFC4"; 
           ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -2080,7 +2144,6 @@
           ctx.fillStyle = "black";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
-        update();
         drawTarget();
         drawPlatforms();
         drawHazards();
@@ -2096,6 +2159,7 @@
           drawChallengeLines();
           drawChallengeGreenBlock();
         }
+
         requestAnimationFrame(gameLoop);
       }
 
@@ -2130,7 +2194,7 @@
             } else {
               // If it's unlocked, check if we have a hard-mode star for it
               if (hardModeStars.includes(index)) {
-                btn.textContent += " ★"; // star emoji
+                btn.textContent += " ★"; // star symbol to show hard-mode completion
               }
               btn.addEventListener("click", () => {
                 hideLevelSelector();
@@ -2372,9 +2436,9 @@
       }
 
       // -------------------------------------------------
-      // 21. Start the Game Loop
+      // 21. Start the Fixed-Step Game Loop
       // -------------------------------------------------
-      gameLoop();
+      requestAnimationFrame(gameLoop);
     </script>
   </body>
 </html>
