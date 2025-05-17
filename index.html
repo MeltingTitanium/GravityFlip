@@ -462,6 +462,8 @@
       let isTeleporting = false;
       let teleportReadyTime = 0;
       let teleportGraceUntil = 0;
+      // Cooldown to prevent immediate reactivation of a teleport pad
+      let telepadCooldownUntil = 0;
 
       // -------------------------------------------------
       //  NEW GLOBALS FOR THE CHALLENGE LEVEL (after level 17)
@@ -1303,6 +1305,43 @@
           hazards: [],
           oranges: [],
           browns: [],
+        purples: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 2 - Level 10 (index 28)
+          // Teleport pad challenge
+          // -------------------------------------------------
+          spawn:  { x: 100/1920,  y: 950/1080 },
+          target: { x: 1800/1920, y: 120/1080 },
+
+          teleportLevel: true,
+          stage: 2,
+
+          platforms: [
+            { x: 100/1920, y: 920/1080, w: 300/1920, h: 20/1080 },
+            { x: 500/1920, y: 920/1080, w: 300/1920, h: 20/1080 },
+            { x: 720/1920, y: 720/1080, w: 300/1920, h: 20/1080 },
+            { x: 1040/1920, y: 520/1080, w: 300/1920, h: 20/1080 },
+            { x: 1360/1920, y: 320/1080, w: 300/1920, h: 20/1080 }
+          ],
+
+          hazards: [
+            { x: 860/1920, y: 640/1080, w: 40/1920, h: 120/1080,
+              dy: 1.0, moving: true, verticalMovement: true,
+              minY: 640/1080, maxY: 900/1080 }
+          ],
+
+          telepads: [
+            { x: 380/1920, y: 900/1080, w: 60/1920, h: 60/1080, destX: 650/1920, destY: 900/1080 },
+            { x: 650/1920, y: 900/1080, w: 60/1920, h: 60/1080, destX: 870/1920, destY: 700/1080 },
+            { x: 870/1920, y: 680/1080, w: 60/1920, h: 60/1080, destX: 1190/1920, destY: 480/1080 },
+            { x: 1190/1920, y: 460/1080, w: 60/1920, h: 60/1080, destX: 1510/1920, destY: 260/1080 },
+            { x: 1510/1920, y: 240/1080, w: 60/1920, h: 60/1080, destX: 1740/1920, destY: 140/1080 }
+          ],
+
+          oranges: [],
+          browns: [],
           purples: []
         }
       ];
@@ -1328,6 +1367,9 @@
 
       // Grey lifts used in Stage 2 Level 5
       let lifts = [];
+
+      // Teleport pads used in Stage 2 Level 10 and beyond
+      let telepads = [];
 
       // Target object representing the level’s goal (if applicable)
       let target = { x: 0, y: 0, size: cube.size };
@@ -1365,6 +1407,7 @@
         dashGraceUntil = 0;
         isTeleporting = false;
         teleportReadyTime = Date.now();
+        telepadCooldownUntil = 0;
 
         // Reset arrow direction and movement direction
         arrowDirX = 0;
@@ -1482,15 +1525,34 @@
         }));
 
         // Map grey lift definitions
-        lifts = (lvl.lifts || []).map(l => ({
-          x: l.x * canvas.width,
-          y: l.y * canvas.height,
-          width: l.w * canvas.width,
-          height: l.h * canvas.height,
-          baseVy: l.dy || 0,
-          vy: l.dy || 0,
-          minY: (l.minY || 0) * canvas.height,
-          maxY: (l.maxY || 1) * canvas.height
+       lifts = (lvl.lifts || []).map(l => ({
+         x: l.x * canvas.width,
+         y: l.y * canvas.height,
+         width: l.w * canvas.width,
+         height: l.h * canvas.height,
+         baseVy: l.dy || 0,
+         vy: l.dy || 0,
+         minY: (l.minY || 0) * canvas.height,
+         maxY: (l.maxY || 1) * canvas.height
+       }));
+
+        telepads = (lvl.telepads || []).map(t => ({
+          x: t.x * canvas.width,
+          y: t.y * canvas.height,
+          width: t.w * canvas.width,
+          height: t.h * canvas.height,
+          destX: t.destX * canvas.width,
+          destY: t.destY * canvas.height
+        }));
+
+        // Map teleport pad definitions
+        telepads = (lvl.telepads || []).map(t => ({
+          x: t.x * canvas.width,
+          y: t.y * canvas.height,
+          width: t.w * canvas.width,
+          height: t.h * canvas.height,
+          destX: t.destX * canvas.width,
+          destY: t.destY * canvas.height
         }));
 
         // For specific levels (2 through 6), set up horizontal movement for hazards
@@ -2354,6 +2416,21 @@
           }
         }
 
+        // Check collisions with teleport pads
+        if (now > telepadCooldownUntil) {
+          for (let tp of telepads) {
+            const tpRect = { x: tp.x, y: tp.y, width: tp.width, height: tp.height };
+            if (rectIntersect(cubeRect, tpRect)) {
+              cube.x = tp.destX;
+              cube.y = tp.destY;
+              telepadCooldownUntil = now + 300;
+              teleportSound.currentTime = 0;
+              teleportSound.play();
+              break;
+            }
+          }
+        }
+
         // If level 13, handle special pillars
         if (levels[currentLevel].level13) {
           if (!level13PillarsSpawned && level13Stage >= 1) {
@@ -2719,6 +2796,13 @@
           ctx.fillRect(l.x, l.y, l.width, l.height);
         }
       }
+
+      function drawTelepads() {
+        ctx.fillStyle = "cyan";
+        for (let t of telepads) {
+          ctx.fillRect(t.x, t.y, t.width, t.height);
+        }
+      }
       function drawFallingBrownBlocks() {
         if (levels[currentLevel].fallingBrownLevel) {
           ctx.fillStyle = "saddlebrown";
@@ -2889,6 +2973,7 @@
         drawPurples();
         drawBrowns();
         drawLifts();
+        drawTelepads();
         drawFallingBrownBlocks();
         drawCube();
         drawBrownParticles();
