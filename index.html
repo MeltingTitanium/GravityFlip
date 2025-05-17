@@ -1237,6 +1237,56 @@
             { x: 900/1920,  y:   0/1080, w: 20/1920,  h: 780/1080 },
             { x: 1400/1920, y: 350/1080, w: 20/1920,  h: 730/1080 }
           ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 2 - Level 8 "The Gauntlet" (index 26)
+          // -------------------------------------------------
+          spawn:  { x: 100/1920,  y: 950/1080 },   // bottom-left corner
+          target: { x: 1820/1920, y: 100/1080 },   // top-right corner
+
+          teleportLevel: true,
+          stage: 2,
+
+          // Stationary platforms in the middle corridor
+          platforms: [
+            { x: 680/1920, y: 820/1080, w: 600/1920, h: 20/1080 },
+            { x: 680/1920, y: 620/1080, w: 600/1920, h: 20/1080 },
+            { x: 680/1920, y: 420/1080, w: 600/1920, h: 20/1080 },
+            { x: 1280/1920, y: 120/1080, w: 620/1920, h: 20/1080 }
+          ],
+
+          hazards: [
+            // Horizontally moving hazards in the left corridor
+            { x: 100/1920, y: 760/1080, w: 150/1920, h: 40/1080,
+              dx: 2, moving: true, minX: 0/1920,  maxX: 620/1920 },
+            { x: 300/1920, y: 560/1080, w: 150/1920, h: 40/1080,
+              dx: -2, moving: true, minX: 0/1920,  maxX: 620/1920 },
+            { x: 200/1920, y: 360/1080, w: 150/1920, h: 40/1080,
+              dx: 2, moving: true, minX: 0/1920,  maxX: 620/1920 },
+
+            // Vertical hazard patrolling the goal corridor
+            { x: 1500/1920, y: 400/1080, w: 250/1920, h: 40/1080,
+              dy: 2, moving: true, verticalMovement: true,
+              minY: 200/1080, maxY: 800/1080 }
+          ],
+
+          oranges: [],
+          browns: [],
+          purples: [
+            // Two tall walls dividing the level into corridors
+            { x: 640/1920,  y: 0,        w: 40/1920, h: 1 },
+            { x: 1280/1920, y: 0,        w: 40/1920, h: 1 },
+
+            // Moving purple platform in the middle corridor
+            { x: 880/1920, y: 500/1080, w: 160/1920, h: 20/1080,
+              dy: 1.5, moving: true, verticalMovement: true,
+              minY: 400/1080, maxY: 700/1080 },
+
+            // Horizontal teleport-blocking wall
+            { x: 780/1920, y: 300/1080, w: 80/1920,  h: 200/1080,
+              dx: 2, moving: true, minX: 720/1920, maxX: 1120/1920 }
+          ]
         }
       ];
 
