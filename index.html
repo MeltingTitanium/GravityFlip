@@ -1143,7 +1143,7 @@
             { x: 0,            y: 820/1080,  w: 420/1920, h: 20/1080 },
 
             /* 2) Vertical “stopper” that catches the very first rightward teleport. */
-            { x: 600/1920,     y: 820/1080,  w: 20/1920,  h: 260/1080 },
+            { x: 600/1920,     y: 620/1080,  w: 20/1920,  h: 460/1080 },
 
             /* 3) Mid-shelf you must reach with the second teleport. */
             { x: 500/1920,     y: 620/1080,  w: 920/1920, h: 20/1080 },
@@ -1179,7 +1179,18 @@
 
           oranges: [],
           browns: [],
-          lifts: []
+          lifts: [
+            {
+              // just to the right of the red left-border kill strip
+              x: 60/1920,
+              y: 650/1080,
+              w: 20/1920,
+              h: 260/1080,
+              dy: -2,
+              minY: 300/1080,
+              maxY: 650/1080
+            }
+          ]
         }
       ];
 
