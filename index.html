@@ -1078,39 +1078,47 @@
             }
           ]
         },
+        // -------------------------------------------------
+        // Stage 2 Level 5 (index 23), hyper-specific coords
+        // -------------------------------------------------
         {
-          // -------------------------------------------------
-          // NEW LEVEL: Stage 2 Level 5 (index 23)
-          // -------------------------------------------------
-          spawn:  { x: 0.0521, y: 0.0926 },            // (100,100)
-          target: { x: 0.7292, y: 0.8333 },            // (1400,900)
+          // spawn at (100px,100px), goal at (1400px,900px)
+          spawn:  { x: 100/1920,   y: 100/1080 },
+          target: { x: 1400/1920,  y: 900/1080 },
+
           teleportLevel: true,
+
           stage: 2,
-          arrow: { x: 1, y: 0 },
+
+          // overhead grey beam: y=820px, height=80px
           platforms: [
-            { x: 0, y: 0.7593, w: 1, h: 0.074 }           // Fixed grey beam
+            { x: 0,            y: 820/1080, w: 1,        h: 80/1080 }
           ],
+
+          // kill-strips exactly 22px tall on top/bottom, 38px wide on left/right
           hazards: [
-            { x: 0, y: 0, w: 1, h: 0.0204 },             // Top frame
-            { x: 0, y: 0.9796, w: 1, h: 0.0204 },        // Bottom frame
-            { x: 0, y: 0, w: 0.0198, h: 1 },             // Left frame
-            { x: 0.9802, y: 0, w: 0.0198, h: 1 }         // Right frame
+            { x: 0,            y:   0,       w: 1,        h: 22/1080 },    // top
+            { x: 0,            y:1058/1080,  w: 1,        h: 22/1080 },    // bottom
+            { x: 0,            y:   0,       w: 38/1920,  h: 1        },    // left
+            { x:1882/1920,     y:   0,       w: 38/1920,  h: 1        }     // right
           ],
-          oranges: [],
-          browns: [],
+
+          // vertical purple wall at x=500px, horizontal shelf at y=540px
           purples: [
-            { x: 0.2604, y: 0, w: 0.0417, h: 1 },        // Vertical wall
-            { x: 0, y: 0.5, w: 0.2604, h: 0.0741 }       // Horizontal shelf
+            { x:500/1920,     y:   0,       w: 80/1920,  h: 1        },
+            { x:   0,         y:540/1080,   w:500/1920,  h: 80/1080  }
           ],
+
+          // single lift: left edge at 1154px, width=154px, height=108px
           lifts: [
             {
-              x: 0.3307,
-              y: 0.1389,
-              w: 0.0802,
-              h: 0.1,
-              dy: 2,
-              minY: 0.1389,
-              maxY: 0.6574
+              x: 1154/1920,    // (500px + kill-right(1882px) center minus 77px)
+              y: 150/1080,     // start y = 150px
+              w: 154/1920,     // width = 154px
+              h: 108/1080,     // height =108px
+              dy: 2,           // speed = 2px per tick (then scaled)
+              minY: 150/1080,  // clamp top at 150px
+              maxY: 712/1080   // clamp bottom at (820px–108px)=712px
             }
           ]
         }
