@@ -1182,13 +1182,15 @@
           lifts: [
             {
               // just to the right of the red left-border kill strip
+              // spawns 15% of the screen height above the player’s start
               x: 60/1920,
-              y: 650/1080,
+              y: 788/1080,
               w: 20/1920,
-              h: 260/1080,
+              h: 260/1080, // unchanged height
               dy: -2,
-              minY: 300/1080,
-              maxY: 650/1080
+              // travels up toward the mid-screen shelf then returns
+              minY: 220/1080,
+              maxY: 788/1080
             }
           ]
         }
