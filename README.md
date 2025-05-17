@@ -6,7 +6,7 @@ Play it here: <https://meltingtitanium.github.io/GravityFlip/>
 
 ## Controls
 
-- **Arrow keys** &ndash; move (one direction at a time)
+- **Arrow keys** &ndash; flip gravity
 - **Space** &ndash; dash on later levels or teleport in Stage 2
 - **R** &ndash; restart the current level
 
