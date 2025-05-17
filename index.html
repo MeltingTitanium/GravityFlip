@@ -182,6 +182,7 @@
         <div id="easyModeButton" class="modeButton">Easy Mode</div>
         <div id="normalModeButton" class="modeButton">Normal Mode</div>
         <div id="hardModeButton" class="modeButton">Hard Mode</div>
+        <div id="superSlowModeButton" class="modeButton">Super Slow</div>
       </div>
     </div>
 
@@ -322,6 +323,19 @@
         pillarDy: 0.2475,
         dashCooldown: 1500      // 1.5 seconds
       };
+      // Parameters for super slow mode (extremely slow gameplay)
+      const superSlowParams = {
+        acceleration: 0.15,
+        dashDistance: 400,
+        dashDuration: 450,
+        hazardSpeed: 0.5,
+        orangeDx: -0.75,
+        fallingBlockSpeed: 0.4875,
+        fallingOrangeDy: 1.25,
+        pillarDx: 0.45,
+        pillarDy: 0.12375,
+        dashCooldown: 1000
+      };
       // Parameters for hard mode (more challenging, faster gameplay)
       const hardParams = {
         acceleration: 0.675, // 35% faster than normal (0.5 * 1.35)
@@ -347,9 +361,11 @@
       // HELPER FUNCTION FOR SCALING MOVING SPEEDS BASED ON DIFFICULTY
       // -------------------------------------------------
       // This function is used to scale any arbitrary movement speed by
-      // 0.5 in easy mode, 1.0 in normal, and 1.45 in hard.
+      // 0.25 in super slow, 0.5 in easy, 1.0 in normal, and 1.45 in hard.
       function applyGlobalMovementScale(value) {
-        if (currentMode === "easy") {
+        if (currentMode === "superSlow") {
+          return value * 0.25;
+        } else if (currentMode === "easy") {
           return value * 0.5;
         } else if (currentMode === "hard") {
           return value * 1.45;
@@ -360,7 +376,19 @@
 
       // Function to update the current game parameters based on the selected mode
       function updateModeParameters() {
-        if (currentMode === "easy") {
+        if (currentMode === "superSlow") {
+          currentAcceleration      = superSlowParams.acceleration;
+          currentDashDistance      = superSlowParams.dashDistance;
+          currentDashDuration      = superSlowParams.dashDuration;
+          currentHazardSpeed       = superSlowParams.hazardSpeed;
+          currentOrangeDx          = superSlowParams.orangeDx;
+          currentFallingBlockSpeed = superSlowParams.fallingBlockSpeed;
+          currentFallingOrangeDy   = superSlowParams.fallingOrangeDy;
+          currentPillarDx          = superSlowParams.pillarDx;
+          currentPillarDy          = superSlowParams.pillarDy;
+          currentDashCooldown      = superSlowParams.dashCooldown;
+          currentTeleportCooldown  = 1000;
+        } else if (currentMode === "easy") {
           currentAcceleration      = easyParams.acceleration;
           currentDashDistance      = easyParams.dashDistance;
           currentDashDuration      = easyParams.dashDuration;
@@ -398,6 +426,7 @@
           currentDashCooldown      = normalParams.dashCooldown;
           currentTeleportCooldown  = 4000; // Teleport cooldown is 4 seconds in normal mode
         }
+        updateMusicPlaybackRate();
       }
       // Initialize game parameters with the default mode
       updateModeParameters();
@@ -443,6 +472,16 @@
       bgHardMusic.volume = 0.38;
       bgHardMusic.loop = true;
       bgHardMusic.isMusic = true;
+
+      function updateMusicPlaybackRate() {
+        if (currentMode === "superSlow") {
+          bgEasyNormalMusic.playbackRate = 0.5;
+          bgHardMusic.playbackRate = 0.5;
+        } else {
+          bgEasyNormalMusic.playbackRate = 1.0;
+          bgHardMusic.playbackRate = 1.0;
+        }
+      }
 
       // -------------------------------------------------
       // 0.1 Global Variables for Level Unlocking and Cheat Flag
@@ -2509,6 +2548,8 @@
             difficultyMultiplier = 0.7; // 30% faster spawn times
           } else if (currentMode === "easy") {
             difficultyMultiplier = 1.5; // 50% slower spawn times
+          } else if (currentMode === "superSlow") {
+            difficultyMultiplier = 2.5; // extremely slow spawn times
           }
 
           // Instead of just "now - challengeStartTime", we subtract challengePausedTime
@@ -2794,7 +2835,9 @@
         ctx.fillStyle = (isDashing || isTeleporting) ? "blue" : "#fff";
         ctx.fillRect(cube.x - cube.size / 2, cube.y - cube.size / 2, cube.size, cube.size);
         let arrowColor = "#000";
-        if (currentMode === "easy") {
+        if (currentMode === "superSlow") {
+          arrowColor = "cyan";
+        } else if (currentMode === "easy") {
           arrowColor = "green";
         } else if (currentMode === "hard") {
           arrowColor = "red";
@@ -2950,6 +2993,7 @@
                   bgHardMusic.pause();
                   bgHardMusic.currentTime = 0;
                 }
+                updateMusicPlaybackRate();
               });
             }
             levelSelectorContainer.appendChild(btn);
@@ -3044,6 +3088,7 @@
           bgHardMusic.pause();
           bgHardMusic.currentTime = 0;
         }
+        updateMusicPlaybackRate();
       });
 
       menuLevelSelectorButton.addEventListener("click", () => {
@@ -3119,12 +3164,16 @@
       const easyModeButton = document.getElementById("easyModeButton");
       const normalModeButton = document.getElementById("normalModeButton");
       const hardModeButton = document.getElementById("hardModeButton");
+      const superSlowModeButton = document.getElementById("superSlowModeButton");
 
       function updateModeButtons() {
         easyModeButton.classList.remove("selected");
         normalModeButton.classList.remove("selected");
         hardModeButton.classList.remove("selected");
-        if (currentMode === "easy") {
+        superSlowModeButton.classList.remove("selected");
+        if (currentMode === "superSlow") {
+          superSlowModeButton.classList.add("selected");
+        } else if (currentMode === "easy") {
           easyModeButton.classList.add("selected");
         } else if (currentMode === "normal") {
           normalModeButton.classList.add("selected");
@@ -3150,6 +3199,12 @@
         updateModeParameters();
         updateModeButtons();
         console.log("Hard mode activated!");
+      });
+      superSlowModeButton.addEventListener("click", () => {
+        currentMode = "superSlow";
+        updateModeParameters();
+        updateModeButtons();
+        console.log("Super slow mode activated!");
       });
 
       updateModeButtons();
@@ -3209,6 +3264,7 @@
             } else {
               bgEasyNormalMusic.play();
             }
+            updateMusicPlaybackRate();
           }
         }
       });
