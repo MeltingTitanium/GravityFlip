@@ -1303,7 +1303,34 @@
           hazards: [],
           oranges: [],
           browns: [],
-          purples: []
+        purples: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 2 - Level 10 (index 28)
+          // Moving teleport sequence with mixed platform motion
+          // -------------------------------------------------
+          spawn:  { x: 0.05, y: 0.95 },
+          target: { x: 0.95, y: 0.05 },
+          teleportLevel: true,
+          stage: 2,
+          platforms: [
+            { x: 0.0,  y: 0.9,  w: 0.15, h: 0.02 },
+            { x: 0.85, y: 0.1,  w: 0.15, h: 0.02 }
+          ],
+          hazards: [],
+          oranges: [],
+          browns: [],
+          purples: [],
+          lifts: [
+            { x: 0.2, y: 0.85, w: 0.1, h: 0.02, dx: 0.01, minX: 0.18, maxX: 0.28 },
+            { x: 0.4, y: 0.75, w: 0.1, h: 0.02, dx: -0.01, minX: 0.32, maxX: 0.48 },
+            { x: 0.6, y: 0.65, w: 0.1, h: 0.02, dx: 0.01, minX: 0.52, maxX: 0.68 },
+            { x: 0.75, y: 0.55, w: 0.1, h: 0.02, dx: 0.01, dy: 0.005, verticalMovement: true,
+              minX: 0.73, maxX: 0.87, minY: 0.5,  maxY: 0.6 },
+            { x: 0.9, y: 0.45, w: 0.1, h: 0.02, dx: -0.01, dy: -0.005, verticalMovement: true,
+              minX: 0.88, maxX: 0.98, minY: 0.4,  maxY: 0.5 }
+          ]
         }
       ];
 
@@ -1490,7 +1517,11 @@
           baseVy: l.dy || 0,
           vy: l.dy || 0,
           minY: (l.minY || 0) * canvas.height,
-          maxY: (l.maxY || 1) * canvas.height
+          maxY: (l.maxY || 1) * canvas.height,
+          baseVx: l.dx || 0,
+          vx: l.dx || 0,
+          minX: (l.minX || 0) * canvas.width,
+          maxX: (l.maxX || 1) * canvas.width
         }));
 
         // For specific levels (2 through 6), set up horizontal movement for hazards
@@ -1539,6 +1570,8 @@
         lifts.forEach(l => {
           l.baseVy = applyGlobalMovementScale(l.baseVy);
           l.vy = l.baseVy;
+          l.baseVx = applyGlobalMovementScale(l.baseVx);
+          l.vx = l.baseVx;
         });
 
         // If the level has the movingTarget flag, we’ve set target.dx = -5; now scale it
@@ -2182,7 +2215,9 @@
         // Update lifts
         lifts.forEach(l => {
           const prevY = l.y;
+          const prevX = l.x;
           l.y += l.vy;
+          l.x += l.vx;
           if (l.y < l.minY) {
             l.y = l.minY;
             l.vy = Math.abs(l.baseVy);
@@ -2194,17 +2229,32 @@
             l.baseVy = l.vy;
             if (l.vy === 0) l.vy = (l.baseVy < 0 ? -Math.abs(l.baseVy) : Math.abs(l.baseVy));
           }
+          if (l.vx) {
+            if (l.x < l.minX) {
+              l.x = l.minX;
+              l.vx = Math.abs(l.vx);
+            } else if (l.x + l.width > l.maxX) {
+              l.x = l.maxX - l.width;
+              l.vx = -Math.abs(l.vx);
+            }
+          }
 
           // Move player along with lift and handle collisions
           const liftRect = { x: l.x, y: l.y, width: l.width, height: l.height };
           let cubeRect = { x: cube.x - cube.size / 2, y: cube.y - cube.size / 2, width: cube.size, height: cube.size };
           const horizOverlap = cubeRect.x < liftRect.x + liftRect.width && cubeRect.x + cubeRect.width > liftRect.x;
+          const vertOverlap = cubeRect.y < liftRect.y + liftRect.height && cubeRect.y + cubeRect.height > liftRect.y;
 
           if (horizOverlap) {
             const wasOnTop = Math.abs((cube.y + cube.size / 2) - prevY) <= Math.abs(l.vy);
             if (wasOnTop) {
               cube.y += l.vy;
               cubeRect.y = cube.y - cube.size / 2;
+            }
+
+            if (vertOverlap && Math.abs((cube.x + cube.size / 2) - prevX) <= Math.abs(l.vx)) {
+              cube.x += l.vx;
+              cubeRect.x = cube.x - cube.size / 2;
             }
 
             if (rectIntersect(cubeRect, liftRect)) {
@@ -2214,6 +2264,7 @@
                 cube.y = l.y + l.height + cube.size / 2;
               }
               cube.vy = 0;
+              cube.vx = 0;
             }
           }
         });
