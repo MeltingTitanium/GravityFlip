@@ -1837,7 +1837,7 @@
             height: cube.size
           };
           if (!obstacles.some(p => {
-            if (p.baseVy !== undefined && p.vy === 0) return false;
+            // Treat lifts as obstacles even when stationary
             let pRect = { x: p.x, y: p.y, width: p.width, height: p.height };
             return rectIntersect(candidateX, pRect);
           })) {
@@ -1855,7 +1855,7 @@
             height: cube.size
           };
           if (!obstacles.some(p => {
-            if (p.baseVy !== undefined && p.vy === 0) return false;
+            // Treat lifts as obstacles even when stationary
             let pRect = { x: p.x, y: p.y, width: p.width, height: p.height };
             return rectIntersect(candidateY, pRect);
           })) {
@@ -1959,6 +1959,7 @@
 
         // Update lifts
         lifts.forEach(l => {
+          const prevY = l.y;
           l.y += l.vy;
           if (l.y < l.minY) {
             l.y = l.minY;
@@ -1971,26 +1972,27 @@
             l.baseVy = l.vy;
             if (l.vy === 0) l.vy = (l.baseVy < 0 ? -Math.abs(l.baseVy) : Math.abs(l.baseVy));
           }
-          // Push-down mechanic
+
+          // Move player along with lift and handle collisions
           const liftRect = { x: l.x, y: l.y, width: l.width, height: l.height };
-          const cubeRect = { x: cube.x - cube.size / 2, y: cube.y - cube.size / 2, width: cube.size, height: cube.size };
-          let noOverlap = (cubeRect.x + cubeRect.width < liftRect.x || cubeRect.x > liftRect.x + liftRect.width);
-          if (!noOverlap) {
-            let liftBottom = liftRect.y + liftRect.height;
-            let playerTop = cubeRect.y;
-            if (liftBottom > playerTop && liftRect.y < (cubeRect.y + cubeRect.height)) {
-              l.vy = 0;
-              cube.y += 4;
-              if (cube.y + cube.size / 2 > canvas.height) {
-                cube.y = canvas.height - cube.size / 2;
-              }
-            } else {
-              if (l.vy === 0) {
-                l.vy = l.baseVy;
-              }
+          let cubeRect = { x: cube.x - cube.size / 2, y: cube.y - cube.size / 2, width: cube.size, height: cube.size };
+          const horizOverlap = cubeRect.x < liftRect.x + liftRect.width && cubeRect.x + cubeRect.width > liftRect.x;
+
+          if (horizOverlap) {
+            const wasOnTop = Math.abs((cube.y + cube.size / 2) - prevY) <= Math.abs(l.vy);
+            if (wasOnTop) {
+              cube.y += l.vy;
+              cubeRect.y = cube.y - cube.size / 2;
             }
-          } else if (l.vy === 0) {
-            l.vy = l.baseVy;
+
+            if (rectIntersect(cubeRect, liftRect)) {
+              if (cube.y < l.y) {
+                cube.y = l.y - cube.size / 2;
+              } else {
+                cube.y = l.y + l.height + cube.size / 2;
+              }
+              cube.vy = 0;
+            }
           }
         });
 
