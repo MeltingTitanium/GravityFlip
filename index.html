@@ -1125,6 +1125,61 @@
               maxY: 712/1080   // clamp bottom at (820px–108px)=712px
             }
           ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 2 - Level 6  (index 24)
+          // Teleport-centric timing puzzle (“Timing Corridor”)
+          // -------------------------------------------------
+          spawn:  { x: 100/1920,  y: 950/1080 },   // bottom-left pocket
+          target: { x: 1820/1920, y: 160/1080 },   // top-right ledge
+
+          teleportLevel: true,
+          stage: 2,
+
+          /* ----------- SOLID PLATFORMS (stop teleport) ----------- */
+          platforms: [
+            /* 1) Spawn pocket ceiling – prevents an instant vertical teleport. */
+            { x: 0,            y: 820/1080,  w: 420/1920, h: 20/1080 },
+
+            /* 2) Vertical “stopper” that catches the very first rightward teleport. */
+            { x: 600/1920,     y: 820/1080,  w: 20/1920,  h: 260/1080 },
+
+            /* 3) Mid-shelf you must reach with the second teleport. */
+            { x: 500/1920,     y: 620/1080,  w: 920/1920, h: 20/1080 },
+
+            /* 4) Narrow ledge that actually holds the green cube. */
+            { x: 1520/1920,    y: 300/1080,  w: 300/1920, h: 20/1080 }
+          ],
+
+          /* ----------- RED HAZARDS (kill & block teleport) ----------- */
+          hazards: [
+            /* Four-side “kill-strip” border identical to Level 23. */
+            { x: 0,            y:   0,       w: 1,        h: 22/1080 },    // top
+            { x: 0,            y:1058/1080,  w: 1,        h: 22/1080 },    // bottom
+            { x: 0,            y:   0,       w: 38/1920,  h: 1        },   // left
+            { x:1882/1920,     y:   0,       w: 38/1920,  h: 1        },   // right
+
+            /* Moving central bar: forces you to time the two vertical teleports. */
+            { x: 960/1920,     y: 22/1080,   w: 20/1920,  h: 650/1080,
+              dy: 1.4, moving: true, verticalMovement: true }
+          ],
+
+          /* ----------- PURPLE WALLS (block walking, allow teleport) ----------- */
+          purples: [
+            /* Tall spine that divides the map and forces a sideways teleport. */
+            { x: 420/1920,     y: 22/1080,   w: 60/1920,  h:1014/1080 },
+
+            /* Roof above the mid-shelf – you stand on its underside after step 2. */
+            { x: 500/1920,     y: 600/1080,  w: 920/1920, h: 20/1080 },
+
+            /* Right-side stub so you can’t hug the wall past the timing challenge. */
+            { x: 1500/1920,    y: 22/1080,   w: 60/1920,  h: 278/1080 }
+          ],
+
+          oranges: [],
+          browns: [],
+          lifts: []
         }
       ];
 
