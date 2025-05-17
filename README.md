@@ -9,8 +9,6 @@ Play it here: <https://meltingtitanium.github.io/GravityFlip/>
 - **Arrow keys** &ndash; move (one direction at a time)
 - **Space** &ndash; dash on later levels or teleport in Stage 2
 - **R** &ndash; restart the current level
-- **Shift+5** or **Numpad 5** &ndash; open the level selector
-- **Shift+7** or **Numpad 7** &ndash; clear saved progress
 
 ## Features
 
@@ -20,6 +18,11 @@ Play it here: <https://meltingtitanium.github.io/GravityFlip/>
 - Easy, Normal and Hard difficulty modes
 - Optional sound, music and light mode settings
 - Progress is stored locally so you can continue later
+
+## Cheats 
+- **Shift+5** or **Numpad 5** &ndash; open the level selector
+- **Shift+7** or **Numpad 7** &ndash; clear saved progress
+
 
 Have fun flipping gravity!
 
