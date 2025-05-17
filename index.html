@@ -2085,17 +2085,6 @@
           }
         }
 
-        // Treat lifts as hazards
-        for (const l of lifts) {
-          if (rectIntersect(cubeRect, { x: l.x, y: l.y, width: l.width, height: l.height })) {
-            dashReadyTime = Date.now();
-            deathSound.currentTime = 0;
-            deathSound.play();
-            loadLevel(currentLevel);
-            return;
-          }
-        }
-
         // Check collisions with oranges
         for (let o of oranges) {
           const orangeRect = { x: o.x, y: o.y, width: o.width, height: o.height };
