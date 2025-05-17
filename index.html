@@ -1047,7 +1047,12 @@
             { x: 0.0,  y: 0.45, w: 0.45, h: 0.02 },
             { x: 0.55, y: 0.25, w: 0.45, h: 0.02 }
           ],
-          hazards: [],
+          hazards: [
+            // New moving red hazards to increase difficulty
+            { x: 0.2, y: 0.78, w: 0.05, h: 0.05 },
+            { x: 0.65, y: 0.58, w: 0.05, h: 0.05 },
+            { x: 0.2, y: 0.38, w: 0.05, h: 0.05 }
+          ],
           oranges: [],
           browns: [],
           purples: [
@@ -1231,7 +1236,7 @@
         }));
 
         // For specific levels (2 through 6), set up horizontal movement for hazards
-        if ([2, 3, 4, 5, 6].includes(index)) {
+        if ([2, 3, 4, 5, 6, 21].includes(index)) {
           hazards.forEach(h => {
             h.vx = currentHazardSpeed; // already scaled by difficulty
             h.minX = 0;
@@ -1342,7 +1347,7 @@
           height: b.h * canvas.height
         }));
 
-        if ([2, 3, 4, 5, 6].includes(currentLevel)) {
+        if ([2, 3, 4, 5, 6, 21].includes(currentLevel)) {
           hazards.forEach(h => {
             h.vx = currentHazardSpeed;
             h.minX = 0;
@@ -1779,7 +1784,7 @@
         }
 
         // Update hazards (levels 2-6 have horizontally moving hazards)
-        if ([2, 3, 4, 5, 6].includes(currentLevel)) {
+        if ([2, 3, 4, 5, 6, 21].includes(currentLevel)) {
           hazards.forEach(h => {
             h.x += h.vx;
             if (h.x < h.minX || h.x > canvas.width) {
