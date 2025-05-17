@@ -2583,6 +2583,10 @@
         levelSelectorFromMainMenu = fromMainMenu;
         levelSelectorActive = true;
         gamePaused = true;
+        if (levelSelectorFromMainMenu) {
+          const highestUnlockedIndex = Math.min(maxUnlockedLevel, levels.length - 1);
+          currentStage = levels[highestUnlockedIndex].stage || 1;
+        }
         populateLevelSelector();
         resumeButton.style.display = (currentLevel >= levels.length) ? "none" : "block";
         if (levelSelectorFromMainMenu) {
