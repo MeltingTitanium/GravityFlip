@@ -470,9 +470,9 @@
       const challengeDuration = 30000; // Duration of the challenge in milliseconds (30 seconds)
       let lastChallengeLineSpawn = 0; // Timestamp for last spawned challenge line
       let challengeLines = []; // Array to store moving challenge line objects
-      // Challenge lines move 20% slower than level 15’s orange blocks originally,
-      // but we will not scale them by mode for Level 18 as per the new requirement:
-      let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8; 
+      // Challenge lines move at 40% of level 15’s orange block speed.
+      // They are not scaled by mode for Level 18:
+      let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
 
       // For falling red blocks (similar to brown blocks but drawn in red)
       let fallingRedBlocks = [];
