@@ -1,1 +1,25 @@
-A short and simple browser game which you can find at https://meltingtitanium.github.io/GravityFlip/
+# Gravity Flip
+
+Gravity Flip is a browser-based arcade platformer built with HTML5 canvas and JavaScript. Guide a small square to the green goal while avoiding hazards and mastering special abilities.
+
+Play it here: <https://meltingtitanium.github.io/GravityFlip/>
+
+## Controls
+
+- **Arrow keys** &ndash; move (one direction at a time)
+- **Space** &ndash; dash on later levels or teleport in Stage 2
+- **R** &ndash; restart the current level
+- **Shift+5** or **Numpad 5** &ndash; open the level selector
+- **Shift+7** or **Numpad 7** &ndash; clear saved progress
+
+## Features
+
+- Over twenty levels across two stages
+- Abilities such as dashing and teleportation
+- Moving hazards, falling blocks and other obstacles
+- Easy, Normal and Hard difficulty modes
+- Optional sound, music and light mode settings
+- Progress is stored locally so you can continue later
+
+Have fun flipping gravity!
+
