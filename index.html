@@ -1287,6 +1287,23 @@
             { x: 880/1920, y: 22/1080, w: 40/1920, h: 1014/1080 },
             { x:1360/1920, y: 22/1080, w: 40/1920, h: 1014/1080 }
           ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 2 - Level 9  (index 27)
+          // Teleport version of Stage 1 Level 13
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.5 },
+          teleportLevel: true,
+          level13: true,
+          stage: 2,
+          halfSpeedPillars: true,
+          platforms: [],
+          hazards: [],
+          oranges: [],
+          browns: [],
+          purples: []
         }
       ];
 
@@ -1842,24 +1859,28 @@
               height: target.size
             };
             if (rectIntersect(candidate, targetRect)) {
-              winSound.currentTime = 0;
-              winSound.play();
-              // NEW CODE ADDED: if Hard Mode, record a star for the level
-              if (currentMode === "hard") {
-                let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
-                if (!hardModeStars.includes(currentLevel)) {
-                  hardModeStars.push(currentLevel);
-                }
-                localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
-              }
-              currentLevel++;
-              if (currentLevel < levels.length) {
-                loadLevel(currentLevel);
+              if (levels[currentLevel].level13 && levels[currentLevel].teleportLevel && level13Stage < 5) {
+                // Ignore early targets on teleport levels modeled after Level 13
               } else {
-                showWinScreen();
+                winSound.currentTime = 0;
+                winSound.play();
+                // NEW CODE ADDED: if Hard Mode, record a star for the level
+                if (currentMode === "hard") {
+                  let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
+                  if (!hardModeStars.includes(currentLevel)) {
+                    hardModeStars.push(currentLevel);
+                  }
+                  localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
+                }
+                currentLevel++;
+                if (currentLevel < levels.length) {
+                  loadLevel(currentLevel);
+                } else {
+                  showWinScreen();
+                }
+                // *** Not resetting teleport cooldown for the new level. ***
+                return;
               }
-              // *** Not resetting teleport cooldown for the new level. ***
-              return;
             }
           }
           let hitPlatform = platforms.concat(lifts).some(obj => {
@@ -2665,7 +2686,7 @@
         for (let o of oranges) {
           ctx.fillRect(o.x, o.y, o.width, o.height);
         }
-        if (currentLevel === 12 && level13PillarsSpawned) {
+        if (levels[currentLevel].level13 && level13PillarsSpawned) {
           for (let pillar of level13Pillars) {
             ctx.fillRect(pillar.x, pillar.y, pillar.width, pillar.height);
           }
@@ -2810,6 +2831,7 @@
       }
       function spawnLevel13Pillars() {
         level13PillarsSpawned = true;
+        const speedMult = levels[currentLevel].halfSpeedPillars ? .8 : 1;
         let verticalPillarWidth = 0.02 * canvas.width;
         let verticalPillarHeight = canvas.height;
         let verticalPillar = {
@@ -2817,7 +2839,7 @@
           y: 0,
           width: verticalPillarWidth,
           height: verticalPillarHeight,
-          dx: currentPillarDx
+          dx: currentPillarDx * speedMult
         };
         let horizontalPillarHeight = 0.02 * canvas.height;
         let horizontalPillarWidth = canvas.width;
@@ -2826,7 +2848,7 @@
           y: 0,
           width: horizontalPillarWidth,
           height: horizontalPillarHeight,
-          dy: currentPillarDy
+          dy: currentPillarDy * speedMult
         };
         level13Pillars.push(verticalPillar);
         level13Pillars.push(horizontalPillar);
