@@ -1237,6 +1237,53 @@
             { x: 900/1920,  y:   0/1080, w: 20/1920,  h: 780/1080 },
             { x: 1400/1920, y: 350/1080, w: 20/1920,  h: 730/1080 }
           ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 2 - Level 8  (index 26)
+          // Vertical teleport timing challenge
+          // -------------------------------------------------
+          spawn:  { x: 0.5, y: 0.95 },  // Player starts at bottom center
+          target: { x: 0.5, y: 0.05 },  // Goal at top center
+
+          teleportLevel: true,
+          stage: 2,
+
+          platforms: [],
+
+          hazards: [
+            // Bottom zone: horizontally moving pair
+            { x: 0.05, y: 0.90, w: 0.15, h: 0.05,
+              dx: 2, moving: true, minX: 0.05, maxX: 0.80 },
+            { x: 0.80, y: 0.85, w: 0.15, h: 0.05,
+              dx: -2, moving: true, minX: 0.05, maxX: 0.80 },
+
+            // Top zone: vertically moving hazards in alternating pattern
+            { x: 0.30, y: 0.10, w: 0.05, h: 0.15,
+              dy: 1.2, moving: true, verticalMovement: true,
+              minY: 0.05, maxY: 0.30 },
+            { x: 0.45, y: 0.20, w: 0.05, h: 0.15,
+              dy: -1.2, moving: true, verticalMovement: true,
+              minY: 0.05, maxY: 0.30 },
+            { x: 0.60, y: 0.10, w: 0.05, h: 0.15,
+              dy: 1.2, moving: true, verticalMovement: true,
+              minY: 0.05, maxY: 0.30 },
+            { x: 0.75, y: 0.20, w: 0.05, h: 0.15,
+              dy: -1.2, moving: true, verticalMovement: true,
+              minY: 0.05, maxY: 0.30 }
+          ],
+
+          oranges: [],
+          browns: [],
+
+          purples: [
+            // Middle zone maze walls creating narrow passages
+            { x: 0.25, y: 0.45, w: 0.02, h: 0.25 },
+            { x: 0.50, y: 0.35, w: 0.02, h: 0.25 },
+            { x: 0.75, y: 0.45, w: 0.02, h: 0.25 },
+            { x: 0.10, y: 0.60, w: 0.25, h: 0.02 },
+            { x: 0.55, y: 0.50, w: 0.25, h: 0.02 }
+          ]
         }
       ];
 
