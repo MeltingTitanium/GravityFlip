@@ -1664,9 +1664,9 @@
               return;
             }
           }
-          let hitPlatform = platforms.some(p => {
-            let pRect = { x: p.x, y: p.y, width: p.width, height: p.height };
-            return rectIntersect(candidate, pRect);
+          let hitPlatform = platforms.concat(lifts).some(obj => {
+            let r = { x: obj.x, y: obj.y, width: obj.width, height: obj.height };
+            return rectIntersect(candidate, r);
           });
           if (hitPlatform) break;
           hitRed = hazards.some(h => {
@@ -1949,10 +1949,12 @@
             l.y = l.minY;
             l.vy = Math.abs(l.baseVy);
             l.baseVy = l.vy;
+            if (l.vy === 0) l.vy = (l.baseVy < 0 ? -Math.abs(l.baseVy) : Math.abs(l.baseVy));
           } else if (l.y + l.height > l.maxY) {
             l.y = l.maxY - l.height;
             l.vy = -Math.abs(l.baseVy);
             l.baseVy = l.vy;
+            if (l.vy === 0) l.vy = (l.baseVy < 0 ? -Math.abs(l.baseVy) : Math.abs(l.baseVy));
           }
           // Push-down mechanic
           const liftRect = { x: l.x, y: l.y, width: l.width, height: l.height };
@@ -2065,6 +2067,15 @@
             deathSound.currentTime = 0;
             deathSound.play();
             loadLevel(currentLevel);
+            for (const l of lifts) {
+              if (rectIntersect(cubeRect, { x: l.x, y: l.y, width: l.width, height: l.height })) {
+                dashReadyTime = Date.now();
+                deathSound.currentTime = 0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
+            }
             return;
           }
         }
