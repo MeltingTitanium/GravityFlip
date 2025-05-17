@@ -9,6 +9,7 @@ Play it here: <https://meltingtitanium.github.io/GravityFlip/>
 - **Arrow keys** &ndash; flip gravity
 - **Space** &ndash; use the current gimmick
 - **R** &ndash; restart the current level
+- Super Slow Motion can be toggled in the Settings menu
 
 ## Features
 
@@ -17,6 +18,7 @@ Play it here: <https://meltingtitanium.github.io/GravityFlip/>
 - Moving hazards, falling blocks and other obstacles
 - Easy, Normal and Hard difficulty modes
 - Optional sound, music and light mode settings
+- Super slow motion toggle for dramatic slowdowns
 - Progress is stored locally so you can continue later
 
 ## Cheats 
