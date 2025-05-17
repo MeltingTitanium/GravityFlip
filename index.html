@@ -1232,10 +1232,56 @@
 
           oranges: [],
           browns: [],
-          purples: [
+        purples: [
             { x: 400/1920,  y: 300/1080, w: 20/1920,  h: 780/1080 },
             { x: 900/1920,  y:   0/1080, w: 20/1920,  h: 780/1080 },
             { x: 1400/1920, y: 350/1080, w: 20/1920,  h: 730/1080 }
+          ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 2 - Level 8  (index 26)
+          // Teleport maze with moving hazards
+          // -------------------------------------------------
+          spawn:  { x: 100/1920,  y: 950/1080 },
+          target: { x: 1800/1920, y: 120/1080 },
+
+          teleportLevel: true,
+          stage: 2,
+
+          // Stepped platforms used after each teleport
+          platforms: [
+            { x: 0,         y: 920/1080, w: 360/1920, h: 20/1080 },
+            { x: 460/1920,  y: 720/1080, w: 360/1920, h: 20/1080 },
+            { x: 940/1920,  y: 520/1080, w: 360/1920, h: 20/1080 },
+            { x: 1420/1920, y: 320/1080, w: 360/1920, h: 20/1080 }
+          ],
+
+          hazards: [
+            // Kill-strip border
+            { x: 0, y: 0, w: 1, h: 22/1080 },
+            { x: 0, y:1058/1080, w: 1, h: 22/1080 },
+            { x: 0, y: 0, w: 38/1920, h: 1 },
+            { x:1882/1920, y: 0, w: 38/1920, h: 1 },
+
+            // Moving vertical hazards between pillars
+            { x: 380/1920, y: 22/1080,  w: 20/1920, h: 200/1080,
+              dy: 1.8, moving: true, verticalMovement: true,
+              minY: 22/1080,  maxY: 900/1080 },
+            { x: 860/1920, y: 500/1080, w: 20/1920, h: 200/1080,
+              dy: -1.6, moving: true, verticalMovement: true,
+              minY: 150/1080, maxY: 950/1080 },
+            { x:1340/1920, y: 100/1080, w: 20/1920, h: 200/1080,
+              dy: 2.0, moving: true, verticalMovement: true,
+              minY: 100/1080, maxY: 920/1080 }
+          ],
+
+          oranges: [],
+          browns: [],
+          purples: [
+            { x: 400/1920, y: 22/1080, w: 40/1920, h: 1014/1080 },
+            { x: 880/1920, y: 22/1080, w: 40/1920, h: 1014/1080 },
+            { x:1360/1920, y: 22/1080, w: 40/1920, h: 1014/1080 }
           ]
         }
       ];
