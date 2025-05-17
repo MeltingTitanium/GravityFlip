@@ -1252,23 +1252,21 @@
           platforms: [],
 
           hazards: [
-            // Bottom zone: horizontally moving pair
-            { x: 0.05, y: 0.90, w: 0.15, h: 0.05,
-              dx: 2, moving: true, minX: 0.05, maxX: 0.80 },
-            { x: 0.80, y: 0.85, w: 0.15, h: 0.05,
+            // Bottom zone: single moving block (removed line that overlapped spawn)
+            { x: 0.80, y: 0.85, w: 0.05, h: 0.05,
               dx: -2, moving: true, minX: 0.05, maxX: 0.80 },
 
             // Top zone: vertically moving hazards in alternating pattern
-            { x: 0.30, y: 0.10, w: 0.05, h: 0.15,
+            { x: 0.30, y: 0.10, w: 0.05, h: 0.05,
               dy: 1.2, moving: true, verticalMovement: true,
               minY: 0.05, maxY: 0.30 },
-            { x: 0.45, y: 0.20, w: 0.05, h: 0.15,
+            { x: 0.45, y: 0.20, w: 0.05, h: 0.05,
               dy: -1.2, moving: true, verticalMovement: true,
               minY: 0.05, maxY: 0.30 },
-            { x: 0.60, y: 0.10, w: 0.05, h: 0.15,
+            { x: 0.60, y: 0.10, w: 0.05, h: 0.05,
               dy: 1.2, moving: true, verticalMovement: true,
               minY: 0.05, maxY: 0.30 },
-            { x: 0.75, y: 0.20, w: 0.05, h: 0.15,
+            { x: 0.75, y: 0.20, w: 0.05, h: 0.05,
               dy: -1.2, moving: true, verticalMovement: true,
               minY: 0.05, maxY: 0.30 }
           ],
