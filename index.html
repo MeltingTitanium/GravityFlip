@@ -1082,34 +1082,35 @@
           // -------------------------------------------------
           // NEW LEVEL: Stage 2 Level 5 (index 23)
           // -------------------------------------------------
-          spawn:  { x: 0.0521, y: 0.0926 },
-          target: { x: 0.7292, y: 0.8333 },
+          spawn:  { x: 0.0521, y: 0.0926 },            // (100,100)
+          target: { x: 0.7292, y: 0.8333 },            // (1400,900)
           teleportLevel: true,
           stage: 2,
+          arrow: { x: 1, y: 0 },
           platforms: [
-            { x: 0, y: 0.7593, w: 1, h: 0.074 } // Fixed grey beam above the goal
+            { x: 0, y: 0.7593, w: 1, h: 0.074 }           // Fixed grey beam
           ],
           hazards: [
-            { x: 0, y: 0, w: 1, h: 0.02 },   // Top
-            { x: 0, y: 0.98, w: 1, h: 0.02 }, // Bottom
-            { x: 0, y: 0, w: 0.02, h: 1 },   // Left
-            { x: 0.98, y: 0, w: 0.02, h: 1 } // Right
+            { x: 0, y: 0, w: 1, h: 0.0204 },             // Top frame
+            { x: 0, y: 0.9796, w: 1, h: 0.0204 },        // Bottom frame
+            { x: 0, y: 0, w: 0.0198, h: 1 },             // Left frame
+            { x: 0.9802, y: 0, w: 0.0198, h: 1 }         // Right frame
           ],
           oranges: [],
           browns: [],
           purples: [
-            { x: 0.2604, y: 0, w: 0.0417, h: 1 },              // Vertical barrier
-            { x: 0, y: 0.5, w: 0.2604, h: 0.074 }              // Horizontal shelf
+            { x: 0.2604, y: 0, w: 0.0417, h: 1 },        // Vertical wall
+            { x: 0, y: 0.5, w: 0.2604, h: 0.0741 }       // Horizontal shelf
           ],
           lifts: [
             {
-              x: 0.33,          // Approximate center of shaft
-              y: 0.139,         // Starting position
+              x: 0.3307,
+              y: 0.1389,
               w: 0.0802,
               h: 0.1,
               dy: 2,
-              minY: 0.139,
-              maxY: 0.657
+              minY: 0.1389,
+              maxY: 0.6574
             }
           ]
         }
@@ -1178,6 +1179,11 @@
         arrowDirX = 0;
         arrowDirY = -1;
         lastDirection = null;
+
+        if (lvl.arrow) {
+          arrowDirX = lvl.arrow.x;
+          arrowDirY = lvl.arrow.y;
+        }
 
         // Clear particles and falling objects from previous level
         brownParticles = [];
@@ -2067,15 +2073,17 @@
             deathSound.currentTime = 0;
             deathSound.play();
             loadLevel(currentLevel);
-            for (const l of lifts) {
-              if (rectIntersect(cubeRect, { x: l.x, y: l.y, width: l.width, height: l.height })) {
-                dashReadyTime = Date.now();
-                deathSound.currentTime = 0;
-                deathSound.play();
-                loadLevel(currentLevel);
-                return;
-              }
-            }
+            return;
+          }
+        }
+
+        // Treat lifts as hazards
+        for (const l of lifts) {
+          if (rectIntersect(cubeRect, { x: l.x, y: l.y, width: l.width, height: l.height })) {
+            dashReadyTime = Date.now();
+            deathSound.currentTime = 0;
+            deathSound.play();
+            loadLevel(currentLevel);
             return;
           }
         }
