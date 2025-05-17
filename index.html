@@ -1052,8 +1052,8 @@
             { x: 0.2, y: 0.78, w: 0.05, h: 0.05 },
             { x: 0.65, y: 0.58, w: 0.05, h: 0.05 },
             { x: 0.2, y: 0.38, w: 0.05, h: 0.05 },
-            // Added vertical hazard on the right edge
-            { x: 0.95, y: 0.0, w: 0.02, h: 1.0 }
+            // Moving vertical hazard in the center
+            { x: 0.49, y: 0.45, w: 0.02, h: 0.15, dy: 0.7, moving: true, verticalMovement: true }
           ],
           oranges: [],
           browns: [],
@@ -1199,7 +1199,10 @@
           x: h.x * canvas.width,
           y: h.y * canvas.height,
           width: h.w * canvas.width,
-          height: h.h * canvas.height
+          height: h.h * canvas.height,
+          dy: h.dy || 0,
+          moving: h.moving || false,
+          verticalMovement: h.verticalMovement || false
         }));
         // Map orange (moving obstacles) definitions
         oranges = (lvl.oranges || []).map(o => ({
@@ -1245,6 +1248,13 @@
             h.maxX = canvas.width - h.width;
           });
         }
+
+        // Scale vertical hazard movement by difficulty
+        hazards.forEach(h => {
+          if (h.verticalMovement) {
+            h.dy = applyGlobalMovementScale(h.dy);
+          }
+        });
 
         // IMPORTANT: Scale dx/dy for all moving oranges/purples EXCEPT
         // level 9's oranges (since that’s already using currentOrangeDx).
@@ -1320,7 +1330,10 @@
           x: h.x * canvas.width,
           y: h.y * canvas.height,
           width: h.w * canvas.width,
-          height: h.h * canvas.height
+          height: h.h * canvas.height,
+          dy: h.dy || 0,
+          moving: h.moving || false,
+          verticalMovement: h.verticalMovement || false
         }));
         oranges = (lvl.oranges || []).map(o => ({
           x: o.x * canvas.width,
@@ -1356,6 +1369,13 @@
             h.maxX = canvas.width - h.width;
           });
         }
+
+        // Scale vertical hazard movement by difficulty
+        hazards.forEach(h => {
+          if (h.verticalMovement) {
+            h.dy = applyGlobalMovementScale(h.dy);
+          }
+        });
         oranges.forEach(o => {
           if (o.moving && currentLevel !== 9) {
             o.dx = applyGlobalMovementScale(o.dx);
@@ -1794,6 +1814,20 @@
             }
           });
         }
+
+        // Handle vertically moving hazards
+        hazards.forEach(h => {
+          if (h.moving && h.verticalMovement) {
+            h.y += h.dy;
+            if (h.y < 0) {
+              h.y = 0;
+              h.dy = -h.dy;
+            } else if (h.y + h.height > canvas.height) {
+              h.y = canvas.height - h.height;
+              h.dy = -h.dy;
+            }
+          }
+        });
 
         // -------------------------------
         // REWORKED MOVEMENT FOR ORANGES & PURPLES
