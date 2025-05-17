@@ -1287,6 +1287,24 @@
             { x: 880/1920, y: 22/1080, w: 40/1920, h: 1014/1080 },
             { x:1360/1920, y: 22/1080, w: 40/1920, h: 1014/1080 }
           ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 2 - Level 9  (index 27)
+          // Teleport version of Stage 1 Level 13
+          // -------------------------------------------------
+          spawn:  { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.5 },
+
+          teleportLevel: true,
+          stage: 2,
+          level13: true,
+
+          platforms: [],
+          hazards: [],
+          oranges: [],
+          browns: [],
+          purples: []
         }
       ];
 
@@ -2665,7 +2683,7 @@
         for (let o of oranges) {
           ctx.fillRect(o.x, o.y, o.width, o.height);
         }
-        if (currentLevel === 12 && level13PillarsSpawned) {
+        if (levels[currentLevel].level13 && level13PillarsSpawned) {
           for (let pillar of level13Pillars) {
             ctx.fillRect(pillar.x, pillar.y, pillar.width, pillar.height);
           }
