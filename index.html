@@ -1279,7 +1279,6 @@
           purples: [
             // Middle zone maze walls creating narrow passages
             { x: 0.25, y: 0.45, w: 0.02, h: 0.25 },
-            { x: 0.50, y: 0.35, w: 0.02, h: 0.25 },
             { x: 0.75, y: 0.45, w: 0.02, h: 0.25 },
             { x: 0.10, y: 0.60, w: 0.25, h: 0.02 },
             { x: 0.55, y: 0.50, w: 0.25, h: 0.02 }
@@ -2639,6 +2638,33 @@
       // -------------------------------------------------
       // 15. Drawing Functions
       // -------------------------------------------------
+
+      function drawRectAsBlocks(rect, color) {
+        const stageTwo = levels[currentLevel] && levels[currentLevel].stage === 2;
+        if (!stageTwo) {
+          ctx.fillStyle = color;
+          ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+          return;
+        }
+
+        const horizontal = rect.width > rect.height * 4;
+        const vertical = rect.height > rect.width * 4;
+        const size = horizontal ? rect.height : rect.width;
+
+        ctx.fillStyle = color;
+
+        if (horizontal) {
+          for (let x = rect.x; x < rect.x + rect.width; x += size * 2) {
+            ctx.fillRect(x, rect.y, size, size);
+          }
+        } else if (vertical) {
+          for (let y = rect.y; y < rect.y + rect.height; y += size * 2) {
+            ctx.fillRect(rect.x, y, size, size);
+          }
+        } else {
+          ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+        }
+      }
       function drawTarget() {
         if (target) {
           ctx.fillStyle = "green";
@@ -2648,7 +2674,7 @@
       function drawPlatforms() {
         ctx.fillStyle = "#555";
         for (let p of platforms) {
-          ctx.fillRect(p.x, p.y, p.width, p.height);
+          drawRectAsBlocks(p, "#555");
         }
       }
       function drawHazards() {
@@ -2680,7 +2706,7 @@
       function drawPurples() {
         ctx.fillStyle = "purple";
         for (let p of purples) {
-          ctx.fillRect(p.x, p.y, p.width, p.height);
+          drawRectAsBlocks(p, "purple");
         }
       }
       function drawBrowns() {
