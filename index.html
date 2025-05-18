@@ -1317,7 +1317,18 @@
           platforms: [],
           hazards: [],
           oranges: [],
-          purples: [],
+          purples: [
+            {
+              x: 1862/1920,
+              y: 0,
+              w: 20/1920,
+              h: 1,
+              dx: -2,
+              moving: true,
+              minX: 38/1920,
+              maxX: 1862/1920
+            }
+          ],
           blues: [
             { x: 0, y: 0.5, w: 1, h: 0.02 }
           ]
@@ -1341,17 +1352,31 @@
             // Staggered moving blocks guarding each window
             { x: 700/1920,     y: 540/1080,  w: 80/1920,  h: 80/1080,
               dy: -1.4, moving: true, verticalMovement: true,
-              minY: 360/1080,  maxY: 720/1080 },
+              minY: 360/1080,  maxY: 720/1080,
+              color: "grey" },
             { x:1260/1920,     y: 300/1080,  w: 80/1920,  h: 80/1080,
               dy: 1.7,  moving: true, verticalMovement: true,
-              minY: 160/1080,  maxY: 600/1080 },
+              minY: 160/1080,  maxY: 600/1080,
+              color: "grey" },
             { x:1720/1920,     y: 120/1080,  w: 80/1920,  h: 80/1080,
               dy: 2.1,  moving: true, verticalMovement: true,
-              minY: 100/1080,  maxY: 480/1080 }
+              minY: 100/1080,  maxY: 480/1080,
+              color: "grey" }
           ],
           oranges: [],
           browns: [],
-          purples: [],
+          purples: [
+            {
+              x: 1862/1920,
+              y: 0,
+              w: 20/1920,
+              h: 1,
+              dx: -2,
+              moving: true,
+              minX: 38/1920,
+              maxX: 1862/1920
+            }
+          ],
           blues: [
             // Vertical walls with single-cube gaps
             { x: 400/1920, y: 22/1080,  w: 80/1920, h: 478/1080 },
@@ -1501,6 +1526,7 @@
           vx: h.vx || 0,
           moving: h.moving || false,
           verticalMovement: h.verticalMovement || false,
+          color: h.color || "red",
           minX: (h.minX !== undefined ? h.minX : 0) * canvas.width,
           maxX: (h.maxX !== undefined ? h.maxX : 1) * canvas.width,
           minY: (h.minY !== undefined ? h.minY : 0) * canvas.height,
@@ -1667,6 +1693,7 @@
           vx: h.vx || 0,
           moving: h.moving || false,
           verticalMovement: h.verticalMovement || false,
+          color: h.color || "red",
           minX: (h.minX !== undefined ? h.minX : 0) * canvas.width,
           maxX: (h.maxX !== undefined ? h.maxX : 1) * canvas.width,
           minY: (h.minY !== undefined ? h.minY : 0) * canvas.height,
@@ -2752,8 +2779,8 @@
         }
       }
       function drawHazards() {
-        ctx.fillStyle = "red";
         for (let h of hazards) {
+          ctx.fillStyle = h.color || "red";
           ctx.fillRect(h.x, h.y, h.width, h.height);
         }
       }
