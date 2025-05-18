@@ -996,7 +996,7 @@
 
         {
           // -------------------------------------------------
-          // NEW LEVEL: Stage 2 Level 3 (index 21)
+          // NEW LEVEL: Stage 2 Level 3 (index 20)
           // -------------------------------------------------
           spawn:  { x: 0.05, y: 0.05 },  // 5% each axis
           target: { x: 0.90, y: 0.90 },  // 90% each axis
@@ -1035,7 +1035,7 @@
         },
         {
           // -------------------------------------------------
-          // NEW LEVEL: Stage 2 Level 4 (index 22)
+          // NEW LEVEL: Stage 2 Level 4 (index 21)
           // -------------------------------------------------
           spawn:  { x: 0.1, y: 0.95 },   // Start near bottom-left (moved slightly lower)
           target: { x: 0.9, y: 0.1 },   // Target near top-right
@@ -1079,7 +1079,7 @@
           ]
         },
         // -------------------------------------------------
-        // Stage 2 Level 5 (index 23), hyper-specific coords
+        // Stage 2 Level 5 (index 22), hyper-specific coords
         // -------------------------------------------------
         {
           // spawn at (100px,100px), goal at (1400px,900px)
@@ -1128,7 +1128,7 @@
         },
         {
           // -------------------------------------------------
-          // NEW LEVEL: Stage 2 - Level 6  (index 24)
+          // NEW LEVEL: Stage 2 - Level 6  (index 23)
           // Teleport-centric timing puzzle (“Timing Corridor”)
           // -------------------------------------------------
           spawn:  { x: 100/1920,  y: 950/1080 },   // bottom-left pocket
@@ -1196,7 +1196,7 @@
         },
         {
           // -------------------------------------------------
-          // NEW LEVEL: Stage 2 - Level 7  (index 25)
+          // NEW LEVEL: Stage 2 - Level 7  (index 24)
           // -------------------------------------------------
           spawn:  { x: 150/1920,  y: 950/1080 },
           target: { x: 1750/1920, y: 100/1080 },
@@ -1240,7 +1240,7 @@
         },
         {
           // -------------------------------------------------
-          // NEW LEVEL: Stage 2 - Level 8  (index 26)
+          // NEW LEVEL: Stage 2 - Level 8  (index 25)
           // Teleport maze with moving hazards
           // -------------------------------------------------
           spawn:  { x: 100/1920,  y: 950/1080 },
@@ -1290,7 +1290,7 @@
         },
         {
           // -------------------------------------------------
-          // NEW LEVEL: Stage 2 - Level 9  (index 27)
+          // NEW LEVEL: Stage 2 - Level 9  (index 26)
           // Teleport version of Stage 1 Level 13
           // -------------------------------------------------
           spawn: { x: 0.5, y: 0.95 },
@@ -1307,7 +1307,7 @@
         },
         {
           // -------------------------------------------------
-          // NEW LEVEL: Stage 2 - Level 10 (index 28)
+          // NEW LEVEL: Stage 2 - Level 10 (index 27)
           // Introduces blue blocks that block teleporting
           // -------------------------------------------------
           spawn: { x: 0.5, y: 0.95 },
@@ -1324,7 +1324,7 @@
         },
         {
           // -------------------------------------------------
-          // NEW LEVEL: Stage 2 - Level 11 (index 29)
+          // NEW LEVEL: Stage 2 - Level 11 (index 28)
           // Encased teleport gauntlet with staggered hazards
           // -------------------------------------------------
           spawn:  { x: 150/1920,  y: 950/1080 },
@@ -1342,11 +1342,11 @@
           lifts: [
             // Former red hazards are now harmless grey lifts
             { x: 700/1920,  y: 540/1080, w: 80/1920, h: 80/1080,
-              dy: -1.4, minY: 360/1080, maxY: 720/1080 },
+              dy: -0.7, minY: 360/1080, maxY: 720/1080 },
             { x:1260/1920,  y: 300/1080, w: 80/1920, h: 80/1080,
-              dy: 1.7,  minY: 160/1080, maxY: 600/1080 },
+              dy: 0.85, minY: 160/1080, maxY: 600/1080 },
             { x:1720/1920,  y: 120/1080, w: 80/1920, h: 80/1080,
-              dy: 2.1,  minY: 100/1080, maxY: 480/1080 }
+              dy: 1.05, minY: 100/1080, maxY: 480/1080 }
           ],
           blues: [
             // Vertical walls with double-cube gaps
@@ -2511,7 +2511,7 @@
             };
             if (levels[currentLevel].fallingBrownLevel && (now - target.spawnTime < 500)) {
               // do nothing for half a second
-            } else if ((currentLevel === 9 || currentLevel === 29) && rectIntersect(cubeRect, targetRect)) {
+            } else if ((currentLevel === 26 || currentLevel === 28) && rectIntersect(cubeRect, targetRect)) {
               if (!(target.x < 50 && target.y > canvas.height - 50)) {
                 target.x = cube.size / 2;
                 target.y = canvas.height - cube.size / 2;
