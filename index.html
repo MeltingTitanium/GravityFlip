@@ -1303,7 +1303,34 @@
           hazards: [],
           oranges: [],
           browns: [],
-          purples: []
+        purples: []
+        },
+        {
+          // -------------------------------------------------
+          // Stage 2 - Level 11: Blue Cross Maze
+          // -------------------------------------------------
+          spawn:  { x: 0.12, y: 0.78 },
+          target: { x: 0.88, y: 0.22 },
+          teleportLevel: true,
+          stage: 2,
+          platforms: [],
+          hazards: [
+            { x: 0, y: 0, w: 1, h: 22/1080 },
+            { x: 0, y:1058/1080, w: 1, h: 22/1080 },
+            { x: 0, y: 0, w: 38/1920, h: 1 },
+            { x:1882/1920, y: 0, w: 38/1920, h: 1 },
+            { x: 0.78, y: 0.45, w: 0.02, h: 0.18, dy: 1.6, moving: true, verticalMovement: true, minY: 0.22, maxY: 0.78 }
+          ],
+          oranges: [],
+          browns: [],
+          purples: [
+            { x: 0.72, y: 0.62, w: 0.04, h: 0.18 }
+          ],
+          blues: [
+            { x: 0.48, y: 0,    w: 0.04, h: 0.86 },
+            { x: 0.14, y: 0.42, w: 0.72, h: 0.04 },
+            { x: 0.48, y: 0.42, w: 0.04, h: 0.04 }
+          ]
         }
       ];
 
@@ -1325,6 +1352,9 @@
 
       // NEW: separate purples array
       let purples = [];
+
+      // NEW: blue walls that block teleports
+      let blues = [];
 
       // Grey lifts used in Stage 2 Level 5
       let lifts = [];
@@ -1473,6 +1503,18 @@
           verticalMovement: p.verticalMovement || false
         }));
 
+        // Map blue wall definitions
+        blues = (lvl.blues || []).map(b => ({
+          x: b.x * canvas.width,
+          y: b.y * canvas.height,
+          width: b.w * canvas.width,
+          height: b.h * canvas.height,
+          dx: b.dx || 0,
+          dy: b.dy || 0,
+          moving: b.moving || false,
+          verticalMovement: b.verticalMovement || false
+        }));
+
         // Map brown block definitions
         browns = (lvl.browns || []).map(b => ({
           x: b.x * canvas.width,
@@ -1532,6 +1574,17 @@
           }
           if (p.verticalMovement) {
             p.dy = applyGlobalMovementScale(p.dy);
+          }
+        });
+
+        // And scale blues similarly
+        blues.forEach(b => {
+          if (b.moving) {
+            if (b.verticalMovement) {
+              b.dy = applyGlobalMovementScale(b.dy);
+            } else {
+              b.dx = applyGlobalMovementScale(b.dx);
+            }
           }
         });
 
@@ -1661,6 +1714,16 @@
           }
           if (p.verticalMovement) {
             p.dy = applyGlobalMovementScale(p.dy);
+          }
+        });
+
+        blues.forEach(b => {
+          if (b.moving) {
+            if (b.verticalMovement) {
+              b.dy = applyGlobalMovementScale(b.dy);
+            } else {
+              b.dx = applyGlobalMovementScale(b.dx);
+            }
           }
         });
         lifts.forEach(l => {
@@ -1883,7 +1946,7 @@
               }
             }
           }
-          let hitPlatform = platforms.concat(lifts).some(obj => {
+          let hitPlatform = platforms.concat(lifts, blues).some(obj => {
             let r = { x: obj.x, y: obj.y, width: obj.width, height: obj.height };
             return rectIntersect(candidate, r);
           });
@@ -1936,7 +1999,7 @@
       function update() {
         if (gamePaused) return;
         const now = Date.now();
-        let obstacles = [...platforms, ...browns, ...lifts];
+        let obstacles = [...platforms, ...browns, ...lifts, ...blues];
         if (levels[currentLevel].fallingBrownLevel) {
           obstacles = obstacles.concat(fallingBrownBlocks);
         }
@@ -2174,6 +2237,31 @@
               } else if (p.x + p.width > canvas.width) {
                 p.x = canvas.width - p.width;
                 p.dx = -p.dx;
+              }
+            }
+          }
+        });
+
+        // Apply the same movement logic for blues
+        blues.forEach(b => {
+          if (b.moving) {
+            if (b.verticalMovement) {
+              b.y += b.dy;
+              if (b.y < 0) {
+                b.y = 0;
+                b.dy = -b.dy;
+              } else if (b.y + b.height > canvas.height) {
+                b.y = canvas.height - b.height;
+                b.dy = -b.dy;
+              }
+            } else {
+              b.x += b.dx;
+              if (b.x < 0) {
+                b.x = 0;
+                b.dx = -b.dx;
+              } else if (b.x + b.width > canvas.width) {
+                b.x = canvas.width - b.width;
+                b.dx = -b.dx;
               }
             }
           }
@@ -2707,6 +2795,13 @@
           ctx.fillRect(p.x, p.y, p.width, p.height);
         }
       }
+
+      function drawBlues() {
+        ctx.fillStyle = "blue";
+        for (let b of blues) {
+          ctx.fillRect(b.x, b.y, b.width, b.height);
+        }
+      }
       function drawBrowns() {
         ctx.fillStyle = "saddlebrown";
         for (let b of browns) {
@@ -2887,6 +2982,7 @@
         drawHazards();
         drawOranges();
         drawPurples();
+        drawBlues();
         drawBrowns();
         drawLifts();
         drawFallingBrownBlocks();
