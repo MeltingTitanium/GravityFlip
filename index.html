@@ -222,9 +222,7 @@
       <p>
         <strong>Teleport:</strong> Press <strong>Space</strong> to instantly teleport all the way in the direction you’re facing.<br>
         Teleport will work as long as there are no red blocks blocking the way.<br>
-        It can teleport through purple blocks, but it stops when it reaches a platform or the edge.<br>
-        Additionally, if your teleport path hits a green block (the target), the stage is immediately completed.<br>
-        The teleport has a 4-second cooldown.
+        It can teleport through purple blocks.<br> The teleport has a 4-second cooldown.
       </p>
       <p><em>Press Enter to continue...</em></p>
     </div>
@@ -1337,7 +1335,7 @@
           browns: [],
           purples: [
             // NEW: Moving vertical purple wall that traverses the level
-            { x: 0.98, y: 0, w: 0.02, h: 1, dx: -2, moving: true }
+            { x: 0.98, y: 0, w: 0.02, h: 1, dx: -1.5, moving: true }
           ],
           lifts: [
             // Former red hazards are now harmless grey lifts
