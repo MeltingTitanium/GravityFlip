@@ -196,8 +196,8 @@
           <button id="clearYes" class="bigButton">Yes</button>
           <button id="clearNo" class="bigButton">No</button>
         </div>
-      </div>
-    </div>
+      </div>=
+    </div>=
 
     <!-- ======================================================
          Gimmick Popup: Provides instructions for Level 8’s dash gimmick.
@@ -578,6 +578,7 @@
       let gamePaused = true; // Game starts paused until the main menu is dismissed
       let levelSelectorActive = false; // Flag indicating if the level selector is active
 
+      const EPS = 0.01; // small vertical offset for lifts
       // -------------------------------------------------
       // 4. Arrow Direction for Drawing the Triangle (Indicates Movement Direction)
       // -------------------------------------------------
@@ -1996,8 +1997,8 @@
         return !(
           r2.x > r1.x + r1.width ||
           r2.x + r2.width < r1.x ||
-          r2.y > r1.y + r1.height ||
-          r2.y + r2.height < r1.y
+          r2.y >= r1.y + r1.height ||
+          r2.y + r2.height <= r1.y
         );
       }
 
@@ -2280,9 +2281,9 @@
 
             if (rectIntersect(cubeRect, liftRect)) {
               if (cube.y < l.y) {
-                cube.y = l.y - cube.size / 2;
+                cube.y = l.y - cube.size / 2 - EPS;
               } else {
-                cube.y = l.y + l.height + cube.size / 2;
+                cube.y = l.y + l.height + cube.size / 2 + EPS;
               }
               cube.vy = 0;
             }
