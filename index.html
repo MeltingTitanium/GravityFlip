@@ -1337,21 +1337,23 @@
             { x: 0,            y:   0,       w: 1,        h: 22/1080 },
             { x: 0,            y:1058/1080,  w: 1,        h: 22/1080 },
             { x: 0,            y:   0,       w: 38/1920,  h: 1        },
-            { x:1882/1920,     y:   0,       w: 38/1920,  h: 1        },
-            // Staggered moving blocks guarding each window
-            { x: 700/1920,     y: 540/1080,  w: 80/1920,  h: 80/1080,
-              dy: -1.4, moving: true, verticalMovement: true,
-              minY: 360/1080,  maxY: 720/1080 },
-            { x:1260/1920,     y: 300/1080,  w: 80/1920,  h: 80/1080,
-              dy: 1.7,  moving: true, verticalMovement: true,
-              minY: 160/1080,  maxY: 600/1080 },
-            { x:1720/1920,     y: 120/1080,  w: 80/1920,  h: 80/1080,
-              dy: 2.1,  moving: true, verticalMovement: true,
-              minY: 100/1080,  maxY: 480/1080 }
+            { x:1882/1920,     y:   0,       w: 38/1920,  h: 1        }
           ],
           oranges: [],
           browns: [],
-          purples: [],
+          purples: [
+            // NEW: Moving vertical purple wall that traverses the level
+            { x: 0.98, y: 0, w: 0.02, h: 1, dx: -2, moving: true }
+          ],
+          lifts: [
+            // Former red hazards are now harmless grey lifts
+            { x: 700/1920,  y: 540/1080, w: 80/1920, h: 80/1080,
+              dy: -1.4, minY: 360/1080, maxY: 720/1080 },
+            { x:1260/1920,  y: 300/1080, w: 80/1920, h: 80/1080,
+              dy: 1.7,  minY: 160/1080, maxY: 600/1080 },
+            { x:1720/1920,  y: 120/1080, w: 80/1920, h: 80/1080,
+              dy: 2.1,  minY: 100/1080, maxY: 480/1080 }
+          ],
           blues: [
             // Vertical walls with single-cube gaps
             { x: 400/1920, y: 22/1080,  w: 80/1920, h: 478/1080 },
