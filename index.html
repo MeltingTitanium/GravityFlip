@@ -274,6 +274,11 @@
           <input type="checkbox" id="toggleLightMode"> Light Mode
         </label>
       </div>
+      <div style="font-size:24px; margin:20px;">
+        <label>
+          <input type="checkbox" id="toggleSlowMotion"> Super Slow Motion
+        </label>
+      </div>
       <div style="margin-top:30px;">
         <div id="settingsBackButton" class="bigButton">Back</div>
       </div>
@@ -405,11 +410,12 @@
       // -------------------------------
       // GLOBAL SETTINGS OBJECT & AUDIO OVERRIDE
       // -------------------------------
-      // Global settings for sound effects, music, and light mode
+      // Global settings for sound effects, music, light mode and slow motion
       let settings = {
         soundEffects: true,
         music: true,
-        lightMode: false
+        lightMode: false,
+        slowMotion: false
       };
 
       // Override the Audio play method so that sound effects and music respect the settings
@@ -2912,7 +2918,8 @@
         // Time since last frame
         let delta = timestamp - lastTime;
         lastTime = timestamp;
-        accumulator += delta;
+        let rate = settings.slowMotion ? 0.25 : 1;
+        accumulator += delta * rate;
 
         // Run the update() logic in fixed 60 FPS steps
         while (accumulator >= step) {
@@ -3109,6 +3116,7 @@
       const toggleSoundEffects = document.getElementById("toggleSoundEffects");
       const toggleMusic = document.getElementById("toggleMusic");
       const toggleLightMode = document.getElementById("toggleLightMode");
+      const toggleSlowMotion = document.getElementById("toggleSlowMotion");
 
       settingsButton.addEventListener("click", () => {
         mainMenu.classList.add("hidden");
@@ -3140,6 +3148,15 @@
 
       toggleLightMode.addEventListener("change", function() {
         settings.lightMode = this.checked;
+        // Save to localStorage whenever changed
+        localStorage.setItem('gravityFlipperSettings', JSON.stringify(settings));
+      });
+
+      toggleSlowMotion.addEventListener("change", function() {
+        settings.slowMotion = this.checked;
+        const rate = settings.slowMotion ? 0.25 : 1;
+        bgEasyNormalMusic.playbackRate = rate;
+        bgHardMusic.playbackRate = rate;
         // Save to localStorage whenever changed
         localStorage.setItem('gravityFlipperSettings', JSON.stringify(settings));
       });
@@ -3221,6 +3238,10 @@
       toggleSoundEffects.checked = settings.soundEffects;
       toggleMusic.checked = settings.music;
       toggleLightMode.checked = settings.lightMode;
+      toggleSlowMotion.checked = settings.slowMotion;
+      const startupRate = settings.slowMotion ? 0.25 : 1;
+      bgEasyNormalMusic.playbackRate = startupRate;
+      bgHardMusic.playbackRate = startupRate;
 
       // Also, if music is off, pause both BG tracks immediately
       if (!settings.music) {
@@ -3252,6 +3273,9 @@
           // Restore them
           settings.music = wasMusicOnBefore;
           settings.soundEffects = wereSoundsOnBefore;
+          const rate = settings.slowMotion ? 0.25 : 1;
+          bgEasyNormalMusic.playbackRate = rate;
+          bgHardMusic.playbackRate = rate;
           if (settings.music) {
             if (currentMode === "hard") {
               bgHardMusic.play();
