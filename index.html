@@ -1530,12 +1530,18 @@
           verticalMovement: p.verticalMovement || false
         }));
 
-        // Map blue block definitions (no movement)
+        // Map blue block definitions (can optionally move like oranges/purples)
         blues = (lvl.blues || []).map(b => ({
           x: b.x * canvas.width,
           y: b.y * canvas.height,
           width: b.w * canvas.width,
-          height: b.h * canvas.height
+          height: b.h * canvas.height,
+          dx: b.dx || 0,
+          dy: b.dy || 0,
+          moving: b.moving || false,
+          verticalMovement: b.verticalMovement || false,
+          minX: (b.minX !== undefined ? b.minX : 0) * canvas.width,
+          maxX: (b.maxX !== undefined ? b.maxX : 1) * canvas.width
         }));
 
         // Map brown block definitions
@@ -1597,6 +1603,15 @@
           }
           if (p.verticalMovement) {
             p.dy = applyGlobalMovementScale(p.dy);
+          }
+        });
+        // Scale blues the same way
+        blues.forEach(b => {
+          if (b.moving) {
+            b.dx = applyGlobalMovementScale(b.dx);
+          }
+          if (b.verticalMovement) {
+            b.dy = applyGlobalMovementScale(b.dy);
           }
         });
 
@@ -1688,6 +1703,18 @@
           moving: p.moving || false,
           verticalMovement: p.verticalMovement || false
         }));
+        blues = (lvl.blues || []).map(b => ({
+          x: b.x * canvas.width,
+          y: b.y * canvas.height,
+          width: b.w * canvas.width,
+          height: b.h * canvas.height,
+          dx: b.dx || 0,
+          dy: b.dy || 0,
+          moving: b.moving || false,
+          verticalMovement: b.verticalMovement || false,
+          minX: (b.minX !== undefined ? b.minX : 0) * canvas.width,
+          maxX: (b.maxX !== undefined ? b.maxX : 1) * canvas.width
+        }));
         browns = (lvl.browns || []).map(b => ({
           x: b.x * canvas.width,
           y: b.y * canvas.height,
@@ -1726,6 +1753,14 @@
           }
           if (p.verticalMovement) {
             p.dy = applyGlobalMovementScale(p.dy);
+          }
+        });
+        blues.forEach(b => {
+          if (b.moving) {
+            b.dx = applyGlobalMovementScale(b.dx);
+          }
+          if (b.verticalMovement) {
+            b.dy = applyGlobalMovementScale(b.dy);
           }
         });
         lifts.forEach(l => {
@@ -2246,6 +2281,33 @@
               } else if (p.x + p.width > canvas.width) {
                 p.x = canvas.width - p.width;
                 p.dx = -p.dx;
+              }
+            }
+          }
+        });
+
+        // Apply similar movement rules for blues
+        blues.forEach(b => {
+          if (b.moving) {
+            if (b.verticalMovement) {
+              b.y += b.dy;
+              if (b.y < 0) {
+                b.y = 0;
+                b.dy = -b.dy;
+              } else if (b.y + b.height > canvas.height) {
+                b.y = canvas.height - b.height;
+                b.dy = -b.dy;
+              }
+            } else {
+              b.x += b.dx;
+              const minX = b.minX || 0;
+              const maxX = b.maxX || canvas.width;
+              if (b.x < minX) {
+                b.x = minX;
+                b.dx = Math.abs(b.dx);
+              } else if (b.x + b.width > maxX) {
+                b.x = maxX - b.width;
+                b.dx = -Math.abs(b.dx);
               }
             }
           }
