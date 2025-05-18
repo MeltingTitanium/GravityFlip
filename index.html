@@ -1321,6 +1321,32 @@
           blues: [
             { x: 0, y: 0.5, w: 1, h: 0.02 }
           ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 2 - Level 11 (index 29)
+          // Blue blocks toggle between solid and pass-through
+          // -------------------------------------------------
+          spawn:  { x: 0.1, y: 0.9 },
+          target: { x: 0.9, y: 0.1 },
+          teleportLevel: true,
+          stage: 2,
+          platforms: [
+            { x: 0.05, y: 0.85, w: 0.25, h: 0.02 },
+            { x: 0.7,  y: 0.65, w: 0.25, h: 0.02 },
+            { x: 0.05, y: 0.45, w: 0.25, h: 0.02 },
+            { x: 0.7,  y: 0.25, w: 0.25, h: 0.02 }
+          ],
+          hazards: [
+            { x: 0.48, y: 0.0, w: 0.04, h: 1 }
+          ],
+          oranges: [],
+          purples: [],
+          blues: [
+            { x: 0, y: 0.75, w: 1, h: 0.02, toggleInterval: 2000 },
+            { x: 0, y: 0.55, w: 1, h: 0.02, toggleInterval: 2000 },
+            { x: 0, y: 0.35, w: 1, h: 0.02, toggleInterval: 2000 }
+          ]
         }
       ];
 
@@ -1494,12 +1520,15 @@
           verticalMovement: p.verticalMovement || false
         }));
 
-        // Map blue block definitions (no movement)
+        // Map blue block definitions (optional toggling)
         blues = (lvl.blues || []).map(b => ({
           x: b.x * canvas.width,
           y: b.y * canvas.height,
           width: b.w * canvas.width,
-          height: b.h * canvas.height
+          height: b.h * canvas.height,
+          toggleInterval: b.toggleInterval || 0,
+          active: true,
+          lastToggle: Date.now()
         }));
 
         // Map brown block definitions
@@ -1925,6 +1954,7 @@
           if (hitRed) break;
 
           hitBlue = blues.some(b => {
+            if (!b.active) return false;
             let bRect = { x: b.x, y: b.y, width: b.width, height: b.height };
             return rectIntersect(candidate, bRect);
           });
@@ -2212,6 +2242,14 @@
                 p.dx = -p.dx;
               }
             }
+          }
+        });
+
+        // Update blue block toggle states
+        blues.forEach(b => {
+          if (b.toggleInterval > 0 && now - b.lastToggle >= b.toggleInterval) {
+            b.active = !b.active;
+            b.lastToggle = now;
           }
         });
 
@@ -2746,8 +2784,8 @@
 
       // Draw blue blocks
       function drawBlues() {
-        ctx.fillStyle = "blue";
         for (let b of blues) {
+          ctx.fillStyle = b.active ? "blue" : "rgba(0,0,255,0.3)";
           ctx.fillRect(b.x, b.y, b.width, b.height);
         }
       }
@@ -2836,6 +2874,10 @@
         if (currentLevel === 27) {
           ctx.textAlign = "center";
           ctx.fillText("You can't teleport through blue blocks", canvas.width / 2, 80);
+        }
+        if (currentLevel === 28) {
+          ctx.textAlign = "center";
+          ctx.fillText("Blue blocks toggle on and off", canvas.width / 2, 80);
         }
       }
       function drawCube() {
