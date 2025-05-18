@@ -1321,6 +1321,46 @@
           blues: [
             { x: 0, y: 0.5, w: 1, h: 0.02 }
           ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 2 - Level 11 (index 29)
+          // Encased teleport gauntlet with staggered hazards
+          // -------------------------------------------------
+          spawn:  { x: 150/1920,  y: 950/1080 },
+          target: { x: 1750/1920, y: 100/1080 },
+          teleportLevel: true,
+          stage: 2,
+          platforms: [],
+          hazards: [
+            // Four-side kill-strip border
+            { x: 0,            y:   0,       w: 1,        h: 22/1080 },
+            { x: 0,            y:1058/1080,  w: 1,        h: 22/1080 },
+            { x: 0,            y:   0,       w: 38/1920,  h: 1        },
+            { x:1882/1920,     y:   0,       w: 38/1920,  h: 1        },
+            // Staggered moving blocks guarding each window
+            { x: 700/1920,     y: 540/1080,  w: 80/1920,  h: 80/1080,
+              dy: -1.4, moving: true, verticalMovement: true,
+              minY: 360/1080,  maxY: 720/1080 },
+            { x:1260/1920,     y: 300/1080,  w: 80/1920,  h: 80/1080,
+              dy: 1.7,  moving: true, verticalMovement: true,
+              minY: 160/1080,  maxY: 600/1080 },
+            { x:1720/1920,     y: 120/1080,  w: 80/1920,  h: 80/1080,
+              dy: 2.1,  moving: true, verticalMovement: true,
+              minY: 100/1080,  maxY: 480/1080 }
+          ],
+          oranges: [],
+          browns: [],
+          purples: [],
+          blues: [
+            // Vertical walls with single-cube gaps
+            { x: 400/1920, y: 22/1080,  w: 80/1920, h: 478/1080 },
+            { x: 400/1920, y: 580/1080, w: 80/1920, h: 478/1080 },
+            { x: 960/1920, y: 22/1080,  w: 80/1920, h: 308/1080 },
+            { x: 960/1920, y: 410/1080, w: 80/1920, h: 648/1080 },
+            { x:1520/1920, y: 22/1080,  w: 80/1920, h: 138/1080 },
+            { x:1520/1920, y: 240/1080, w: 80/1920, h: 818/1080 }
+          ]
         }
       ];
 
