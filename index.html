@@ -1304,6 +1304,23 @@
           oranges: [],
           browns: [],
           purples: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 2 - Level 10 (index 28)
+          // Introduces blue blocks that block teleporting
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.05 },
+          teleportLevel: true,
+          stage: 2,
+          platforms: [],
+          hazards: [],
+          oranges: [],
+          purples: [],
+          blues: [
+            { x: 0, y: 0.5, w: 1, h: 0.02 }
+          ]
         }
       ];
 
@@ -1325,6 +1342,9 @@
 
       // NEW: separate purples array
       let purples = [];
+
+      // NEW: blue blocks that only affect teleporting
+      let blues = [];
 
       // Grey lifts used in Stage 2 Level 5
       let lifts = [];
@@ -1380,6 +1400,7 @@
         brownParticles = [];
         fallingOranges = [];
         lastFallingOrangeSpawn = Date.now();
+        blues = [];
 
         // Special handling for challenge levels or levels with unique behavior
         if (lvl.challengeDashingLevel) {
@@ -1471,6 +1492,14 @@
           dy: p.dy || 0,
           moving: p.moving || false,
           verticalMovement: p.verticalMovement || false
+        }));
+
+        // Map blue block definitions (no movement)
+        blues = (lvl.blues || []).map(b => ({
+          x: b.x * canvas.width,
+          y: b.y * canvas.height,
+          width: b.w * canvas.width,
+          height: b.h * canvas.height
         }));
 
         // Map brown block definitions
@@ -1842,6 +1871,7 @@
         let lastSafeX = cube.x;
         let lastSafeY = cube.y;
         let hitRed = false;
+        let hitBlue = false;
         while (true) {
           let nextX = currentX + dirX * step;
           let nextY = currentY + dirY * step;
@@ -1893,6 +1923,12 @@
             return rectIntersect(candidate, hRect);
           });
           if (hitRed) break;
+
+          hitBlue = blues.some(b => {
+            let bRect = { x: b.x, y: b.y, width: b.width, height: b.height };
+            return rectIntersect(candidate, bRect);
+          });
+          if (hitBlue) break;
           if (nextX - cube.size / 2 < 0 || nextX + cube.size / 2 > canvas.width ||
               nextY - cube.size / 2 < 0 || nextY + cube.size / 2 > canvas.height) {
             lastSafeX = Math.max(cube.size / 2, Math.min(nextX, canvas.width - cube.size / 2));
@@ -1904,7 +1940,7 @@
           currentX = nextX;
           currentY = nextY;
         }
-        if (hitRed) {
+        if (hitRed || hitBlue) {
           deathSound.currentTime = 0;
           deathSound.play();
           loadLevel(currentLevel);
@@ -2707,6 +2743,14 @@
           ctx.fillRect(p.x, p.y, p.width, p.height);
         }
       }
+
+      // Draw blue blocks
+      function drawBlues() {
+        ctx.fillStyle = "blue";
+        for (let b of blues) {
+          ctx.fillRect(b.x, b.y, b.width, b.height);
+        }
+      }
       function drawBrowns() {
         ctx.fillStyle = "saddlebrown";
         for (let b of browns) {
@@ -2788,6 +2832,10 @@
         if (currentLevel === 13) {
           ctx.textAlign = "center";
           ctx.fillText("One of these brown blocks hides a green block", canvas.width / 2, 80);
+        }
+        if (currentLevel === 27) {
+          ctx.textAlign = "center";
+          ctx.fillText("You can't teleport through blue blocks", canvas.width / 2, 80);
         }
       }
       function drawCube() {
@@ -2884,10 +2932,11 @@
         }
         drawTarget();
         drawPlatforms();
-        drawHazards();
-        drawOranges();
-        drawPurples();
-        drawBrowns();
+       drawHazards();
+       drawOranges();
+       drawPurples();
+       drawBlues();
+       drawBrowns();
         drawLifts();
         drawFallingBrownBlocks();
         drawCube();
