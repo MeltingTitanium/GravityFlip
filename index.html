@@ -1332,13 +1332,7 @@
           teleportLevel: true,
           stage: 2,
           platforms: [],
-          hazards: [
-            // Four-side kill-strip border
-            { x: 0,            y:   0,       w: 1,        h: 22/1080 },
-            { x: 0,            y:1058/1080,  w: 1,        h: 22/1080 },
-            { x: 0,            y:   0,       w: 38/1920,  h: 1        },
-            { x:1882/1920,     y:   0,       w: 38/1920,  h: 1        }
-          ],
+          hazards: [],
           oranges: [],
           browns: [],
           purples: [
@@ -2517,7 +2511,7 @@
             };
             if (levels[currentLevel].fallingBrownLevel && (now - target.spawnTime < 500)) {
               // do nothing for half a second
-            } else if (currentLevel === 9 && rectIntersect(cubeRect, targetRect)) {
+            } else if ((currentLevel === 9 || currentLevel === 29) && rectIntersect(cubeRect, targetRect)) {
               if (!(target.x < 50 && target.y > canvas.height - 50)) {
                 target.x = cube.size / 2;
                 target.y = canvas.height - cube.size / 2;
