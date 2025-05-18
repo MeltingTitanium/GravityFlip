@@ -553,6 +553,13 @@
       let lastBrownSpawnTime = 0; // Timestamp for when the last brown block was spawned
 
       // -------------------------------------------------
+      // Global Variables for Stage 2 Level 10 (Two-Room Relay)
+      // -------------------------------------------------
+      let relayFlag = false;      // Set once the upper ledge is touched
+      let relayWall = null;       // Reference to the purple wall blocking the goal
+      let relayWallMoved = 0;     // Tracks how far the wall has slid
+
+      // -------------------------------------------------
       // 2. Player (Cube) + Movement (No Diagonals)
       // -------------------------------------------------
       // Define the player cube with initial properties
@@ -1303,7 +1310,59 @@
           hazards: [],
           oranges: [],
           browns: [],
-          purples: []
+        purples: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 2 - Level 10  (index 28)
+          // Two-room relay with sliding goal wall
+          // -------------------------------------------------
+          spawn:  { x: 138/1920,  y: 958/1080 },
+          target: { x: 1782/1920, y: 122/1080 },
+
+          teleportLevel: true,
+          stage: 2,
+
+          platforms: [
+            // Lower-right ledge inside the bottom chamber
+            { x: 1802/1920, y: 720/1080, w: 80/1920, h: 20/1080 },
+            // Upper-left ledge that triggers the goal wall
+            { x: 38/1920,  y: 300/1080, w: 80/1920, h: 20/1080 }
+          ],
+
+          hazards: [
+            // Kill-strip border
+            { x: 0, y: 0, w: 1, h: 22/1080 },
+            { x: 0, y:1058/1080, w: 1, h: 22/1080 },
+            { x: 0, y: 0, w: 38/1920, h: 1 },
+            { x:1882/1920, y: 0, w: 38/1920, h: 1 },
+
+            // Lower chamber moving hazard (starts low)
+            { x:1200/1920, y:540/1080, w:50/1920, h:200/1080,
+              dy: 2, moving: true, verticalMovement: true,
+              minY:540/1080, maxY:780/1080 },
+            // Upper chamber moving hazard (starts high)
+            { x:670/1920, y:320/1080, w:50/1920, h:200/1080,
+              dy: 2, moving: true, verticalMovement: true,
+              minY:260/1080, maxY:520/1080 },
+            // Horizontal hazard patrolling the top corridor
+            { x:860/1920, y:140/1080, w:200/1920, h:50/1080,
+              dx: 2.2, moving: true,
+              minX:600/1920, maxX:1200/1920 }
+          ],
+
+          oranges: [],
+          browns: [],
+          purples: [
+            // Central purple spine
+            { x:950/1920, y:22/1080, w:20/1920, h:1014/1080 },
+            // Goal-blocking wall (slides left when triggered)
+            { x:1762/1920, y:260/1080, w:20/1920, h:260/1080, dx:0, moving:false }
+          ],
+          lifts: [
+            { x:300/1920, y:800/1080, w:154/1920, h:108/1080,
+              dy:-2, minY:420/1080, maxY:800/1080 }
+          ]
         }
       ];
 
@@ -1472,6 +1531,12 @@
           moving: p.moving || false,
           verticalMovement: p.verticalMovement || false
         }));
+
+        if (index === 28) {
+          relayFlag = false;
+          relayWall = purples[purples.length - 1];
+          relayWallMoved = 0;
+        }
 
         // Map brown block definitions
         browns = (lvl.browns || []).map(b => ({
@@ -1647,6 +1712,9 @@
             h.dx = applyGlobalMovementScale(h.dx);
           }
         });
+
+
+
         oranges.forEach(o => {
           if (o.moving && currentLevel !== 9) {
             o.dx = applyGlobalMovementScale(o.dx);
@@ -2217,6 +2285,29 @@
             }
           }
         });
+
+        // Stage 2 Level 10: handle relay trigger and goal wall
+        if (currentLevel === 28) {
+          if (platforms[1]) {
+            const ledge = platforms[1];
+            const ledgeRect = { x: ledge.x, y: ledge.y, width: ledge.width, height: ledge.height };
+            const cubeRectTop = { x: cube.x - cube.size / 2, y: cube.y - cube.size / 2, width: cube.size, height: cube.size };
+            if (rectIntersect(cubeRectTop, ledgeRect)) {
+              relayFlag = true;
+            }
+          }
+          if (relayFlag && cube.y + cube.size / 2 >= canvas.height - 100 && relayWall && !relayWall.moving) {
+            relayWall.dx = applyGlobalMovementScale(-2);
+            relayWall.moving = true;
+          }
+          if (relayWall && relayWall.moving) {
+            relayWallMoved += Math.abs(relayWall.dx);
+            if (relayWallMoved >= 80) {
+              relayWall.moving = false;
+              relayWall.dx = 0;
+            }
+          }
+        }
 
         // If level 11, handle fallingOranges
         if (currentLevel === 11) {
