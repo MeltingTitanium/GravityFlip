@@ -1318,8 +1318,49 @@
           hazards: [],
           oranges: [],
           purples: [],
-          blues: [
-            { x: 0, y: 0.5, w: 1, h: 0.02 }
+        blues: [
+          { x: 0, y: 0.5, w: 1, h: 0.02 }
+        ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 2 - Level 11 (index 29)
+          // Moving hazards recolored grey with a roaming purple wall
+          // -------------------------------------------------
+          spawn:  { x: 150/1920,  y: 950/1080 },
+          target: { x: 1750/1920, y: 100/1080 },
+
+          teleportLevel: true,
+          stage: 2,
+
+          platforms: [
+            { x: 400/1920,  y: 300/1080, w: 500/1920, h: 20/1080 },
+            { x: 900/1920,  y: 780/1080, w: 500/1920, h: 20/1080 },
+            { x: 1400/1920, y: 350/1080, w: -250/1920, h: 20/1080 },
+            { x: 1650/1920, y: 370/1080, w: 30/1920, h: 710/1080 }
+          ],
+
+          hazards: [
+            { x: 650/1920,  y: 320/1080, w: 50/1920, h: 200/1080,
+              dy: 1.8, moving: true, verticalMovement: true,
+              minY: 320/1080, maxY: 900/1080, color: "#555" },
+            { x: 1150/1920, y:   0/1080, w: 50/1920, h: 250/1080,
+              dy: 2.2, moving: true, verticalMovement: true,
+              minY:   0/1080, maxY: 550/1080, color: "#555" },
+            { x: 1400/1920, y: 700/1080, w: 200/1920, h: 50/1080,
+              dx: 2, moving: true,
+              minX: 1000/1920, maxX: 1600/1920, color: "#555" },
+            { x: 1500/1920, y: 50/1080, w: 150/1920, h: 120/1080, color: "#555" }
+          ],
+
+          oranges: [],
+          browns: [],
+          purples: [
+            { x: 400/1920,  y: 300/1080, w: 20/1920,  h: 780/1080 },
+            { x: 900/1920,  y:   0/1080, w: 20/1920,  h: 780/1080 },
+            { x: 1400/1920, y: 350/1080, w: 20/1920,  h: 730/1080 },
+            { x: 0.98, y: 0, w: 0.02, h: 1, dx: -1.92,
+              moving: true, minX: 0, maxX: 1 }
           ]
         }
       ];
@@ -1464,7 +1505,8 @@
           minX: (h.minX !== undefined ? h.minX : 0) * canvas.width,
           maxX: (h.maxX !== undefined ? h.maxX : 1) * canvas.width,
           minY: (h.minY !== undefined ? h.minY : 0) * canvas.height,
-          maxY: (h.maxY !== undefined ? h.maxY : 1) * canvas.height
+          maxY: (h.maxY !== undefined ? h.maxY : 1) * canvas.height,
+          color: h.color
         }));
         // Map orange (moving obstacles) definitions
         oranges = (lvl.oranges || []).map(o => ({
@@ -2712,8 +2754,8 @@
         }
       }
       function drawHazards() {
-        ctx.fillStyle = "red";
         for (let h of hazards) {
+          ctx.fillStyle = h.color || "red";
           ctx.fillRect(h.x, h.y, h.width, h.height);
         }
       }
