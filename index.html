@@ -2158,9 +2158,6 @@
         if (gamePaused) return;
         const now = Date.now();
         let obstacles = [...platforms, ...browns, ...lifts];
-        if (levels[currentLevel].challengeTeleportLevel) {
-          obstacles = obstacles.concat(challengeGreyBlocks);
-        }
         if (levels[currentLevel].fallingBrownLevel) {
           obstacles = obstacles.concat(fallingBrownBlocks);
         }
