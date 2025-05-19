@@ -2103,11 +2103,18 @@
             return rectIntersect(candidate, r);
           });
           if (hitPlatform) break;
-          hitRed = hazards.some(h => {
-            let hRect = { x: h.x, y: h.y, width: h.width, height: h.height };
-            return rectIntersect(candidate, hRect);
-          });
-          if (hitRed) break;
+            hitRed = hazards.some(h => {
+              let hRect = { x: h.x, y: h.y, width: h.width, height: h.height };
+              return rectIntersect(candidate, hRect);
+            });
+            if (!hitRed) {
+              let extraReds = challengeGreyBlocks.concat(fallingRedBlocks);
+              hitRed = extraReds.some(b => {
+                let bRect = { x: b.x, y: b.y, width: b.width, height: b.height };
+                return rectIntersect(candidate, bRect);
+              });
+            }
+            if (hitRed) break;
 
           hitBlue = blues.some(b => {
             let bRect = { x: b.x, y: b.y, width: b.width, height: b.height };
@@ -2158,9 +2165,6 @@
         if (gamePaused) return;
         const now = Date.now();
         let obstacles = [...platforms, ...browns, ...lifts];
-        if (levels[currentLevel].challengeTeleportLevel) {
-          obstacles = obstacles.concat(challengeGreyBlocks);
-        }
         if (levels[currentLevel].fallingBrownLevel) {
           obstacles = obstacles.concat(fallingBrownBlocks);
         }
