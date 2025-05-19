@@ -470,7 +470,14 @@
       let challengeLines = []; // Array to store moving challenge line objects
       // Challenge lines move at 40% of level 15’s orange block speed.
       // They are not scaled by mode for Level 18:
-      let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
+let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
+
+      // Additional globals for the teleport challenge (Stage 2 Level 13)
+      let challengeTeleportLines = [];
+      let lastTeleportLineSpawn = 0;
+      let challengeGreyBlocks = [];
+      let lastGreyBlockSpawn = 0;
+      let challengeWhiteBlock = null;
 
       // For falling red blocks (similar to brown blocks but drawn in red)
       let fallingRedBlocks = [];
@@ -1385,6 +1392,23 @@
             // Bottom block - original speed
             { x: 0.18, y: 0.45, w: 0.05, h: 0.02, moving: true, dx: 0.9, minX: 0, maxX: 0.3 }
           ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 2 - Level 13 (index 30)
+          // Challenge of Teleportation
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: -100, y: -100 },
+          teleportLevel: true,
+          stage: 2,
+          challengeTeleportLevel: true,
+          platforms: [],
+          hazards: [],
+          oranges: [],
+          purples: [],
+          blues: [],
+          browns: []
         }
       ];
 
@@ -1477,6 +1501,17 @@
           lastRedSpawnTime = Date.now();
           challengeGreenBlock = null;
           // === Reset the paused-time tracking for Level 18 ===
+          challengePausedTime = 0;
+          isChallengePaused = false;
+          lastChallengePauseStart = 0;
+        } else if (lvl.challengeTeleportLevel) {
+          target = null;
+          challengeStartTime = Date.now();
+          lastTeleportLineSpawn = Date.now();
+          lastGreyBlockSpawn = Date.now();
+          challengeTeleportLines = [];
+          challengeGreyBlocks = [];
+          challengeWhiteBlock = null;
           challengePausedTime = 0;
           isChallengePaused = false;
           lastChallengePauseStart = 0;
@@ -2072,6 +2107,9 @@
         if (gamePaused) return;
         const now = Date.now();
         let obstacles = [...platforms, ...browns, ...lifts];
+        if (levels[currentLevel].challengeTeleportLevel) {
+          obstacles = obstacles.concat(challengeGreyBlocks);
+        }
         if (levels[currentLevel].fallingBrownLevel) {
           obstacles = obstacles.concat(fallingBrownBlocks);
         }
@@ -2820,6 +2858,147 @@
             }
           }
         }
+
+        // Handle any challenge-teleportation-level logic (Stage 2 Level 13)
+        if (levels[currentLevel].challengeTeleportLevel) {
+          if (!document.hidden && !gamePaused) {
+            if (isChallengePaused) {
+              challengePausedTime += (now - lastChallengePauseStart);
+              isChallengePaused = false;
+            }
+          } else {
+            if (!isChallengePaused) {
+              isChallengePaused = true;
+              lastChallengePauseStart = now;
+            }
+          }
+
+          let elapsed = (now - challengeStartTime) - challengePausedTime;
+          let remaining = challengeDuration - elapsed;
+
+          let spawnInterval;
+          if (remaining > 20000) {
+            spawnInterval = currentMode === "easy" ? 5000 : currentMode === "hard" ? 3000 : 4000;
+          } else if (remaining > 10000) {
+            spawnInterval = currentMode === "easy" ? 4000 : currentMode === "hard" ? 2000 : 3000;
+          } else {
+            spawnInterval = currentMode === "easy" ? 3000 : currentMode === "hard" ? 1000 : 2000;
+          }
+
+          if (now - lastTeleportLineSpawn >= spawnInterval) {
+            let sides = ["top", "bottom", "left", "right"];
+            let side = sides[Math.floor(Math.random() * sides.length)];
+            let thickness = 20;
+            let color = Math.random() < 0.5 ? "purple" : "blue";
+            let obj = { x: 0, y: 0, width: 0, height: 0 };
+            if (side === "top") {
+              obj.x = 0;
+              obj.y = -thickness;
+              obj.width = canvas.width;
+              obj.height = thickness;
+              challengeTeleportLines.push({ obj, vx: 0, vy: challengeLineSpeed, color });
+            } else if (side === "bottom") {
+              obj.x = 0;
+              obj.y = canvas.height;
+              obj.width = canvas.width;
+              obj.height = thickness;
+              challengeTeleportLines.push({ obj, vx: 0, vy: -challengeLineSpeed, color });
+            } else if (side === "left") {
+              obj.x = -thickness;
+              obj.y = 0;
+              obj.width = thickness;
+              obj.height = canvas.height;
+              challengeTeleportLines.push({ obj, vx: challengeLineSpeed, vy: 0, color });
+            } else if (side === "right") {
+              obj.x = canvas.width;
+              obj.y = 0;
+              obj.width = thickness;
+              obj.height = canvas.height;
+              challengeTeleportLines.push({ obj, vx: -challengeLineSpeed, vy: 0, color });
+            }
+            if (color === "purple") {
+              purples.push(obj);
+            } else {
+              blues.push(obj);
+            }
+            lastTeleportLineSpawn = now;
+          }
+
+          if (now - lastGreyBlockSpawn >= 3000) {
+            challengeGreyBlocks.push({
+              x: Math.random() * (canvas.width - cube.size),
+              y: -cube.size,
+              width: cube.size,
+              height: cube.size,
+              vy: 1
+            });
+            lastGreyBlockSpawn = now;
+          }
+
+          for (let i = challengeTeleportLines.length - 1; i >= 0; i--) {
+            let line = challengeTeleportLines[i];
+            line.obj.x += line.vx;
+            line.obj.y += line.vy;
+            if (line.obj.x > canvas.width || line.obj.x + line.obj.width < 0 ||
+                line.obj.y > canvas.height || line.obj.y + line.obj.height < 0) {
+              if (line.color === "purple") {
+                let idx = purples.indexOf(line.obj);
+                if (idx !== -1) purples.splice(idx, 1);
+              } else {
+                let idx = blues.indexOf(line.obj);
+                if (idx !== -1) blues.splice(idx, 1);
+              }
+              challengeTeleportLines.splice(i, 1);
+            }
+          }
+
+          for (let i = challengeGreyBlocks.length - 1; i >= 0; i--) {
+            let gb = challengeGreyBlocks[i];
+            gb.y += gb.vy;
+            if (gb.y > canvas.height) {
+              challengeGreyBlocks.splice(i, 1);
+              continue;
+            }
+            let blockRect = { x: gb.x, y: gb.y, width: gb.width, height: gb.height };
+            if (rectIntersect(cubeRect, blockRect)) {
+              cube.y += gb.vy;
+              if (cube.y + cube.size / 2 > canvas.height) {
+                cube.y = canvas.height - cube.size / 2;
+              }
+            }
+          }
+
+          if (elapsed >= challengeDuration && !challengeWhiteBlock) {
+            challengeWhiteBlock = { x: canvas.width / 2, y: canvas.height / 2, size: 200 };
+          }
+
+          if (challengeWhiteBlock) {
+            let rect = {
+              x: challengeWhiteBlock.x - challengeWhiteBlock.size / 2,
+              y: challengeWhiteBlock.y - challengeWhiteBlock.size / 2,
+              width: challengeWhiteBlock.size,
+              height: challengeWhiteBlock.size
+            };
+            if (rectIntersect(cubeRect, rect)) {
+              if (currentMode === "hard") {
+                let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
+                if (!hardModeStars.includes(currentLevel)) {
+                  hardModeStars.push(currentLevel);
+                }
+                localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
+              }
+              winSound.currentTime = 0;
+              winSound.play();
+              currentLevel++;
+              if (currentLevel < levels.length) {
+                loadLevel(currentLevel);
+              } else {
+                showWinScreen();
+              }
+              return;
+            }
+          }
+        }
       }
 
       // -------------------------------------------------
@@ -2913,14 +3092,41 @@
           }
         }
       }
+      function drawChallengeTeleportLines() {
+        if (levels[currentLevel].challengeTeleportLevel) {
+          for (let line of challengeTeleportLines) {
+            ctx.fillStyle = line.color === "purple" ? "purple" : "blue";
+            ctx.fillRect(line.obj.x, line.obj.y, line.obj.width, line.obj.height);
+          }
+        }
+      }
+      function drawChallengeGreyBlocks() {
+        if (levels[currentLevel].challengeTeleportLevel) {
+          ctx.fillStyle = "grey";
+          for (let b of challengeGreyBlocks) {
+            ctx.fillRect(b.x, b.y, b.width, b.height);
+          }
+        }
+      }
       function drawChallengeGreenBlock() {
         if (levels[currentLevel].challengeDashingLevel && challengeGreenBlock) {
           ctx.fillStyle = "green";
           ctx.fillRect(
-            challengeGreenBlock.x - challengeGreenBlock.size / 2, 
+            challengeGreenBlock.x - challengeGreenBlock.size / 2,
             challengeGreenBlock.y - challengeGreenBlock.size / 2,
             challengeGreenBlock.size,
             challengeGreenBlock.size
+          );
+        }
+      }
+      function drawChallengeWhiteBlock() {
+        if (levels[currentLevel].challengeTeleportLevel && challengeWhiteBlock) {
+          ctx.fillStyle = "white";
+          ctx.fillRect(
+            challengeWhiteBlock.x - challengeWhiteBlock.size / 2,
+            challengeWhiteBlock.y - challengeWhiteBlock.size / 2,
+            challengeWhiteBlock.size,
+            challengeWhiteBlock.size
           );
         }
       }
@@ -2930,6 +3136,13 @@
         ctx.textAlign = "left";
         if (levels[currentLevel].challengeDashingLevel) {
           ctx.fillText("Challenge Of Dashing", 10, 40);
+          let elapsed = Date.now() - challengeStartTime - challengePausedTime;
+          let remainingSec = Math.max(0, Math.ceil((challengeDuration - elapsed) / 1000));
+          ctx.textAlign = "center";
+          ctx.fillText(remainingSec + "s", canvas.width / 2, 40);
+          ctx.textAlign = "left";
+        } else if (levels[currentLevel].challengeTeleportLevel) {
+          ctx.fillText("Challenge Of Teleportation", 10, 40);
           let elapsed = Date.now() - challengeStartTime - challengePausedTime;
           let remainingSec = Math.max(0, Math.ceil((challengeDuration - elapsed) / 1000));
           ctx.textAlign = "center";
@@ -3073,6 +3286,10 @@
           drawFallingRedBlocks();
           drawChallengeLines();
           drawChallengeGreenBlock();
+        } else if (levels[currentLevel].challengeTeleportLevel) {
+          drawChallengeGreyBlocks();
+          drawChallengeTeleportLines();
+          drawChallengeWhiteBlock();
         }
 
         requestAnimationFrame(gameLoop);
