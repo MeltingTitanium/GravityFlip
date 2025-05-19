@@ -469,16 +469,21 @@
       let lastChallengeLineSpawn = 0; // Timestamp for last spawned challenge line
       let challengeLines = []; // Array to store moving challenge line objects
       // Challenge lines move at 40% of level 15’s orange block speed.
-      // They are not scaled by mode for Level 18:
-let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
+      // They are not scaled by mode for Level 18. We keep the initial
+      // value so we can ramp up difficulty later when the white block
+      // is touched.
+      let initialChallengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
+      let challengeLineSpeed = initialChallengeLineSpeed;
 
       // Additional globals for the teleport challenge (Stage 2 Level 13)
       let challengeTeleportLines = [];
       let lastTeleportLineSpawn = 0;
       let challengeGreyBlocks = [];
       let lastGreyBlockSpawn = 0;
+      let challengeGreyBlockSpeed = 1;
       let challengeWhiteBlock = null;
       let whiteBlockTouched = false;
+      let challengePhaseTwo = false; // becomes true after the white block is touched
       const teleportBlueHoleSize = 320; // size in pixels for blue line holes
       const activeBlueSides = { top: false, bottom: false, left: false, right: false };
 
@@ -1507,19 +1512,22 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
           challengePausedTime = 0;
           isChallengePaused = false;
           lastChallengePauseStart = 0;
-        } else if (lvl.challengeTeleportLevel) {
-          target = null;
-          challengeStartTime = Date.now();
-          lastTeleportLineSpawn = Date.now();
-          lastGreyBlockSpawn = Date.now();
-          challengeTeleportLines = [];
-          challengeGreyBlocks = [];
-          challengeWhiteBlock = null;
-          whiteBlockTouched = false;
-          activeBlueSides.top = activeBlueSides.bottom = activeBlueSides.left = activeBlueSides.right = false;
-          challengePausedTime = 0;
-          isChallengePaused = false;
-          lastChallengePauseStart = 0;
+          } else if (lvl.challengeTeleportLevel) {
+            target = null;
+            challengeStartTime = Date.now();
+            lastTeleportLineSpawn = Date.now();
+            lastGreyBlockSpawn = Date.now();
+            challengeTeleportLines = [];
+            challengeGreyBlocks = [];
+            challengeWhiteBlock = null;
+            whiteBlockTouched = false;
+            challengePhaseTwo = false;
+            challengeLineSpeed = initialChallengeLineSpeed;
+            challengeGreyBlockSpeed = 1;
+            activeBlueSides.top = activeBlueSides.bottom = activeBlueSides.left = activeBlueSides.right = false;
+            challengePausedTime = 0;
+            isChallengePaused = false;
+            lastChallengePauseStart = 0;
         } else if (lvl.level13) {
           level13Stage = 0;
           level13PillarsSpawned = false;
@@ -2881,16 +2889,18 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
           let elapsed = (now - challengeStartTime) - challengePausedTime;
           let remaining = challengeDuration - elapsed;
 
-          let spawnInterval;
-          if (remaining > 20000) {
-            spawnInterval = currentMode === "easy" ? 5000 : currentMode === "hard" ? 3000 : 4000;
-          } else if (remaining > 10000) {
-            spawnInterval = currentMode === "easy" ? 4000 : currentMode === "hard" ? 2000 : 3000;
-          } else {
-            spawnInterval = currentMode === "easy" ? 3000 : currentMode === "hard" ? 1000 : 2000;
-          }
+            let spawnInterval;
+            if (challengePhaseTwo) {
+              spawnInterval = 1000; // faster spawns once the white block is touched
+            } else if (remaining > 20000) {
+              spawnInterval = currentMode === "easy" ? 5000 : currentMode === "hard" ? 3000 : 4000;
+            } else if (remaining > 10000) {
+              spawnInterval = currentMode === "easy" ? 4000 : currentMode === "hard" ? 2000 : 3000;
+            } else {
+              spawnInterval = currentMode === "easy" ? 3000 : currentMode === "hard" ? 1000 : 2000;
+            }
 
-          if (!whiteBlockTouched && now - lastTeleportLineSpawn >= spawnInterval) {
+            if (now - lastTeleportLineSpawn >= spawnInterval) {
             let sides = ["top", "bottom", "left", "right"];
             let side = sides[Math.floor(Math.random() * sides.length)];
             let thickness = 20;
@@ -2947,16 +2957,17 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
             }
           }
 
-          if (!whiteBlockTouched && now - lastGreyBlockSpawn >= 3000) {
-            challengeGreyBlocks.push({
-              x: Math.random() * (canvas.width - cube.size),
-              y: -cube.size,
-              width: cube.size,
-              height: cube.size,
-              vy: 1
-            });
-            lastGreyBlockSpawn = now;
-          }
+            let greySpawnInterval = challengePhaseTwo ? 1500 : 3000;
+            if (now - lastGreyBlockSpawn >= greySpawnInterval) {
+              challengeGreyBlocks.push({
+                x: Math.random() * (canvas.width - cube.size),
+                y: -cube.size,
+                width: cube.size,
+                height: cube.size,
+                vy: challengeGreyBlockSpeed
+              });
+              lastGreyBlockSpawn = now;
+            }
 
           for (let i = challengeTeleportLines.length - 1; i >= 0; i--) {
             let line = challengeTeleportLines[i];
@@ -3015,10 +3026,13 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
               width: challengeWhiteBlock.size,
               height: challengeWhiteBlock.size
             };
-            if (rectIntersect(cubeRect, rect)) {
-              whiteBlockTouched = true;
-              challengeWhiteBlock = null;
-            }
+              if (rectIntersect(cubeRect, rect)) {
+                whiteBlockTouched = true;
+                challengePhaseTwo = true;
+                challengeLineSpeed = initialChallengeLineSpeed * 1.5;
+                challengeGreyBlockSpeed = 2;
+                challengeWhiteBlock = null;
+              }
           }
         }
       }
