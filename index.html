@@ -2989,7 +2989,7 @@
                     let holeX = Math.random() * (canvas.width - teleportBlueHoleSize);
                     let seg1 = { x: 0, y: (p.side === "top" ? -thickness : canvas.height), width: holeX, height: thickness };
                     let seg2 = { x: holeX + teleportBlueHoleSize, y: (p.side === "top" ? -thickness : canvas.height), width: canvas.width - (holeX + teleportBlueHoleSize), height: thickness };
-                    const blueSpeed = challengeLineSpeed * blueLineSpeedFactor;
+                    const blueSpeed = challengeLineSpeed * 0.8;
                     challengeTeleportLines.push({ segments: [seg1, seg2], vx: 0, vy: (p.side === "top" ? blueSpeed : -blueSpeed), color: "blue", side: p.side });
                     blues.push(seg1, seg2);
                   } else {
@@ -3050,7 +3050,7 @@
                 activePurpleAxes[orientation] = true;
               } else {
                 activeBlueSides[side] = true;
-                const blueSpeed = challengeLineSpeed * blueLineSpeedFactor;
+                const blueSpeed = challengeLineSpeed * 0.8;
                 if (side === "top" || side === "bottom") {
                   let holeX = Math.random() * (canvas.width - teleportBlueHoleSize);
                   let seg1 = { x: 0, y: (side === "top" ? -thickness : canvas.height), width: holeX, height: thickness };
