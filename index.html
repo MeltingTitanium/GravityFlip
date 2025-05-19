@@ -1378,12 +1378,12 @@
             { x: 0.3, y: 0,    w: 0.02, h: 1 }
           ],
           blues: [
-            // Top block - fastest
-            { x: 0.04, y: 0.15, w: 0.05, h: 0.02, moving: true, dx: 0.7,  minX: 0, maxX: 0.3 },
-            // Middle block - medium speed
-            { x: 0.11, y: 0.30, w: 0.05, h: 0.02, moving: true, dx: 0.55, minX: 0, maxX: 0.3 },
-            // Bottom block - original speed
-            { x: 0.18, y: 0.45, w: 0.05, h: 0.02, moving: true, dx: 0.45, minX: 0, maxX: 0.3 }
+            // Top block - fastest (spawn slightly more left)
+            { x: 0.02, y: 0.15, w: 0.05, h: 0.02, moving: true, dx: 0.7,  minX: 0, maxX: 0.3 },
+            // Middle block - medium speed (spawn at center)
+            { x: 0.15, y: 0.30, w: 0.05, h: 0.02, moving: true, dx: 0.55, minX: 0, maxX: 0.3 },
+            // Bottom block - original speed (spawn more to the right but within purple barrier)
+            { x: 0.24, y: 0.45, w: 0.05, h: 0.02, moving: true, dx: 0.45, minX: 0, maxX: 0.3 }
           ]
         }
       ];
