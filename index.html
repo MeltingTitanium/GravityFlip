@@ -276,6 +276,7 @@
         <div id="settingsBackButton" class="bigButton">Back</div>
       </div>
     </div>
+    <div id="checkpointPopup" class="overlay hidden">Checkpoint Reached</div>
 
     <!-- ======================================================
          JavaScript Section: Contains all game logic and functionality.
@@ -494,6 +495,8 @@
       // When the challenge timer finishes, a giant green block appears to complete the level
       let challengeGreenBlock = null;
 
+      let teleportCheckpoint = false;      // true once white block touched
+      let checkpointPopupTime = 0;         // timestamp when popup shown
       // === NEW CODE to stop the Level 18 timer from counting down if paused or tab is hidden ===
       let challengePausedTime = 0;
       let isChallengePaused = false;
@@ -1465,11 +1468,17 @@
       let hasShownTeleportPopup = false;
 
       function loadLevel(index) {
+        const prevLevel = currentLevel;
         currentLevel = index;
         updateUnlockedProgress();
         const lvl = levels[index];
 
         // Set player spawn position
+        if (index === 30 && prevLevel !== 30) {
+          teleportCheckpoint = false;
+          checkpointPopupTime = 0;
+        }
+        document.getElementById("checkpointPopup").classList.add("hidden");
         cube.x = lvl.spawn.x * canvas.width;
         cube.y = lvl.spawn.y * canvas.height;
         cube.vx = 0;
@@ -1512,7 +1521,7 @@
           challengePausedTime = 0;
           isChallengePaused = false;
           lastChallengePauseStart = 0;
-          } else if (lvl.challengeTeleportLevel) {
+        } else if (lvl.challengeTeleportLevel) {
             target = null;
             challengeStartTime = Date.now();
             lastTeleportLineSpawn = Date.now();
@@ -1520,10 +1529,20 @@
             challengeTeleportLines = [];
             challengeGreyBlocks = [];
             challengeWhiteBlock = null;
-            whiteBlockTouched = false;
-            challengePhaseTwo = false;
-            challengeLineSpeed = initialChallengeLineSpeed;
-            challengeGreyBlockSpeed = 1;
+            fallingRedBlocks = [];
+            fallingRedTextStart = Date.now();
+            lastRedSpawnTime = Date.now();
+            if (index === 30 && teleportCheckpoint) {
+              whiteBlockTouched = true;
+              challengePhaseTwo = true;
+              challengeLineSpeed = initialChallengeLineSpeed * 1.5;
+              challengeGreyBlockSpeed = 2;
+            } else {
+              whiteBlockTouched = false;
+              challengePhaseTwo = false;
+              challengeLineSpeed = initialChallengeLineSpeed;
+              challengeGreyBlockSpeed = 1;
+            }
             activeBlueSides.top = activeBlueSides.bottom = activeBlueSides.left = activeBlueSides.right = false;
             challengePausedTime = 0;
             isChallengePaused = false;
@@ -3015,6 +3034,36 @@
             }
           }
 
+          if (challengePhaseTwo && now - lastRedSpawnTime >= 2000) {
+            const count = currentMode === "easy" ? 2
+                         : currentMode === "hard" ? 4 : 3;
+            for (let i = 0; i < count; i++) {
+              fallingRedBlocks.push({
+                x: Math.random() * (canvas.width - cube.size),
+                y: -cube.size,
+                width: cube.size,
+                height: cube.size,
+                vy: 2
+              });
+            }
+            lastRedSpawnTime = now;
+          }
+          for (let i = fallingRedBlocks.length - 1; i >= 0; i--) {
+            let block = fallingRedBlocks[i];
+            block.y += block.vy;
+            if (block.y > canvas.height) {
+              fallingRedBlocks.splice(i, 1);
+              continue;
+            }
+            let blockRect = { x: block.x, y: block.y, width: block.width, height: block.height };
+            if (rectIntersect(cubeRect, blockRect)) {
+              deathSound.currentTime = 0;
+              deathSound.play();
+              loadLevel(currentLevel);
+              return;
+            }
+          }
+
           if (!whiteBlockTouched && elapsed >= challengeDuration && !challengeWhiteBlock) {
             challengeWhiteBlock = { x: canvas.width / 2, y: canvas.height / 2, size: 200 };
           }
@@ -3032,6 +3081,13 @@
                 challengeLineSpeed = initialChallengeLineSpeed * 1.5;
                 challengeGreyBlockSpeed = 2;
                 challengeWhiteBlock = null;
+                teleportCheckpoint = true;
+                checkpointPopupTime = Date.now();
+                document.getElementById("checkpointPopup").classList.remove("hidden");
+                setTimeout(() => {
+                    document.getElementById("checkpointPopup").classList.add("hidden");
+                    challengeStartTime = Date.now();
+                }, 5000);
               }
           }
         }
@@ -3113,7 +3169,8 @@
         }
       }
       function drawFallingRedBlocks() {
-        if (levels[currentLevel].challengeDashingLevel) {
+        if (levels[currentLevel].challengeDashingLevel ||
+            (levels[currentLevel].challengeTeleportLevel && challengePhaseTwo)) {
           ctx.fillStyle = "red";
           for (let block of fallingRedBlocks) {
             ctx.fillRect(block.x, block.y, block.width, block.height);
@@ -3328,8 +3385,11 @@
         drawBrownParticles();
         drawLevelText();
         drawCooldown();
-        if (levels[currentLevel].challengeDashingLevel) {
+        if (levels[currentLevel].challengeDashingLevel ||
+            (levels[currentLevel].challengeTeleportLevel && challengePhaseTwo)) {
           drawFallingRedBlocks();
+        }
+        if (levels[currentLevel].challengeDashingLevel) {
           drawChallengeLines();
           drawChallengeGreenBlock();
         } else if (levels[currentLevel].challengeTeleportLevel) {
