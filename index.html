@@ -1473,6 +1473,13 @@
         updateUnlockedProgress();
         const lvl = levels[index];
 
+        // Set teleport cooldown based on difficulty, with a special case for
+        // the teleport challenge level which always uses 3 seconds
+        currentTeleportCooldown = currentMode === "normal" ? 4000 : 2000;
+        if (lvl.challengeTeleportLevel) {
+          currentTeleportCooldown = 3000;
+        }
+
         // Set player spawn position
         if (index === 30 && prevLevel !== 30) {
           teleportCheckpoint = false;
@@ -2909,9 +2916,7 @@
           let remaining = challengeDuration - elapsed;
 
             let spawnInterval;
-            if (challengePhaseTwo) {
-              spawnInterval = 1000; // faster spawns once the white block is touched
-            } else if (remaining > 20000) {
+            if (remaining > 20000) {
               spawnInterval = currentMode === "easy" ? 5000 : currentMode === "hard" ? 3000 : 4000;
             } else if (remaining > 10000) {
               spawnInterval = currentMode === "easy" ? 4000 : currentMode === "hard" ? 2000 : 3000;
@@ -3027,10 +3032,10 @@
             }
             let blockRect = { x: gb.x, y: gb.y, width: gb.width, height: gb.height };
             if (rectIntersect(cubeRect, blockRect)) {
-              cube.y += gb.vy;
-              if (cube.y + cube.size / 2 > canvas.height) {
-                cube.y = canvas.height - cube.size / 2;
-              }
+              deathSound.currentTime = 0;
+              deathSound.play();
+              loadLevel(currentLevel);
+              return;
             }
           }
 
