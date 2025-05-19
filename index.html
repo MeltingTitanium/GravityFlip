@@ -488,6 +488,8 @@
       const teleportBlueHoleSize = 320; // size in pixels for blue line holes
       // Track which sides currently have blue lines so only one per axis spawns
       const activeBlueSides = { top: false, bottom: false, left: false, right: false };
+      // Track whether a purple line is active on a given axis
+      const activePurpleAxes = { vertical: false, horizontal: false };
 
       // For falling red blocks (similar to brown blocks but drawn in red)
       let fallingRedBlocks = [];
@@ -1548,13 +1550,15 @@
             } else {
               whiteBlockTouched = false;
               challengePhaseTwo = false;
-              challengeLineSpeed = initialChallengeLineSpeed;
-              challengeGreyBlockSpeed = 1;
-            }
-            activeBlueSides.top = activeBlueSides.bottom = activeBlueSides.left = activeBlueSides.right = false;
-            challengePausedTime = 0;
-            isChallengePaused = false;
-            lastChallengePauseStart = 0;
+            challengeLineSpeed = initialChallengeLineSpeed;
+            challengeGreyBlockSpeed = 1;
+          }
+          activeBlueSides.top = activeBlueSides.bottom = activeBlueSides.left = activeBlueSides.right = false;
+          activePurpleAxes.vertical = false;
+          activePurpleAxes.horizontal = false;
+          challengePausedTime = 0;
+          isChallengePaused = false;
+          lastChallengePauseStart = 0;
         } else if (lvl.level13) {
           level13Stage = 0;
           level13PillarsSpawned = false;
@@ -2930,6 +2934,7 @@
             let side = sides[Math.floor(Math.random() * sides.length)];
             let thickness = 20;
             let color = Math.random() < 0.5 ? "purple" : "blue";
+            let orientation = (side === "top" || side === "bottom") ? "horizontal" : "vertical";
 
             if (color === "blue" && (
                 (side === "top" || side === "bottom") ?
@@ -2937,6 +2942,8 @@
                   (activeBlueSides.left || activeBlueSides.right)
               )) {
               // Skip spawning another blue line on the same axis
+            } else if (color === "purple" && activePurpleAxes[orientation]) {
+              // Skip spawning another purple line on the same axis
             } else {
               if (color === "purple") {
                 let obj = { x: 0, y: 0, width: 0, height: 0 };
@@ -2966,6 +2973,7 @@
                   challengeTeleportLines.push({ obj, vx: -challengeLineSpeed, vy: 0, color, side });
                 }
                 purples.push(obj);
+                activePurpleAxes[orientation] = true;
               } else {
                 activeBlueSides[side] = true;
                 if (side === "top" || side === "bottom") {
@@ -3022,6 +3030,8 @@
                 if (line.color === "purple") {
                   let idx = purples.indexOf(line.obj);
                   if (idx !== -1) purples.splice(idx, 1);
+                  let orient = (line.side === "top" || line.side === "bottom") ? "horizontal" : "vertical";
+                  activePurpleAxes[orient] = false;
                 }
                 challengeTeleportLines.splice(i, 1);
               }
