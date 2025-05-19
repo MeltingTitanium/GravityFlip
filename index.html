@@ -278,6 +278,21 @@
     </div>
 
     <!-- ======================================================
+         Teleport Challenge Menu Overlay for selecting sub-levels
+         ====================================================== -->
+    <div id="teleportChallengeMenu" class="overlay hidden">
+      <h1 style="font-size:64px; margin-bottom:40px;">Challenge of Teleportation</h1>
+      <div style="display:flex; gap:20px;">
+        <div id="teleportOption1" class="bigButton">1/3</div>
+        <div id="teleportOption2" class="bigButton">2/3</div>
+        <div id="teleportOption3" class="bigButton">3/3</div>
+      </div>
+      <div style="margin-top:30px;">
+        <div id="teleportBackButton" class="bigButton">Back</div>
+      </div>
+    </div>
+
+    <!-- ======================================================
          JavaScript Section: Contains all game logic and functionality.
          ====================================================== -->
     <script>
@@ -478,6 +493,7 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
       let challengeGreyBlocks = [];
       let lastGreyBlockSpawn = 0;
       let challengeWhiteBlock = null;
+      let whiteBlockTouched = false;
       const teleportBlueHoleSize = 320; // size in pixels for blue line holes
       const activeBlueSides = { top: false, bottom: false, left: false, right: false };
 
@@ -1514,6 +1530,7 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
           challengeTeleportLines = [];
           challengeGreyBlocks = [];
           challengeWhiteBlock = null;
+          whiteBlockTouched = false;
           activeBlueSides.top = activeBlueSides.bottom = activeBlueSides.left = activeBlueSides.right = false;
           challengePausedTime = 0;
           isChallengePaused = false;
@@ -2888,7 +2905,7 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
             spawnInterval = currentMode === "easy" ? 3000 : currentMode === "hard" ? 1000 : 2000;
           }
 
-          if (now - lastTeleportLineSpawn >= spawnInterval) {
+          if (!whiteBlockTouched && now - lastTeleportLineSpawn >= spawnInterval) {
             let sides = ["top", "bottom", "left", "right"];
             let side = sides[Math.floor(Math.random() * sides.length)];
             let thickness = 20;
@@ -2945,7 +2962,7 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
             }
           }
 
-          if (now - lastGreyBlockSpawn >= 3000) {
+          if (!whiteBlockTouched && now - lastGreyBlockSpawn >= 3000) {
             challengeGreyBlocks.push({
               x: Math.random() * (canvas.width - cube.size),
               y: -cube.size,
@@ -3002,7 +3019,7 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
             }
           }
 
-          if (elapsed >= challengeDuration && !challengeWhiteBlock) {
+          if (!whiteBlockTouched && elapsed >= challengeDuration && !challengeWhiteBlock) {
             challengeWhiteBlock = { x: canvas.width / 2, y: canvas.height / 2, size: 200 };
           }
 
@@ -3014,22 +3031,8 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
               height: challengeWhiteBlock.size
             };
             if (rectIntersect(cubeRect, rect)) {
-              if (currentMode === "hard") {
-                let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
-                if (!hardModeStars.includes(currentLevel)) {
-                  hardModeStars.push(currentLevel);
-                }
-                localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
-              }
-              winSound.currentTime = 0;
-              winSound.play();
-              currentLevel++;
-              if (currentLevel < levels.length) {
-                loadLevel(currentLevel);
-              } else {
-                showWinScreen();
-              }
-              return;
+              whiteBlockTouched = true;
+              challengeWhiteBlock = null;
             }
           }
         }
@@ -3142,7 +3145,7 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
       }
       function drawChallengeGreyBlocks() {
         if (levels[currentLevel].challengeTeleportLevel) {
-          ctx.fillStyle = "grey";
+          ctx.fillStyle = "red";
           for (let b of challengeGreyBlocks) {
             ctx.fillRect(b.x, b.y, b.width, b.height);
           }
@@ -3182,7 +3185,11 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
           ctx.fillText(remainingSec + "s", canvas.width / 2, 40);
           ctx.textAlign = "left";
         } else if (levels[currentLevel].challengeTeleportLevel) {
-          ctx.fillText("Challenge Of Teleportation", 10, 40);
+          if (whiteBlockTouched) {
+            ctx.fillText("Change of Teleportation 2/3", 10, 40);
+          } else {
+            ctx.fillText("Challenge Of Teleportation", 10, 40);
+          }
           let elapsed = Date.now() - challengeStartTime - challengePausedTime;
           let remainingSec = Math.max(0, Math.ceil((challengeDuration - elapsed) / 1000));
           ctx.textAlign = "center";
@@ -3358,7 +3365,11 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
                 count++;
               }
             }
-            btn.textContent = "Level " + (count + 1);
+            if (index === 30) {
+              btn.textContent = "Challenge of Teleportation";
+            } else {
+              btn.textContent = "Level " + (count + 1);
+            }
             
             if (!allLevelsUnlocked && index > maxUnlockedLevel) {
               btn.textContent += " 🔒";
@@ -3368,21 +3379,27 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
               if (hardModeStars.includes(index)) {
                 btn.textContent += " ★"; // star symbol to show hard-mode completion
               }
-              btn.addEventListener("click", () => {
-                hideLevelSelector();
-                loadLevel(index);
-                gamePaused = false;
-                // Start music based on mode
-                if (currentMode === "hard") {
-                  bgHardMusic.play();
-                  bgEasyNormalMusic.pause();
-                  bgEasyNormalMusic.currentTime = 0;
-                } else {
-                  bgEasyNormalMusic.play();
-                  bgHardMusic.pause();
-                  bgHardMusic.currentTime = 0;
-                }
-              });
+              if (index === 30) {
+                btn.addEventListener("click", () => {
+                  levelSelectorOverlay.classList.add("hidden");
+                  teleportChallengeMenu.classList.remove("hidden");
+                });
+              } else {
+                btn.addEventListener("click", () => {
+                  hideLevelSelector();
+                  loadLevel(index);
+                  gamePaused = false;
+                  if (currentMode === "hard") {
+                    bgHardMusic.play();
+                    bgEasyNormalMusic.pause();
+                    bgEasyNormalMusic.currentTime = 0;
+                  } else {
+                    bgEasyNormalMusic.play();
+                    bgHardMusic.pause();
+                    bgHardMusic.currentTime = 0;
+                  }
+                });
+              }
             }
             levelSelectorContainer.appendChild(btn);
           }
@@ -3493,6 +3510,13 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
       const toggleMusic = document.getElementById("toggleMusic");
       const toggleLightMode = document.getElementById("toggleLightMode");
 
+      // Elements for the teleport challenge sub-level menu
+      const teleportChallengeMenu = document.getElementById("teleportChallengeMenu");
+      const teleportOption1 = document.getElementById("teleportOption1");
+      const teleportOption2 = document.getElementById("teleportOption2");
+      const teleportOption3 = document.getElementById("teleportOption3");
+      const teleportBackButton = document.getElementById("teleportBackButton");
+
       settingsButton.addEventListener("click", () => {
         mainMenu.classList.add("hidden");
         gamePaused = true;
@@ -3544,6 +3568,31 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
       });
 
       clearNo.addEventListener("click", hideClearStoragePrompt);
+
+      // -------------------------------
+      // Teleport Challenge Menu Functions
+      // -------------------------------
+      function hideTeleportChallengeMenu() {
+        teleportChallengeMenu.classList.add("hidden");
+        levelSelectorOverlay.classList.remove("hidden");
+      }
+
+      teleportBackButton.addEventListener("click", hideTeleportChallengeMenu);
+      teleportOption2.addEventListener("click", () => {
+        hideTeleportChallengeMenu();
+        hideLevelSelector();
+        loadLevel(30);
+        gamePaused = false;
+        if (currentMode === "hard") {
+          bgHardMusic.play();
+          bgEasyNormalMusic.pause();
+          bgEasyNormalMusic.currentTime = 0;
+        } else {
+          bgEasyNormalMusic.play();
+          bgHardMusic.pause();
+          bgHardMusic.currentTime = 0;
+        }
+      });
 
       // -------------------------------------------------
       // 20. Difficulty Selection Buttons (At the Bottom of Main Menu)
