@@ -3054,24 +3054,43 @@
             }
           }
 
-          if (challengePhaseTwo && now - lastRedSpawnTime >= 2000) {
-            const count = currentMode === "easy" ? 2
-                         : currentMode === "hard" ? 4 : 3;
+          const redSpawnInterval = 2000;
+          if (now - lastRedSpawnTime >= redSpawnInterval) {
+            let baseCount = currentMode === "easy" ? 2
+                          : currentMode === "hard" ? 4 : 3;
+            let count = challengePhaseTwo ? Math.max(1, baseCount - 1) : baseCount;
             for (let i = 0; i < count; i++) {
-              fallingRedBlocks.push({
-                x: Math.random() * (canvas.width - cube.size),
-                y: -cube.size,
-                width: cube.size,
-                height: cube.size,
-                vy: 2
-              });
+              let sideOptions = ["top", "bottom", "left", "right"];
+              let side = sideOptions[Math.floor(Math.random() * sideOptions.length)];
+              let rb = { x: 0, y: 0, width: cube.size, height: cube.size, vx: 0, vy: 0 };
+              const speed = 2;
+              if (side === "top") {
+                rb.x = Math.random() * (canvas.width - cube.size);
+                rb.y = -cube.size;
+                rb.vy = speed;
+              } else if (side === "bottom") {
+                rb.x = Math.random() * (canvas.width - cube.size);
+                rb.y = canvas.height;
+                rb.vy = -speed;
+              } else if (side === "left") {
+                rb.x = -cube.size;
+                rb.y = Math.random() * (canvas.height - cube.size);
+                rb.vx = speed;
+              } else if (side === "right") {
+                rb.x = canvas.width;
+                rb.y = Math.random() * (canvas.height - cube.size);
+                rb.vx = -speed;
+              }
+              fallingRedBlocks.push(rb);
             }
             lastRedSpawnTime = now;
           }
           for (let i = fallingRedBlocks.length - 1; i >= 0; i--) {
             let block = fallingRedBlocks[i];
-            block.y += block.vy;
-            if (block.y > canvas.height) {
+            block.x += block.vx || 0;
+            block.y += block.vy || 0;
+            if (block.x > canvas.width || block.x + block.width < 0 ||
+                block.y > canvas.height || block.y + block.height < 0) {
               fallingRedBlocks.splice(i, 1);
               continue;
             }
