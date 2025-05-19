@@ -3058,20 +3058,43 @@
             const count = currentMode === "easy" ? 2
                          : currentMode === "hard" ? 4 : 3;
             for (let i = 0; i < count; i++) {
-              fallingRedBlocks.push({
-                x: Math.random() * (canvas.width - cube.size),
-                y: -cube.size,
+              // Randomly choose a side: 0=top,1=bottom,2=left,3=right
+              let side = Math.floor(Math.random() * 4);
+              let block = {
                 width: cube.size,
                 height: cube.size,
-                vy: 2
-              });
+                vx: 0,
+                vy: 0,
+                x: 0,
+                y: 0
+              };
+              if (side === 0) { // from top
+                block.x = Math.random() * (canvas.width - cube.size);
+                block.y = -cube.size;
+                block.vy = 2;
+              } else if (side === 1) { // from bottom
+                block.x = Math.random() * (canvas.width - cube.size);
+                block.y = canvas.height;
+                block.vy = -2;
+              } else if (side === 2) { // from left
+                block.x = -cube.size;
+                block.y = Math.random() * (canvas.height - cube.size);
+                block.vx = 2;
+              } else { // from right
+                block.x = canvas.width;
+                block.y = Math.random() * (canvas.height - cube.size);
+                block.vx = -2;
+              }
+              fallingRedBlocks.push(block);
             }
             lastRedSpawnTime = now;
           }
           for (let i = fallingRedBlocks.length - 1; i >= 0; i--) {
             let block = fallingRedBlocks[i];
+            block.x += block.vx;
             block.y += block.vy;
-            if (block.y > canvas.height) {
+            if (block.x > canvas.width || block.x + block.width < 0 ||
+                block.y > canvas.height || block.y + block.height < 0) {
               fallingRedBlocks.splice(i, 1);
               continue;
             }
