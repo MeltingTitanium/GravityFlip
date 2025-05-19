@@ -1548,6 +1548,7 @@
             challengeGreyBlocks = [];
             challengeWhiteBlock = null;
             fallingRedBlocks = [];
+            pendingBlueLines = [];
             fallingRedTextStart = Date.now();
             lastRedSpawnTime = Date.now();
             if (index === 30 && teleportCheckpoint) {
@@ -3215,6 +3216,7 @@
                 lastTeleportLineSpawn = challengeStartTime;
                 lastGreyBlockSpawn = challengeStartTime;
                 lastComboSpawn = challengeStartTime;
+                pendingBlueLines = [];
               }
           }
           if (challengePhase === 3 && challengeGreenBlock) {
