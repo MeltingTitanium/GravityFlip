@@ -1475,10 +1475,10 @@
         const lvl = levels[index];
 
         // Set teleport cooldown based on difficulty, with a special case for
-        // the teleport challenge level which always uses 2.5 seconds
+        // the teleport challenge level which always uses 2 seconds
         currentTeleportCooldown = currentMode === "normal" ? 4000 : 2000;
         if (lvl.challengeTeleportLevel) {
-          currentTeleportCooldown = 2500;
+          currentTeleportCooldown = 2000;
         }
 
         // Set player spawn position
@@ -3096,7 +3096,6 @@
                 document.getElementById("checkpointPopup").classList.remove("hidden");
                 setTimeout(() => {
                     document.getElementById("checkpointPopup").classList.add("hidden");
-                    challengeStartTime = Date.now();
                 }, 5000);
               }
           }
