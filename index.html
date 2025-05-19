@@ -486,6 +486,7 @@
       let whiteBlockTouched = false;
       let challengePhaseTwo = false; // becomes true after the white block is touched
       const teleportBlueHoleSize = 320; // size in pixels for blue line holes
+      // Track which sides currently have blue lines so only one per axis spawns
       const activeBlueSides = { top: false, bottom: false, left: false, right: false };
 
       // For falling red blocks (similar to brown blocks but drawn in red)
@@ -1474,10 +1475,10 @@
         const lvl = levels[index];
 
         // Set teleport cooldown based on difficulty, with a special case for
-        // the teleport challenge level which always uses 3 seconds
+        // the teleport challenge level which always uses 2.5 seconds
         currentTeleportCooldown = currentMode === "normal" ? 4000 : 2000;
         if (lvl.challengeTeleportLevel) {
-          currentTeleportCooldown = 3000;
+          currentTeleportCooldown = 2500;
         }
 
         // Set player spawn position
@@ -2930,8 +2931,12 @@
             let thickness = 20;
             let color = Math.random() < 0.5 ? "purple" : "blue";
 
-            if (color === "blue" && activeBlueSides[side]) {
-              // Skip spawning another blue line from the same side
+            if (color === "blue" && (
+                (side === "top" || side === "bottom") ?
+                  (activeBlueSides.top || activeBlueSides.bottom) :
+                  (activeBlueSides.left || activeBlueSides.right)
+              )) {
+              // Skip spawning another blue line on the same axis
             } else {
               if (color === "purple") {
                 let obj = { x: 0, y: 0, width: 0, height: 0 };
