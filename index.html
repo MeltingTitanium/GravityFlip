@@ -3054,7 +3054,7 @@
             }
           }
 
-          if (challengePhaseTwo && now - lastRedSpawnTime >= 2000) {
+          if (challengePhaseTwo && now - lastRedSpawnTime >= 4000) {
             const count = currentMode === "easy" ? 2
                          : currentMode === "hard" ? 4 : 3;
             for (let i = 0; i < count; i++) {
@@ -3423,6 +3423,10 @@
        drawBrowns();
         drawLifts();
         drawFallingBrownBlocks();
+        if (levels[currentLevel].challengeTeleportLevel) {
+          drawChallengeGreyBlocks();
+          drawChallengeTeleportLines();
+        }
         drawCube();
         drawBrownParticles();
         drawLevelText();
@@ -3435,8 +3439,6 @@
           drawChallengeLines();
           drawChallengeGreenBlock();
         } else if (levels[currentLevel].challengeTeleportLevel) {
-          drawChallengeGreyBlocks();
-          drawChallengeTeleportLines();
           drawChallengeWhiteBlock();
         }
 
