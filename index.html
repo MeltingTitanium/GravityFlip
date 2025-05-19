@@ -478,6 +478,8 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
       let challengeGreyBlocks = [];
       let lastGreyBlockSpawn = 0;
       let challengeWhiteBlock = null;
+      const teleportBlueHoleSize = 320; // size in pixels for blue line holes
+      const activeBlueSides = { top: false, bottom: false, left: false, right: false };
 
       // For falling red blocks (similar to brown blocks but drawn in red)
       let fallingRedBlocks = [];
@@ -1512,6 +1514,7 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
           challengeTeleportLines = [];
           challengeGreyBlocks = [];
           challengeWhiteBlock = null;
+          activeBlueSides.top = activeBlueSides.bottom = activeBlueSides.left = activeBlueSides.right = false;
           challengePausedTime = 0;
           isChallengePaused = false;
           lastChallengePauseStart = 0;
@@ -2890,38 +2893,56 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
             let side = sides[Math.floor(Math.random() * sides.length)];
             let thickness = 20;
             let color = Math.random() < 0.5 ? "purple" : "blue";
-            let obj = { x: 0, y: 0, width: 0, height: 0 };
-            if (side === "top") {
-              obj.x = 0;
-              obj.y = -thickness;
-              obj.width = canvas.width;
-              obj.height = thickness;
-              challengeTeleportLines.push({ obj, vx: 0, vy: challengeLineSpeed, color });
-            } else if (side === "bottom") {
-              obj.x = 0;
-              obj.y = canvas.height;
-              obj.width = canvas.width;
-              obj.height = thickness;
-              challengeTeleportLines.push({ obj, vx: 0, vy: -challengeLineSpeed, color });
-            } else if (side === "left") {
-              obj.x = -thickness;
-              obj.y = 0;
-              obj.width = thickness;
-              obj.height = canvas.height;
-              challengeTeleportLines.push({ obj, vx: challengeLineSpeed, vy: 0, color });
-            } else if (side === "right") {
-              obj.x = canvas.width;
-              obj.y = 0;
-              obj.width = thickness;
-              obj.height = canvas.height;
-              challengeTeleportLines.push({ obj, vx: -challengeLineSpeed, vy: 0, color });
-            }
-            if (color === "purple") {
-              purples.push(obj);
+
+            if (color === "blue" && activeBlueSides[side]) {
+              // Skip spawning another blue line from the same side
             } else {
-              blues.push(obj);
+              if (color === "purple") {
+                let obj = { x: 0, y: 0, width: 0, height: 0 };
+                if (side === "top") {
+                  obj.x = 0;
+                  obj.y = -thickness;
+                  obj.width = canvas.width;
+                  obj.height = thickness;
+                  challengeTeleportLines.push({ obj, vx: 0, vy: challengeLineSpeed, color, side });
+                } else if (side === "bottom") {
+                  obj.x = 0;
+                  obj.y = canvas.height;
+                  obj.width = canvas.width;
+                  obj.height = thickness;
+                  challengeTeleportLines.push({ obj, vx: 0, vy: -challengeLineSpeed, color, side });
+                } else if (side === "left") {
+                  obj.x = -thickness;
+                  obj.y = 0;
+                  obj.width = thickness;
+                  obj.height = canvas.height;
+                  challengeTeleportLines.push({ obj, vx: challengeLineSpeed, vy: 0, color, side });
+                } else if (side === "right") {
+                  obj.x = canvas.width;
+                  obj.y = 0;
+                  obj.width = thickness;
+                  obj.height = canvas.height;
+                  challengeTeleportLines.push({ obj, vx: -challengeLineSpeed, vy: 0, color, side });
+                }
+                purples.push(obj);
+              } else {
+                activeBlueSides[side] = true;
+                if (side === "top" || side === "bottom") {
+                  let holeX = Math.random() * (canvas.width - teleportBlueHoleSize);
+                  let seg1 = { x: 0, y: (side === "top" ? -thickness : canvas.height), width: holeX, height: thickness };
+                  let seg2 = { x: holeX + teleportBlueHoleSize, y: (side === "top" ? -thickness : canvas.height), width: canvas.width - (holeX + teleportBlueHoleSize), height: thickness };
+                  challengeTeleportLines.push({ segments: [seg1, seg2], vx: 0, vy: (side === "top" ? challengeLineSpeed : -challengeLineSpeed), color, side });
+                  blues.push(seg1, seg2);
+                } else {
+                  let holeY = Math.random() * (canvas.height - teleportBlueHoleSize);
+                  let seg1 = { x: (side === "left" ? -thickness : canvas.width), y: 0, width: thickness, height: holeY };
+                  let seg2 = { x: (side === "left" ? -thickness : canvas.width), y: holeY + teleportBlueHoleSize, width: thickness, height: canvas.height - (holeY + teleportBlueHoleSize) };
+                  challengeTeleportLines.push({ segments: [seg1, seg2], vx: (side === "left" ? challengeLineSpeed : -challengeLineSpeed), vy: 0, color, side });
+                  blues.push(seg1, seg2);
+                }
+              }
+              lastTeleportLineSpawn = now;
             }
-            lastTeleportLineSpawn = now;
           }
 
           if (now - lastGreyBlockSpawn >= 3000) {
@@ -2937,18 +2958,31 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
 
           for (let i = challengeTeleportLines.length - 1; i >= 0; i--) {
             let line = challengeTeleportLines[i];
-            line.obj.x += line.vx;
-            line.obj.y += line.vy;
-            if (line.obj.x > canvas.width || line.obj.x + line.obj.width < 0 ||
-                line.obj.y > canvas.height || line.obj.y + line.obj.height < 0) {
-              if (line.color === "purple") {
-                let idx = purples.indexOf(line.obj);
-                if (idx !== -1) purples.splice(idx, 1);
-              } else {
-                let idx = blues.indexOf(line.obj);
-                if (idx !== -1) blues.splice(idx, 1);
+            if (line.segments) {
+              for (let seg of line.segments) {
+                seg.x += line.vx;
+                seg.y += line.vy;
               }
-              challengeTeleportLines.splice(i, 1);
+              let offscreen = line.segments.every(seg => seg.x > canvas.width || seg.x + seg.width < 0 || seg.y > canvas.height || seg.y + seg.height < 0);
+              if (offscreen) {
+                for (let seg of line.segments) {
+                  let idx = blues.indexOf(seg);
+                  if (idx !== -1) blues.splice(idx, 1);
+                }
+                activeBlueSides[line.side] = false;
+                challengeTeleportLines.splice(i, 1);
+              }
+            } else {
+              line.obj.x += line.vx;
+              line.obj.y += line.vy;
+              if (line.obj.x > canvas.width || line.obj.x + line.obj.width < 0 ||
+                  line.obj.y > canvas.height || line.obj.y + line.obj.height < 0) {
+                if (line.color === "purple") {
+                  let idx = purples.indexOf(line.obj);
+                  if (idx !== -1) purples.splice(idx, 1);
+                }
+                challengeTeleportLines.splice(i, 1);
+              }
             }
           }
 
@@ -3096,7 +3130,13 @@ let challengeLineSpeed = Math.abs(currentOrangeDx * 0.5) * 0.8;
         if (levels[currentLevel].challengeTeleportLevel) {
           for (let line of challengeTeleportLines) {
             ctx.fillStyle = line.color === "purple" ? "purple" : "blue";
-            ctx.fillRect(line.obj.x, line.obj.y, line.obj.width, line.obj.height);
+            if (line.segments) {
+              for (let seg of line.segments) {
+                ctx.fillRect(seg.x, seg.y, seg.width, seg.height);
+              }
+            } else {
+              ctx.fillRect(line.obj.x, line.obj.y, line.obj.width, line.obj.height);
+            }
           }
         }
       }
