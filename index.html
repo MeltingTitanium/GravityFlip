@@ -3107,8 +3107,8 @@
                   if (idx !== -1) purples.splice(idx, 1);
                   let orient = (line.side === "top" || line.side === "bottom") ? "horizontal" : "vertical";
                   activePurpleAxes[orient] = false;
+                  challengeTeleportLines.splice(i, 1);
                 }
-                challengeTeleportLines.splice(i, 1);
               }
             }
           }
