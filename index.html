@@ -2831,14 +2831,17 @@
               height: cube.size,
               // STAGE 1 LEVEL 18 CHANGE: speed isn't affected by modes, so we use a constant:
               baseVy: 2,
+              vx: 0,
               vy: 2
             });
             lastRedSpawnTime = now;
           }
           for (let i = fallingRedBlocks.length - 1; i >= 0; i--) {
             let block = fallingRedBlocks[i];
+            block.x += block.vx || 0;
             block.y += block.vy;
-            if (block.y > canvas.height) {
+            if (block.y > canvas.height || block.y + block.height < 0 ||
+                block.x > canvas.width || block.x + block.width < 0) {
               fallingRedBlocks.splice(i, 1);
               continue;
             }
@@ -3054,24 +3057,40 @@
             }
           }
 
-          if (challengePhaseTwo && now - lastRedSpawnTime >= 2000) {
-            const count = currentMode === "easy" ? 2
-                         : currentMode === "hard" ? 4 : 3;
+          if (now - lastRedSpawnTime >= 2000) {
+            const base = currentMode === "easy" ? 2
+                        : currentMode === "hard" ? 4 : 3;
+            let count = challengePhaseTwo ? Math.max(1, base - 1) : base;
             for (let i = 0; i < count; i++) {
-              fallingRedBlocks.push({
-                x: Math.random() * (canvas.width - cube.size),
-                y: -cube.size,
-                width: cube.size,
-                height: cube.size,
-                vy: 2
-              });
+              let dir = ["down", "up", "left", "right"][Math.floor(Math.random() * 4)];
+              let block = { x: 0, y: 0, width: cube.size, height: cube.size, vx: 0, vy: 0 };
+              if (dir === "down") {
+                block.x = Math.random() * (canvas.width - cube.size);
+                block.y = -cube.size;
+                block.vy = 2;
+              } else if (dir === "up") {
+                block.x = Math.random() * (canvas.width - cube.size);
+                block.y = canvas.height;
+                block.vy = -2;
+              } else if (dir === "left") {
+                block.x = canvas.width;
+                block.y = Math.random() * (canvas.height - cube.size);
+                block.vx = -2;
+              } else {
+                block.x = -cube.size;
+                block.y = Math.random() * (canvas.height - cube.size);
+                block.vx = 2;
+              }
+              fallingRedBlocks.push(block);
             }
             lastRedSpawnTime = now;
           }
           for (let i = fallingRedBlocks.length - 1; i >= 0; i--) {
             let block = fallingRedBlocks[i];
+            block.x += block.vx || 0;
             block.y += block.vy;
-            if (block.y > canvas.height) {
+            if (block.y > canvas.height || block.y + block.height < 0 ||
+                block.x > canvas.width || block.x + block.width < 0) {
               fallingRedBlocks.splice(i, 1);
               continue;
             }
