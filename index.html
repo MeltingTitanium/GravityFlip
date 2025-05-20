@@ -158,6 +158,12 @@
       #clearStoragePrompt {
         z-index: 30;
       }
+
+      /* Style for the checkpoint popup text */
+      #checkpointPopup {
+        font-size: 72px;
+        font-family: "Comic Sans MS", cursive, sans-serif;
+      }
     </style>
   </head>
   <body>
@@ -2862,12 +2868,9 @@
             }
           }
 
-          if (challengePhase === 3 && elapsed >= challengeDuration && !challengeGreenBlock) {
-            challengeGreenBlock = { x: canvas.width / 2, y: canvas.height / 2, size: 200 };
-          }
-
-          // If time is up, spawn the big green block
-          if (elapsed >= challengeDuration && !challengeGreenBlock) {
+          // When the timer expires in phase 3, spawn the green block so the
+          // player can finish the challenge.
+          if (challengePhase === 3 && remaining <= 0 && !challengeGreenBlock) {
             challengeGreenBlock = {
               x: canvas.width / 2,
               y: canvas.height / 2,
@@ -3141,7 +3144,7 @@
                 document.getElementById("checkpointPopup").classList.remove("hidden");
                 setTimeout(() => {
                     document.getElementById("checkpointPopup").classList.add("hidden");
-                }, 5000);
+                }, 1500);
                 challengeStartTime = Date.now();
                 lastGreyBlockSpawn = challengeStartTime;
                 lastComboSpawn = challengeStartTime;
