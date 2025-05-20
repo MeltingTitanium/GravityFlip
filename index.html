@@ -1547,6 +1547,7 @@
             challengeTeleportLines = [];
             challengeGreyBlocks = [];
             challengeWhiteBlock = null;
+            challengeGreenBlock = null;
             fallingRedBlocks = [];
             fallingRedTextStart = Date.now();
             lastRedSpawnTime = Date.now();
@@ -3183,6 +3184,10 @@
             }
           }
 
+          if (challengePhase === 3 && elapsed >= challengeDuration && !challengeGreenBlock) {
+            challengeGreenBlock = { x: canvas.width / 2, y: canvas.height / 2, size: 200 };
+          }
+
           if ((challengePhase === 1 || challengePhase === 2) && elapsed >= challengeDuration && !challengeWhiteBlock) {
             challengeWhiteBlock = { x: canvas.width / 2, y: canvas.height / 2, size: 200 };
           }
@@ -3206,6 +3211,7 @@
                 challengeLineSpeed = initialChallengeLineSpeed * 1.5;
                 challengeGreyBlockSpeed = 2;
                 challengeWhiteBlock = null;
+                challengeGreenBlock = null;
                 checkpointPopupTime = Date.now();
                 document.getElementById("checkpointPopup").classList.remove("hidden");
                 setTimeout(() => {
