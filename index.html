@@ -3050,6 +3050,7 @@
             }
           }
 
+          // Falling purple blocks (formerly red)
           const redInterval = challengePhase === 3 ? 3000 : 4000;
           if (challengePhase >= 2 && now - lastRedSpawnTime >= redInterval) {
             const count = currentMode === "easy" ? 2
@@ -3097,10 +3098,12 @@
             }
             let blockRect = { x: block.x, y: block.y, width: block.width, height: block.height };
             if (rectIntersect(cubeRect, blockRect)) {
-              deathSound.currentTime = 0;
-              deathSound.play();
-              loadLevel(currentLevel);
-              return;
+              if (!(isDashing || now < dashGraceUntil)) {
+                deathSound.currentTime = 0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
             }
           }
 
@@ -3244,7 +3247,7 @@
       function drawFallingRedBlocks() {
         if (levels[currentLevel].challengeDashingLevel ||
             (levels[currentLevel].challengeTeleportLevel && challengePhase >= 2)) {
-          ctx.fillStyle = "red";
+          ctx.fillStyle = levels[currentLevel].challengeTeleportLevel ? "purple" : "red";
           for (let block of fallingRedBlocks) {
             ctx.fillRect(block.x, block.y, block.width, block.height);
           }
