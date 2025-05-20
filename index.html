@@ -495,7 +495,11 @@
       // Track whether a purple line is active on a given axis
       const activePurpleAxes = { vertical: false, horizontal: false };
 
-      // For falling red blocks (similar to brown blocks but drawn in red)
+      // For falling purple blocks during the teleport challenge
+      let fallingPurpleBlocks = [];
+      let fallingPurpleTextStart = 0;
+      let lastPurpleSpawnTime = 0;
+      // For falling red blocks in the dashing challenge
       let fallingRedBlocks = [];
       let fallingRedTextStart = 0;
       let lastRedSpawnTime = 0;
@@ -1542,9 +1546,9 @@
             challengeTeleportLines = [];
             challengeGreyBlocks = [];
             challengeWhiteBlock = null;
-            fallingRedBlocks = [];
-            fallingRedTextStart = Date.now();
-            lastRedSpawnTime = Date.now();
+            fallingPurpleBlocks = [];
+            fallingPurpleTextStart = Date.now();
+            lastPurpleSpawnTime = Date.now();
             if (index === 30 && teleportCheckpoint) {
               whiteBlockTouched = true;
               challengePhase = teleportCheckpoint2 ? 3 : 2;
@@ -3050,8 +3054,8 @@
             }
           }
 
-          const redInterval = challengePhase === 3 ? 3000 : 4000;
-          if (challengePhase >= 2 && now - lastRedSpawnTime >= redInterval) {
+          const purpleInterval = challengePhase === 3 ? 3000 : 4000;
+          if (challengePhase >= 2 && now - lastPurpleSpawnTime >= purpleInterval) {
             const count = currentMode === "easy" ? 2
                          : currentMode === "hard" ? 4 : 3;
             for (let i = 0; i < count; i++) {
@@ -3082,17 +3086,17 @@
                 block.y = Math.random() * (canvas.height - cube.size);
                 block.vx = -2;
               }
-              fallingRedBlocks.push(block);
+              fallingPurpleBlocks.push(block);
             }
-            lastRedSpawnTime = now;
+            lastPurpleSpawnTime = now;
           }
-          for (let i = fallingRedBlocks.length - 1; i >= 0; i--) {
-            let block = fallingRedBlocks[i];
+          for (let i = fallingPurpleBlocks.length - 1; i >= 0; i--) {
+            let block = fallingPurpleBlocks[i];
             block.x += block.vx;
             block.y += block.vy;
             if (block.x > canvas.width || block.x + block.width < 0 ||
                 block.y > canvas.height || block.y + block.height < 0) {
-              fallingRedBlocks.splice(i, 1);
+              fallingPurpleBlocks.splice(i, 1);
               continue;
             }
             let blockRect = { x: block.x, y: block.y, width: block.width, height: block.height };
@@ -3242,10 +3246,17 @@
         }
       }
       function drawFallingRedBlocks() {
-        if (levels[currentLevel].challengeDashingLevel ||
-            (levels[currentLevel].challengeTeleportLevel && challengePhase >= 2)) {
+        if (levels[currentLevel].challengeDashingLevel) {
           ctx.fillStyle = "red";
           for (let block of fallingRedBlocks) {
+            ctx.fillRect(block.x, block.y, block.width, block.height);
+          }
+        }
+      }
+      function drawFallingPurpleBlocks() {
+        if (levels[currentLevel].challengeTeleportLevel && challengePhase >= 2) {
+          ctx.fillStyle = "purple";
+          for (let block of fallingPurpleBlocks) {
             ctx.fillRect(block.x, block.y, block.width, block.height);
           }
         }
@@ -3465,9 +3476,11 @@
         drawBrownParticles();
         drawLevelText();
         drawCooldown();
-        if (levels[currentLevel].challengeDashingLevel ||
-            (levels[currentLevel].challengeTeleportLevel && challengePhase >= 2)) {
+        if (levels[currentLevel].challengeDashingLevel) {
           drawFallingRedBlocks();
+        }
+        if (levels[currentLevel].challengeTeleportLevel && challengePhase >= 2) {
+          drawFallingPurpleBlocks();
         }
         if (levels[currentLevel].challengeDashingLevel) {
           drawChallengeLines();
