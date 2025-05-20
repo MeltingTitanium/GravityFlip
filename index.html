@@ -478,6 +478,14 @@
       // Purple lines in the teleport challenge move a bit slower
       const purpleLineSpeedFactor = 0.8;
 
+      // Returns the speed for teleport challenge lines after applying
+      // difficulty-based scaling. Easy mode slows them by 30%, while
+      // normal and hard modes slow them by 10%.
+      function getTeleportChallengeSpeed() {
+        const difficultyFactor = currentMode === "easy" ? 0.7 : 0.9;
+        return challengeLineSpeed * purpleLineSpeedFactor * difficultyFactor;
+      }
+
       // Additional globals for the teleport challenge (Stage 2 Level 13)
       let challengeTeleportLines = [];
       let challengeGreyBlocks = [];
@@ -2946,7 +2954,7 @@
                 } else {
                   let thickness = 20;
                   let obj = { x: 0, y: 0, width: 0, height: 0 };
-                  const speed = challengeLineSpeed * purpleLineSpeedFactor;
+                  const speed = getTeleportChallengeSpeed();
                   if (side === "top") {
                     obj.x = 0; obj.y = -thickness; obj.width = canvas.width; obj.height = thickness;
                     challengeTeleportLines.push({ obj, vx: 0, vy: speed, color: "purple", side });
@@ -2975,13 +2983,13 @@
                     let holeX = Math.random() * (canvas.width - teleportBlueHoleSize);
                     let seg1 = { x: 0, y: (p.side === "top" ? -thickness : canvas.height), width: holeX, height: thickness };
                     let seg2 = { x: holeX + teleportBlueHoleSize, y: (p.side === "top" ? -thickness : canvas.height), width: canvas.width - (holeX + teleportBlueHoleSize), height: thickness };
-                    challengeTeleportLines.push({ segments: [seg1, seg2], vx: 0, vy: (p.side === "top" ? challengeLineSpeed * purpleLineSpeedFactor : -challengeLineSpeed * purpleLineSpeedFactor), color: "blue", side: p.side });
+                    challengeTeleportLines.push({ segments: [seg1, seg2], vx: 0, vy: (p.side === "top" ? getTeleportChallengeSpeed() : -getTeleportChallengeSpeed()), color: "blue", side: p.side });
                     blues.push(seg1, seg2);
                   } else {
                     let holeY = Math.random() * (canvas.height - teleportBlueHoleSize);
                     let seg1 = { x: (p.side === "left" ? -thickness : canvas.width), y: 0, width: thickness, height: holeY };
                     let seg2 = { x: (p.side === "left" ? -thickness : canvas.width), y: holeY + teleportBlueHoleSize, width: thickness, height: canvas.height - (holeY + teleportBlueHoleSize) };
-                    challengeTeleportLines.push({ segments: [seg1, seg2], vx: (p.side === "left" ? challengeLineSpeed * purpleLineSpeedFactor : -challengeLineSpeed * purpleLineSpeedFactor), vy: 0, color: "blue", side: p.side });
+                    challengeTeleportLines.push({ segments: [seg1, seg2], vx: (p.side === "left" ? getTeleportChallengeSpeed() : -getTeleportChallengeSpeed()), vy: 0, color: "blue", side: p.side });
                     blues.push(seg1, seg2);
                   }
                   pendingBlueLines.splice(i,1);
