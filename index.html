@@ -1553,6 +1553,9 @@
           fallingRedTextStart = Date.now();
           lastRedSpawnTime = Date.now();
           challengeGreenBlock = null;
+          // Dashing challenge has no phases, so set phase to 3 so the
+          // completion block spawns when the timer expires.
+          challengePhase = 3;
           // === Reset the paused-time tracking for Level 18 ===
           challengePausedTime = 0;
           isChallengePaused = false;
