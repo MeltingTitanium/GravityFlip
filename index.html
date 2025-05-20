@@ -1564,6 +1564,7 @@
             challengeTeleportLines = [];
             challengeGreyBlocks = [];
             challengeWhiteBlock = null;
+            challengeGreenBlock = null;
             fallingRedBlocks = [];
             fallingRedTextStart = Date.now();
             lastRedSpawnTime = Date.now();
@@ -2944,6 +2945,15 @@
 
           let elapsed = (now - challengeStartTime) - challengePausedTime;
           let remaining = challengeDuration - elapsed;
+
+          // When the timer expires during phase 3, spawn the green block
+          if (challengePhase === 3 && remaining <= 0 && !challengeGreenBlock) {
+            challengeGreenBlock = {
+              x: canvas.width / 2,
+              y: canvas.height / 2,
+              size: 200
+            };
+          }
 
             let spawnInterval;
             if (challengePhase === 1) {
