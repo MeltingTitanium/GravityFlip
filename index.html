@@ -2549,6 +2549,262 @@
 
         // Check collisions with hazards
         const cubeRect = { x: cube.x - cube.size / 2, y: cube.y - cube.size / 2, width: cube.size, height: cube.size };
+        // Handle any challenge-teleportation-level logic (Stage 2 Level 13)
+        if (levels[currentLevel].challengeTeleportLevel) {
+          if (!document.hidden && !gamePaused) {
+            if (isChallengePaused) {
+              challengePausedTime += (now - lastChallengePauseStart);
+              isChallengePaused = false;
+            }
+          } else {
+            if (!isChallengePaused) {
+              isChallengePaused = true;
+              lastChallengePauseStart = now;
+            }
+          }
+
+          let elapsed = (now - challengeStartTime) - challengePausedTime;
+          let remaining = challengeDuration - elapsed;
+
+            let spawnInterval;
+            if (challengePhase === 1) {
+              spawnInterval = currentMode === "hard" ? 5000 : currentMode === "easy" ? 9000 : 7000;
+            } else if (challengePhase === 2) {
+              spawnInterval = currentMode === "hard" ? 4000 : currentMode === "easy" ? 6000 : 5000;
+            } else {
+              spawnInterval = currentMode === "hard" ? 3000 : currentMode === "easy" ? 5000 : 4000;
+            }
+
+              if (now - lastComboSpawn >= spawnInterval) {
+                let sides = ["top", "bottom", "left", "right"];
+                let side = sides[Math.floor(Math.random() * sides.length)];
+                let orientation = (side === "top" || side === "bottom") ? "horizontal" : "vertical";
+                if (orientation === "horizontal" ? (activePurpleAxes.horizontal || activeBlueSides.top || activeBlueSides.bottom) :
+                    (activePurpleAxes.vertical || activeBlueSides.left || activeBlueSides.right)) {
+                  // skip if axis busy
+                } else {
+                  let thickness = 20;
+                  let obj = { x: 0, y: 0, width: 0, height: 0 };
+                  const speed = challengeLineSpeed * purpleLineSpeedFactor;
+                  if (side === "top") {
+                    obj.x = 0; obj.y = -thickness; obj.width = canvas.width; obj.height = thickness;
+                    challengeTeleportLines.push({ obj, vx: 0, vy: speed, color: "purple", side });
+                  } else if (side === "bottom") {
+                    obj.x = 0; obj.y = canvas.height; obj.width = canvas.width; obj.height = thickness;
+                    challengeTeleportLines.push({ obj, vx: 0, vy: -speed, color: "purple", side });
+                  } else if (side === "left") {
+                    obj.x = -thickness; obj.y = 0; obj.width = thickness; obj.height = canvas.height;
+                    challengeTeleportLines.push({ obj, vx: speed, vy: 0, color: "purple", side });
+                  } else {
+                    obj.x = canvas.width; obj.y = 0; obj.width = thickness; obj.height = canvas.height;
+                    challengeTeleportLines.push({ obj, vx: -speed, vy: 0, color: "purple", side });
+                  }
+                  purples.push(obj);
+                  activePurpleAxes[orientation] = true;
+                  pendingBlueLines.push({ side, orientation, spawnTime: now + 500 });
+                  lastComboSpawn = now;
+                }
+              }
+              for (let i = pendingBlueLines.length - 1; i >= 0; i--) {
+                if (now >= pendingBlueLines[i].spawnTime) {
+                  let p = pendingBlueLines[i];
+                  let thickness = 20;
+                  activeBlueSides[p.side] = true;
+                  if (p.side === "top" || p.side === "bottom") {
+                    let holeX = Math.random() * (canvas.width - teleportBlueHoleSize);
+                    let seg1 = { x: 0, y: (p.side === "top" ? -thickness : canvas.height), width: holeX, height: thickness };
+                    let seg2 = { x: holeX + teleportBlueHoleSize, y: (p.side === "top" ? -thickness : canvas.height), width: canvas.width - (holeX + teleportBlueHoleSize), height: thickness };
+                    challengeTeleportLines.push({ segments: [seg1, seg2], vx: 0, vy: (p.side === "top" ? challengeLineSpeed : -challengeLineSpeed), color: "blue", side: p.side });
+                    blues.push(seg1, seg2);
+                  } else {
+                    let holeY = Math.random() * (canvas.height - teleportBlueHoleSize);
+                    let seg1 = { x: (p.side === "left" ? -thickness : canvas.width), y: 0, width: thickness, height: holeY };
+                    let seg2 = { x: (p.side === "left" ? -thickness : canvas.width), y: holeY + teleportBlueHoleSize, width: thickness, height: canvas.height - (holeY + teleportBlueHoleSize) };
+                    challengeTeleportLines.push({ segments: [seg1, seg2], vx: (p.side === "left" ? challengeLineSpeed : -challengeLineSpeed), vy: 0, color: "blue", side: p.side });
+                    blues.push(seg1, seg2);
+                  }
+                  pendingBlueLines.splice(i,1);
+                }
+              }
+
+            let greySpawnInterval = challengePhase === 1 ? 3000 : (challengePhase === 2 ? 1500 : 1000);
+            if (now - lastGreyBlockSpawn >= greySpawnInterval) {
+              challengeGreyBlocks.push({
+                x: Math.random() * (canvas.width - cube.size),
+                y: -cube.size,
+                width: cube.size,
+                height: cube.size,
+                vy: challengeGreyBlockSpeed
+              });
+              lastGreyBlockSpawn = now;
+            }
+
+          for (let i = challengeTeleportLines.length - 1; i >= 0; i--) {
+            let line = challengeTeleportLines[i];
+            if (line.segments) {
+              for (let seg of line.segments) {
+                seg.x += line.vx;
+                seg.y += line.vy;
+              }
+              let offscreen = line.segments.every(seg => seg.x > canvas.width || seg.x + seg.width < 0 || seg.y > canvas.height || seg.y + seg.height < 0);
+              if (offscreen) {
+                for (let seg of line.segments) {
+                  let idx = blues.indexOf(seg);
+                  if (idx !== -1) blues.splice(idx, 1);
+                }
+                activeBlueSides[line.side] = false;
+                challengeTeleportLines.splice(i, 1);
+              }
+            } else {
+              line.obj.x += line.vx;
+              line.obj.y += line.vy;
+              if (line.obj.x > canvas.width || line.obj.x + line.obj.width < 0 ||
+                  line.obj.y > canvas.height || line.obj.y + line.obj.height < 0) {
+                if (line.color === "purple") {
+                  let idx = purples.indexOf(line.obj);
+                  if (idx !== -1) purples.splice(idx, 1);
+                  let orient = (line.side === "top" || line.side === "bottom") ? "horizontal" : "vertical";
+                  activePurpleAxes[orient] = false;
+                }
+                challengeTeleportLines.splice(i, 1);
+              }
+            }
+          }
+
+          for (let i = challengeGreyBlocks.length - 1; i >= 0; i--) {
+            let gb = challengeGreyBlocks[i];
+            gb.y += gb.vy;
+            if (gb.y > canvas.height) {
+              challengeGreyBlocks.splice(i, 1);
+              continue;
+            }
+            let blockRect = { x: gb.x, y: gb.y, width: gb.width, height: gb.height };
+            if (rectIntersect(cubeRect, blockRect)) {
+              if (!(isDashing || now < dashGraceUntil)) {
+                deathSound.currentTime = 0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
+            }
+          }
+
+          const redInterval = challengePhase === 3 ? 3000 : 4000;
+          if (challengePhase >= 2 && now - lastRedSpawnTime >= redInterval) {
+            const count = currentMode === "easy" ? 2
+                         : currentMode === "hard" ? 4 : 3;
+            for (let i = 0; i < count; i++) {
+              // Randomly choose a side: 0=top,1=bottom,2=left,3=right
+              let side = Math.floor(Math.random() * 4);
+              let block = {
+                width: cube.size,
+                height: cube.size,
+                vx: 0,
+                vy: 0,
+                x: 0,
+                y: 0
+              };
+              if (side === 0) { // from top
+                block.x = Math.random() * (canvas.width - cube.size);
+                block.y = -cube.size;
+                block.vy = 2;
+              } else if (side === 1) { // from bottom
+                block.x = Math.random() * (canvas.width - cube.size);
+                block.y = canvas.height;
+                block.vy = -2;
+              } else if (side === 2) { // from left
+                block.x = -cube.size;
+                block.y = Math.random() * (canvas.height - cube.size);
+                block.vx = 2;
+              } else { // from right
+                block.x = canvas.width;
+                block.y = Math.random() * (canvas.height - cube.size);
+                block.vx = -2;
+              }
+              fallingRedBlocks.push(block);
+            }
+            lastRedSpawnTime = now;
+          }
+          for (let i = fallingRedBlocks.length - 1; i >= 0; i--) {
+            let block = fallingRedBlocks[i];
+            block.x += block.vx;
+            block.y += block.vy;
+            if (block.x > canvas.width || block.x + block.width < 0 ||
+                block.y > canvas.height || block.y + block.height < 0) {
+              fallingRedBlocks.splice(i, 1);
+              continue;
+            }
+            let blockRect = { x: block.x, y: block.y, width: block.width, height: block.height };
+            if (rectIntersect(cubeRect, blockRect)) {
+              if (!(isDashing || now < dashGraceUntil)) {
+                deathSound.currentTime = 0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
+            }
+          }
+
+          if ((challengePhase === 1 || challengePhase === 2) && elapsed >= challengeDuration && !challengeWhiteBlock) {
+            challengeWhiteBlock = { x: canvas.width / 2, y: canvas.height / 2, size: 200 };
+          }
+
+          if (challengeWhiteBlock) {
+            let rect = {
+              x: challengeWhiteBlock.x - challengeWhiteBlock.size / 2,
+              y: challengeWhiteBlock.y - challengeWhiteBlock.size / 2,
+              width: challengeWhiteBlock.size,
+              height: challengeWhiteBlock.size
+            };
+              if (rectIntersect(cubeRect, rect)) {
+                whiteBlockTouched = true;
+                if (challengePhase === 1) {
+                  challengePhase = 2;
+                  teleportCheckpoint = true;
+                } else if (challengePhase === 2) {
+                  challengePhase = 3;
+                  teleportCheckpoint2 = true;
+                }
+                challengeLineSpeed = initialChallengeLineSpeed * 1.5;
+                challengeGreyBlockSpeed = 2;
+                challengeWhiteBlock = null;
+                checkpointPopupTime = Date.now();
+                document.getElementById("checkpointPopup").classList.remove("hidden");
+                setTimeout(() => {
+                    document.getElementById("checkpointPopup").classList.add("hidden");
+                }, 5000);
+                challengeStartTime = Date.now();
+                lastGreyBlockSpawn = challengeStartTime;
+                lastComboSpawn = challengeStartTime;
+              }
+          }
+          if (challengePhase === 3 && challengeGreenBlock) {
+            let greenRect = {
+              x: challengeGreenBlock.x - challengeGreenBlock.size / 2,
+              y: challengeGreenBlock.y - challengeGreenBlock.size / 2,
+              width: challengeGreenBlock.size,
+              height: challengeGreenBlock.size
+            };
+            if (rectIntersect(cubeRect, greenRect)) {
+              if (currentMode === "hard") {
+                let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
+                if (!hardModeStars.includes(currentLevel)) {
+                  hardModeStars.push(currentLevel);
+                }
+                localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
+              }
+              winSound.currentTime = 0;
+              winSound.play();
+              currentLevel++;
+              if (currentLevel < levels.length) {
+                loadLevel(currentLevel);
+              } else {
+                showWinScreen();
+              }
+              return;
+            }
+          }
+        }
         for (let hz of hazards) {
           const hazardRect = { x: hz.x, y: hz.y, width: hz.width, height: hz.height };
           if (rectIntersect(cubeRect, hazardRect)) {
@@ -2913,262 +3169,6 @@
           }
         }
 
-        // Handle any challenge-teleportation-level logic (Stage 2 Level 13)
-        if (levels[currentLevel].challengeTeleportLevel) {
-          if (!document.hidden && !gamePaused) {
-            if (isChallengePaused) {
-              challengePausedTime += (now - lastChallengePauseStart);
-              isChallengePaused = false;
-            }
-          } else {
-            if (!isChallengePaused) {
-              isChallengePaused = true;
-              lastChallengePauseStart = now;
-            }
-          }
-
-          let elapsed = (now - challengeStartTime) - challengePausedTime;
-          let remaining = challengeDuration - elapsed;
-
-            let spawnInterval;
-            if (challengePhase === 1) {
-              spawnInterval = currentMode === "hard" ? 5000 : currentMode === "easy" ? 9000 : 7000;
-            } else if (challengePhase === 2) {
-              spawnInterval = currentMode === "hard" ? 4000 : currentMode === "easy" ? 6000 : 5000;
-            } else {
-              spawnInterval = currentMode === "hard" ? 3000 : currentMode === "easy" ? 5000 : 4000;
-            }
-
-              if (now - lastComboSpawn >= spawnInterval) {
-                let sides = ["top", "bottom", "left", "right"];
-                let side = sides[Math.floor(Math.random() * sides.length)];
-                let orientation = (side === "top" || side === "bottom") ? "horizontal" : "vertical";
-                if (orientation === "horizontal" ? (activePurpleAxes.horizontal || activeBlueSides.top || activeBlueSides.bottom) :
-                    (activePurpleAxes.vertical || activeBlueSides.left || activeBlueSides.right)) {
-                  // skip if axis busy
-                } else {
-                  let thickness = 20;
-                  let obj = { x: 0, y: 0, width: 0, height: 0 };
-                  const speed = challengeLineSpeed * purpleLineSpeedFactor;
-                  if (side === "top") {
-                    obj.x = 0; obj.y = -thickness; obj.width = canvas.width; obj.height = thickness;
-                    challengeTeleportLines.push({ obj, vx: 0, vy: speed, color: "purple", side });
-                  } else if (side === "bottom") {
-                    obj.x = 0; obj.y = canvas.height; obj.width = canvas.width; obj.height = thickness;
-                    challengeTeleportLines.push({ obj, vx: 0, vy: -speed, color: "purple", side });
-                  } else if (side === "left") {
-                    obj.x = -thickness; obj.y = 0; obj.width = thickness; obj.height = canvas.height;
-                    challengeTeleportLines.push({ obj, vx: speed, vy: 0, color: "purple", side });
-                  } else {
-                    obj.x = canvas.width; obj.y = 0; obj.width = thickness; obj.height = canvas.height;
-                    challengeTeleportLines.push({ obj, vx: -speed, vy: 0, color: "purple", side });
-                  }
-                  purples.push(obj);
-                  activePurpleAxes[orientation] = true;
-                  pendingBlueLines.push({ side, orientation, spawnTime: now + 500 });
-                  lastComboSpawn = now;
-                }
-              }
-              for (let i = pendingBlueLines.length - 1; i >= 0; i--) {
-                if (now >= pendingBlueLines[i].spawnTime) {
-                  let p = pendingBlueLines[i];
-                  let thickness = 20;
-                  activeBlueSides[p.side] = true;
-                  if (p.side === "top" || p.side === "bottom") {
-                    let holeX = Math.random() * (canvas.width - teleportBlueHoleSize);
-                    let seg1 = { x: 0, y: (p.side === "top" ? -thickness : canvas.height), width: holeX, height: thickness };
-                    let seg2 = { x: holeX + teleportBlueHoleSize, y: (p.side === "top" ? -thickness : canvas.height), width: canvas.width - (holeX + teleportBlueHoleSize), height: thickness };
-                    challengeTeleportLines.push({ segments: [seg1, seg2], vx: 0, vy: (p.side === "top" ? challengeLineSpeed : -challengeLineSpeed), color: "blue", side: p.side });
-                    blues.push(seg1, seg2);
-                  } else {
-                    let holeY = Math.random() * (canvas.height - teleportBlueHoleSize);
-                    let seg1 = { x: (p.side === "left" ? -thickness : canvas.width), y: 0, width: thickness, height: holeY };
-                    let seg2 = { x: (p.side === "left" ? -thickness : canvas.width), y: holeY + teleportBlueHoleSize, width: thickness, height: canvas.height - (holeY + teleportBlueHoleSize) };
-                    challengeTeleportLines.push({ segments: [seg1, seg2], vx: (p.side === "left" ? challengeLineSpeed : -challengeLineSpeed), vy: 0, color: "blue", side: p.side });
-                    blues.push(seg1, seg2);
-                  }
-                  pendingBlueLines.splice(i,1);
-                }
-              }
-
-            let greySpawnInterval = challengePhase === 1 ? 3000 : (challengePhase === 2 ? 1500 : 1000);
-            if (now - lastGreyBlockSpawn >= greySpawnInterval) {
-              challengeGreyBlocks.push({
-                x: Math.random() * (canvas.width - cube.size),
-                y: -cube.size,
-                width: cube.size,
-                height: cube.size,
-                vy: challengeGreyBlockSpeed
-              });
-              lastGreyBlockSpawn = now;
-            }
-
-          for (let i = challengeTeleportLines.length - 1; i >= 0; i--) {
-            let line = challengeTeleportLines[i];
-            if (line.segments) {
-              for (let seg of line.segments) {
-                seg.x += line.vx;
-                seg.y += line.vy;
-              }
-              let offscreen = line.segments.every(seg => seg.x > canvas.width || seg.x + seg.width < 0 || seg.y > canvas.height || seg.y + seg.height < 0);
-              if (offscreen) {
-                for (let seg of line.segments) {
-                  let idx = blues.indexOf(seg);
-                  if (idx !== -1) blues.splice(idx, 1);
-                }
-                activeBlueSides[line.side] = false;
-                challengeTeleportLines.splice(i, 1);
-              }
-            } else {
-              line.obj.x += line.vx;
-              line.obj.y += line.vy;
-              if (line.obj.x > canvas.width || line.obj.x + line.obj.width < 0 ||
-                  line.obj.y > canvas.height || line.obj.y + line.obj.height < 0) {
-                if (line.color === "purple") {
-                  let idx = purples.indexOf(line.obj);
-                  if (idx !== -1) purples.splice(idx, 1);
-                  let orient = (line.side === "top" || line.side === "bottom") ? "horizontal" : "vertical";
-                  activePurpleAxes[orient] = false;
-                }
-                challengeTeleportLines.splice(i, 1);
-              }
-            }
-          }
-
-          for (let i = challengeGreyBlocks.length - 1; i >= 0; i--) {
-            let gb = challengeGreyBlocks[i];
-            gb.y += gb.vy;
-            if (gb.y > canvas.height) {
-              challengeGreyBlocks.splice(i, 1);
-              continue;
-            }
-            let blockRect = { x: gb.x, y: gb.y, width: gb.width, height: gb.height };
-            if (rectIntersect(cubeRect, blockRect)) {
-              if (!(isDashing || now < dashGraceUntil)) {
-                deathSound.currentTime = 0;
-                deathSound.play();
-                loadLevel(currentLevel);
-                return;
-              }
-            }
-          }
-
-          const redInterval = challengePhase === 3 ? 3000 : 4000;
-          if (challengePhase >= 2 && now - lastRedSpawnTime >= redInterval) {
-            const count = currentMode === "easy" ? 2
-                         : currentMode === "hard" ? 4 : 3;
-            for (let i = 0; i < count; i++) {
-              // Randomly choose a side: 0=top,1=bottom,2=left,3=right
-              let side = Math.floor(Math.random() * 4);
-              let block = {
-                width: cube.size,
-                height: cube.size,
-                vx: 0,
-                vy: 0,
-                x: 0,
-                y: 0
-              };
-              if (side === 0) { // from top
-                block.x = Math.random() * (canvas.width - cube.size);
-                block.y = -cube.size;
-                block.vy = 2;
-              } else if (side === 1) { // from bottom
-                block.x = Math.random() * (canvas.width - cube.size);
-                block.y = canvas.height;
-                block.vy = -2;
-              } else if (side === 2) { // from left
-                block.x = -cube.size;
-                block.y = Math.random() * (canvas.height - cube.size);
-                block.vx = 2;
-              } else { // from right
-                block.x = canvas.width;
-                block.y = Math.random() * (canvas.height - cube.size);
-                block.vx = -2;
-              }
-              fallingRedBlocks.push(block);
-            }
-            lastRedSpawnTime = now;
-          }
-          for (let i = fallingRedBlocks.length - 1; i >= 0; i--) {
-            let block = fallingRedBlocks[i];
-            block.x += block.vx;
-            block.y += block.vy;
-            if (block.x > canvas.width || block.x + block.width < 0 ||
-                block.y > canvas.height || block.y + block.height < 0) {
-              fallingRedBlocks.splice(i, 1);
-              continue;
-            }
-            let blockRect = { x: block.x, y: block.y, width: block.width, height: block.height };
-            if (rectIntersect(cubeRect, blockRect)) {
-              if (!(isDashing || now < dashGraceUntil)) {
-                deathSound.currentTime = 0;
-                deathSound.play();
-                loadLevel(currentLevel);
-                return;
-              }
-            }
-          }
-
-          if ((challengePhase === 1 || challengePhase === 2) && elapsed >= challengeDuration && !challengeWhiteBlock) {
-            challengeWhiteBlock = { x: canvas.width / 2, y: canvas.height / 2, size: 200 };
-          }
-
-          if (challengeWhiteBlock) {
-            let rect = {
-              x: challengeWhiteBlock.x - challengeWhiteBlock.size / 2,
-              y: challengeWhiteBlock.y - challengeWhiteBlock.size / 2,
-              width: challengeWhiteBlock.size,
-              height: challengeWhiteBlock.size
-            };
-              if (rectIntersect(cubeRect, rect)) {
-                whiteBlockTouched = true;
-                if (challengePhase === 1) {
-                  challengePhase = 2;
-                  teleportCheckpoint = true;
-                } else if (challengePhase === 2) {
-                  challengePhase = 3;
-                  teleportCheckpoint2 = true;
-                }
-                challengeLineSpeed = initialChallengeLineSpeed * 1.5;
-                challengeGreyBlockSpeed = 2;
-                challengeWhiteBlock = null;
-                checkpointPopupTime = Date.now();
-                document.getElementById("checkpointPopup").classList.remove("hidden");
-                setTimeout(() => {
-                    document.getElementById("checkpointPopup").classList.add("hidden");
-                }, 5000);
-                challengeStartTime = Date.now();
-                lastGreyBlockSpawn = challengeStartTime;
-                lastComboSpawn = challengeStartTime;
-              }
-          }
-          if (challengePhase === 3 && challengeGreenBlock) {
-            let greenRect = {
-              x: challengeGreenBlock.x - challengeGreenBlock.size / 2,
-              y: challengeGreenBlock.y - challengeGreenBlock.size / 2,
-              width: challengeGreenBlock.size,
-              height: challengeGreenBlock.size
-            };
-            if (rectIntersect(cubeRect, greenRect)) {
-              if (currentMode === "hard") {
-                let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
-                if (!hardModeStars.includes(currentLevel)) {
-                  hardModeStars.push(currentLevel);
-                }
-                localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
-              }
-              winSound.currentTime = 0;
-              winSound.play();
-              currentLevel++;
-              if (currentLevel < levels.length) {
-                loadLevel(currentLevel);
-              } else {
-                showWinScreen();
-              }
-              return;
-            }
-          }
-        }
       }
 
       // -------------------------------------------------
