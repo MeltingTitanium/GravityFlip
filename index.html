@@ -495,7 +495,8 @@
       // Track whether a purple line is active on a given axis
       const activePurpleAxes = { vertical: false, horizontal: false };
 
-      // For falling red blocks (similar to brown blocks but drawn in red)
+      // Falling blocks used in the challenge stages
+      // (red in the dash challenge, purple in the teleport challenge)
       let fallingRedBlocks = [];
       let fallingRedTextStart = 0;
       let lastRedSpawnTime = 0;
@@ -3043,10 +3044,12 @@
             }
             let blockRect = { x: gb.x, y: gb.y, width: gb.width, height: gb.height };
             if (rectIntersect(cubeRect, blockRect)) {
-              deathSound.currentTime = 0;
-              deathSound.play();
-              loadLevel(currentLevel);
-              return;
+              if (!(isDashing || now < dashGraceUntil)) {
+                deathSound.currentTime = 0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
             }
           }
 
@@ -3097,10 +3100,12 @@
             }
             let blockRect = { x: block.x, y: block.y, width: block.width, height: block.height };
             if (rectIntersect(cubeRect, blockRect)) {
-              deathSound.currentTime = 0;
-              deathSound.play();
-              loadLevel(currentLevel);
-              return;
+              if (!(isDashing || now < dashGraceUntil)) {
+                deathSound.currentTime = 0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
             }
           }
 
@@ -3244,7 +3249,7 @@
       function drawFallingRedBlocks() {
         if (levels[currentLevel].challengeDashingLevel ||
             (levels[currentLevel].challengeTeleportLevel && challengePhase >= 2)) {
-          ctx.fillStyle = "red";
+          ctx.fillStyle = levels[currentLevel].challengeTeleportLevel ? "purple" : "red";
           for (let block of fallingRedBlocks) {
             ctx.fillRect(block.x, block.y, block.width, block.height);
           }
@@ -3274,7 +3279,7 @@
       }
       function drawChallengeGreyBlocks() {
         if (levels[currentLevel].challengeTeleportLevel) {
-          ctx.fillStyle = "red";
+          ctx.fillStyle = "purple";
           for (let b of challengeGreyBlocks) {
             ctx.fillRect(b.x, b.y, b.width, b.height);
           }
