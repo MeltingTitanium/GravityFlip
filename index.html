@@ -3215,6 +3215,13 @@
                 lastTeleportLineSpawn = challengeStartTime;
                 lastGreyBlockSpawn = challengeStartTime;
                 lastComboSpawn = challengeStartTime;
+                pendingBlueLines = [];
+                activeBlueSides.top = activeBlueSides.bottom = activeBlueSides.left = activeBlueSides.right = false;
+                activePurpleAxes.vertical = false;
+                activePurpleAxes.horizontal = false;
+                challengePausedTime = 0;
+                isChallengePaused = false;
+                lastChallengePauseStart = 0;
               }
           }
           if (challengePhase === 3 && challengeGreenBlock) {
