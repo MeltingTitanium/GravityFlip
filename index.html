@@ -2946,7 +2946,8 @@
                 } else {
                   let thickness = 20;
                   let obj = { x: 0, y: 0, width: 0, height: 0 };
-                  const speed = challengeLineSpeed * purpleLineSpeedFactor;
+                  const lineSpeedScale = currentMode === "easy" ? 0.75 : 1;
+                  const speed = challengeLineSpeed * purpleLineSpeedFactor * lineSpeedScale;
                   if (side === "top") {
                     obj.x = 0; obj.y = -thickness; obj.width = canvas.width; obj.height = thickness;
                     challengeTeleportLines.push({ obj, vx: 0, vy: speed, color: "purple", side });
@@ -2970,18 +2971,19 @@
                 if (now >= pendingBlueLines[i].spawnTime) {
                   let p = pendingBlueLines[i];
                   let thickness = 20;
+                  const lineSpeedScale = currentMode === "easy" ? 0.75 : 1;
                   activeBlueSides[p.side] = true;
                   if (p.side === "top" || p.side === "bottom") {
                     let holeX = Math.random() * (canvas.width - teleportBlueHoleSize);
                     let seg1 = { x: 0, y: (p.side === "top" ? -thickness : canvas.height), width: holeX, height: thickness };
                     let seg2 = { x: holeX + teleportBlueHoleSize, y: (p.side === "top" ? -thickness : canvas.height), width: canvas.width - (holeX + teleportBlueHoleSize), height: thickness };
-                    challengeTeleportLines.push({ segments: [seg1, seg2], vx: 0, vy: (p.side === "top" ? challengeLineSpeed : -challengeLineSpeed), color: "blue", side: p.side });
+                    challengeTeleportLines.push({ segments: [seg1, seg2], vx: 0, vy: (p.side === "top" ? challengeLineSpeed : -challengeLineSpeed) * lineSpeedScale, color: "blue", side: p.side });
                     blues.push(seg1, seg2);
                   } else {
                     let holeY = Math.random() * (canvas.height - teleportBlueHoleSize);
                     let seg1 = { x: (p.side === "left" ? -thickness : canvas.width), y: 0, width: thickness, height: holeY };
                     let seg2 = { x: (p.side === "left" ? -thickness : canvas.width), y: holeY + teleportBlueHoleSize, width: thickness, height: canvas.height - (holeY + teleportBlueHoleSize) };
-                    challengeTeleportLines.push({ segments: [seg1, seg2], vx: (p.side === "left" ? challengeLineSpeed : -challengeLineSpeed), vy: 0, color: "blue", side: p.side });
+                    challengeTeleportLines.push({ segments: [seg1, seg2], vx: (p.side === "left" ? challengeLineSpeed : -challengeLineSpeed) * lineSpeedScale, vy: 0, color: "blue", side: p.side });
                     blues.push(seg1, seg2);
                   }
                   pendingBlueLines.splice(i,1);
