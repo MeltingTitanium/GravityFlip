@@ -519,6 +519,7 @@
 
       let teleportCheckpoint = false;      // true once white block touched
       let checkpointPopupTime = 0;         // timestamp when popup shown
+      let checkpointKillTimeout = null;    // timeout ID for auto-kill after checkpoint
       // === NEW CODE to stop the Level 18 timer from counting down if paused or tab is hidden ===
       let challengePausedTime = 0;
       let isChallengePaused = false;
@@ -1494,6 +1495,12 @@
         currentLevel = index;
         updateUnlockedProgress();
         const lvl = levels[index];
+
+        // Clear any pending checkpoint auto-kill
+        if (checkpointKillTimeout) {
+          clearTimeout(checkpointKillTimeout);
+          checkpointKillTimeout = null;
+        }
 
         // Set teleport cooldown based on difficulty, with a special case for
         // the teleport challenge level which always uses 2 seconds
@@ -3145,6 +3152,9 @@
                 setTimeout(() => {
                     document.getElementById("checkpointPopup").classList.add("hidden");
                 }, 1500);
+                checkpointKillTimeout = setTimeout(() => {
+                    loadLevel(currentLevel);
+                }, 1000);
                 challengeStartTime = Date.now();
                 lastGreyBlockSpawn = challengeStartTime;
                 lastComboSpawn = challengeStartTime;
