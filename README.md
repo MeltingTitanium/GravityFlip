@@ -12,7 +12,7 @@ Play it here: <https://meltingtitanium.github.io/GravityFlip/>
 
 ## Features
 
-- Over twenty five levels across two stages
+- Over thirty levels across two stages
 - Abilities such as dashing and teleportation
 - Moving hazards, falling blocks and other obstacles
 - Easy, Normal and Hard difficulty modes
