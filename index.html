@@ -2975,13 +2975,13 @@
                     let holeX = Math.random() * (canvas.width - teleportBlueHoleSize);
                     let seg1 = { x: 0, y: (p.side === "top" ? -thickness : canvas.height), width: holeX, height: thickness };
                     let seg2 = { x: holeX + teleportBlueHoleSize, y: (p.side === "top" ? -thickness : canvas.height), width: canvas.width - (holeX + teleportBlueHoleSize), height: thickness };
-                    challengeTeleportLines.push({ segments: [seg1, seg2], vx: 0, vy: (p.side === "top" ? challengeLineSpeed : -challengeLineSpeed), color: "blue", side: p.side });
+                    challengeTeleportLines.push({ segments: [seg1, seg2], vx: 0, vy: (p.side === "top" ? challengeLineSpeed * purpleLineSpeedFactor : -challengeLineSpeed * purpleLineSpeedFactor), color: "blue", side: p.side });
                     blues.push(seg1, seg2);
                   } else {
                     let holeY = Math.random() * (canvas.height - teleportBlueHoleSize);
                     let seg1 = { x: (p.side === "left" ? -thickness : canvas.width), y: 0, width: thickness, height: holeY };
                     let seg2 = { x: (p.side === "left" ? -thickness : canvas.width), y: holeY + teleportBlueHoleSize, width: thickness, height: canvas.height - (holeY + teleportBlueHoleSize) };
-                    challengeTeleportLines.push({ segments: [seg1, seg2], vx: (p.side === "left" ? challengeLineSpeed : -challengeLineSpeed), vy: 0, color: "blue", side: p.side });
+                    challengeTeleportLines.push({ segments: [seg1, seg2], vx: (p.side === "left" ? challengeLineSpeed * purpleLineSpeedFactor : -challengeLineSpeed * purpleLineSpeedFactor), vy: 0, color: "blue", side: p.side });
                     blues.push(seg1, seg2);
                   }
                   pendingBlueLines.splice(i,1);
