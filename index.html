@@ -2960,11 +2960,11 @@
 
             let spawnInterval;
             if (challengePhase === 1) {
-              spawnInterval = currentMode === "hard" ? 5000 : currentMode === "easy" ? 12000 : 7000;
+              spawnInterval = currentMode === "hard" ? 5500 : currentMode === "easy" ? 12500 : 7000;
             } else if (challengePhase === 2) {
-              spawnInterval = currentMode === "hard" ? 4000 : currentMode === "easy" ? 10000 : 5000;
+              spawnInterval = currentMode === "hard" ? 4500 : currentMode === "easy" ? 10500 : 5000;
             } else {
-              spawnInterval = currentMode === "hard" ? 3000 : currentMode === "easy" ? 8000 : 4000;
+              spawnInterval = currentMode === "hard" ? 3500 : currentMode === "easy" ? 8500 : 4000;
             }
 
               if (now - lastComboSpawn >= spawnInterval) {
