@@ -482,7 +482,7 @@
       // difficulty-based scaling. Easy mode slows them by 30%, while
       // normal and hard modes slow them by 10%.
       function getTeleportChallengeSpeed() {
-        const difficultyFactor = currentMode === "easy" ? 0.7 : 0.9;
+        const difficultyFactor = currentMode === "easy" ? 0.6 : 0.9;
         return challengeLineSpeed * purpleLineSpeedFactor * difficultyFactor;
       }
 
@@ -2937,11 +2937,11 @@
 
             let spawnInterval;
             if (challengePhase === 1) {
-              spawnInterval = currentMode === "hard" ? 5000 : currentMode === "easy" ? 9000 : 7000;
+              spawnInterval = currentMode === "hard" ? 5000 : currentMode === "easy" ? 12000 : 7000;
             } else if (challengePhase === 2) {
-              spawnInterval = currentMode === "hard" ? 4000 : currentMode === "easy" ? 6000 : 5000;
+              spawnInterval = currentMode === "hard" ? 4000 : currentMode === "easy" ? 10000 : 5000;
             } else {
-              spawnInterval = currentMode === "hard" ? 3000 : currentMode === "easy" ? 5000 : 4000;
+              spawnInterval = currentMode === "hard" ? 3000 : currentMode === "easy" ? 7000 : 4000;
             }
 
               if (now - lastComboSpawn >= spawnInterval) {
