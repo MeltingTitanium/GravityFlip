@@ -234,6 +234,17 @@
     </div>
 
     <!-- ======================================================
+         Color Change Gimmick Popup: Appears on Stage 3 Level 1
+         ====================================================== -->
+    <div id="colorPopup" class="popup">
+      <h2>New Gimmick: Color changing</h2>
+      <p>
+        Click Space to change your color, you can only walk through colors that you have enabled!
+      </p>
+      <p>Click Enter to confirm</p>
+    </div>
+
+    <!-- ======================================================
          Full-Screen Level Selector Overlay: Allows players to choose a level.
          ====================================================== -->
     <div id="levelSelectorOverlay" class="overlay hidden">
@@ -468,6 +479,9 @@
       let teleportReadyTime = 0;
       let teleportGraceUntil = 0;
 
+      // Outline color for color-change gimmick ("cyan" or "yellow")
+      let outlineColor = null;
+
       // -------------------------------------------------
       //  NEW GLOBALS FOR THE CHALLENGE LEVEL (after level 17)
       // -------------------------------------------------
@@ -636,7 +650,7 @@
         if (levels[currentLevel].teleportLevel) {
           const remaining = teleportReadyTime - now;
           text = remaining > 0 ? "Teleport (" + (remaining / 1000).toFixed(1) + "s)" : "Teleport Ready";
-        } else if (currentLevel >= 7) {
+        } else if (currentLevel >= 7 && !levels[currentLevel].colorLevel) {
           const remaining = dashReadyTime - now;
           text = remaining > 0 ? "Dash (" + (remaining / 1000).toFixed(1) + "s)" : "Dash Ready";
         }
@@ -1442,7 +1456,25 @@
           oranges: [],
           purples: [],
           blues: [],
-          browns: []
+        browns: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 1 (index 31)
+          // Introduces color changing
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.05 },
+          colorLevel: true,
+          stage: 3,
+          platforms: [],
+          hazards: [],
+          cyans: [
+            { x: 0, y: 0.7, w: 1, h: 0.02 }
+          ],
+          yellows: [
+            { x: 0, y: 0.3, w: 1, h: 0.02 }
+          ]
         }
       ];
 
@@ -1464,6 +1496,10 @@
 
       // NEW: separate purples array
       let purples = [];
+
+      // Blocks for color change gimmick
+      let cyans = [];
+      let yellows = [];
 
       // NEW: blue blocks that only affect teleporting
       let blues = [];
@@ -1489,6 +1525,8 @@
 
       // NEW CODE ADDED: track if we've shown the teleport popup already
       let hasShownTeleportPopup = false;
+      // Track if color-change popup has been shown
+      let hasShownColorPopup = false;
 
       function loadLevel(index) {
         const prevLevel = currentLevel;
@@ -1520,6 +1558,8 @@
         cube.vx = 0;
         cube.vy = 0;
 
+        outlineColor = lvl.colorLevel ? "cyan" : null;
+
         // Reset dash and teleport state variables
         isDashing = false;
         dashReadyTime = Date.now();
@@ -1542,6 +1582,8 @@
         fallingOranges = [];
         lastFallingOrangeSpawn = Date.now();
         blues = [];
+        cyans = [];
+        yellows = [];
 
         // Special handling for challenge levels or levels with unique behavior
         if (lvl.challengeDashingLevel) {
@@ -1668,6 +1710,21 @@
           verticalMovement: p.verticalMovement || false
         }));
 
+        // Map cyan and yellow block definitions
+        cyans = (lvl.cyans || []).map(c => ({
+          x: c.x * canvas.width,
+          y: c.y * canvas.height,
+          width: c.w * canvas.width,
+          height: c.h * canvas.height
+        }));
+
+        yellows = (lvl.yellows || []).map(y => ({
+          x: y.x * canvas.width,
+          y: y.y * canvas.height,
+          width: y.w * canvas.width,
+          height: y.h * canvas.height
+        }));
+
         // Map blue block definitions (can optionally move like oranges/purples)
         blues = (lvl.blues || []).map(b => ({
           x: b.x * canvas.width,
@@ -1771,8 +1828,11 @@
           hasShownTeleportPopup = true; // So it won't appear again
           gamePaused = true;
           document.getElementById("teleportPopup").style.display = "block";
-        }
-        else if (index === 7) {
+        } else if (lvl.colorLevel && !hasShownColorPopup) {
+          hasShownColorPopup = true;
+          gamePaused = true;
+          document.getElementById("colorPopup").style.display = "block";
+        } else if (index === 7) {
           showGimmickPopup = true;
           gamePaused = true;
           document.getElementById("gimmickPopup").style.display = "block";
@@ -1780,6 +1840,7 @@
           showGimmickPopup = false;
           document.getElementById("gimmickPopup").style.display = "none";
           document.getElementById("teleportPopup").style.display = "none";
+          document.getElementById("colorPopup").style.display = "none";
         }
       }
 
@@ -1935,12 +1996,15 @@
         }
 
         // If a popup is open, pressing Enter closes it
-        if (showGimmickPopup || document.getElementById("teleportPopup").style.display === "block") {
+        if (showGimmickPopup ||
+            document.getElementById("teleportPopup").style.display === "block" ||
+            document.getElementById("colorPopup").style.display === "block") {
           if (e.key === "Enter") {
             showGimmickPopup = false;
             gamePaused = false;
             document.getElementById("gimmickPopup").style.display = "none";
             document.getElementById("teleportPopup").style.display = "none";
+            document.getElementById("colorPopup").style.display = "none";
           }
           return;
         }
@@ -1978,6 +2042,9 @@
         // Teleport or dash logic
         if (levels[currentLevel].teleportLevel && e.key === " " && !isTeleporting) {
           attemptTeleport();
+        }
+        else if (levels[currentLevel].colorLevel && e.key === " ") {
+          outlineColor = outlineColor === "cyan" ? "yellow" : "cyan";
         }
         else if (currentLevel >= 7 && e.key === " " && !isDashing) {
           attemptDash();
@@ -2602,6 +2669,32 @@
           if (rectIntersect(cubeRect, purpleRect)) {
             if (!(isDashing || now < dashGraceUntil)) {
               dashReadyTime = Date.now();
+              deathSound.currentTime = 0;
+              deathSound.play();
+              loadLevel(currentLevel);
+              return;
+            }
+          }
+        }
+
+        // Check collisions with cyan blocks
+        for (let c of cyans) {
+          const cRect = { x: c.x, y: c.y, width: c.width, height: c.height };
+          if (rectIntersect(cubeRect, cRect)) {
+            if (outlineColor !== "cyan") {
+              deathSound.currentTime = 0;
+              deathSound.play();
+              loadLevel(currentLevel);
+              return;
+            }
+          }
+        }
+
+        // Check collisions with yellow blocks
+        for (let y of yellows) {
+          const yRect = { x: y.x, y: y.y, width: y.width, height: y.height };
+          if (rectIntersect(cubeRect, yRect)) {
+            if (outlineColor !== "yellow") {
               deathSound.currentTime = 0;
               deathSound.play();
               loadLevel(currentLevel);
@@ -3260,6 +3353,20 @@
           ctx.fillRect(b.x, b.y, b.width, b.height);
         }
       }
+
+      function drawCyans() {
+        ctx.fillStyle = "cyan";
+        for (let c of cyans) {
+          ctx.fillRect(c.x, c.y, c.width, c.height);
+        }
+      }
+
+      function drawYellows() {
+        ctx.fillStyle = "yellow";
+        for (let y of yellows) {
+          ctx.fillRect(y.x, y.y, y.width, y.height);
+        }
+      }
       function drawBrowns() {
         ctx.fillStyle = "saddlebrown";
         for (let b of browns) {
@@ -3398,6 +3505,11 @@
       function drawCube() {
         ctx.fillStyle = (isDashing || isTeleporting) ? "blue" : "#fff";
         ctx.fillRect(cube.x - cube.size / 2, cube.y - cube.size / 2, cube.size, cube.size);
+        if (levels[currentLevel].colorLevel) {
+          ctx.lineWidth = 6;
+          ctx.strokeStyle = outlineColor || "cyan";
+          ctx.strokeRect(cube.x - cube.size / 2 - 3, cube.y - cube.size / 2 - 3, cube.size + 6, cube.size + 6);
+        }
         let arrowColor = "#000";
         if (currentMode === "easy") {
           arrowColor = "green";
@@ -3487,13 +3599,15 @@
           ctx.fillStyle = "black";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
-        drawTarget();
-        drawPlatforms();
-       drawHazards();
-       drawOranges();
-       drawPurples();
-       drawBlues();
-       drawBrowns();
+       drawTarget();
+       drawPlatforms();
+      drawHazards();
+      drawOranges();
+      drawPurples();
+      drawCyans();
+      drawYellows();
+      drawBlues();
+      drawBrowns();
         drawLifts();
         drawFallingBrownBlocks();
         if (levels[currentLevel].challengeTeleportLevel) {
