@@ -234,6 +234,18 @@
     </div>
 
     <!-- ======================================================
+         Color Change Gimmick Popup
+         ====================================================== -->
+    <div id="colorPopup" class="popup">
+      <h2>New Gimmick</h2>
+      <p>
+        <strong>Color Swap:</strong> Press <strong>Space</strong> to cycle your cube's outline color.<br>
+        Touch cyan, orange, or pink blocks only when your outline matches their color.
+      </p>
+      <p><em>Press Enter to continue...</em></p>
+    </div>
+
+    <!-- ======================================================
          Full-Screen Level Selector Overlay: Allows players to choose a level.
          ====================================================== -->
     <div id="levelSelectorOverlay" class="overlay hidden">
@@ -1443,6 +1455,25 @@
           purples: [],
           blues: [],
           browns: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 1 (index 31)
+          // Introduces color swapping mechanic
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.05 },
+          colorChangeLevel: true,
+          stage: 3,
+          platforms: [],
+          hazards: [],
+          cyans:   [{ x: 0, y: 0.5, w: 1, h: 0.02 }],
+          orangeColors: [{ x: 0, y: 0.3, w: 1, h: 0.02 }],
+          pinks:   [{ x: 0, y: 0.7, w: 1, h: 0.02 }],
+          oranges: [],
+          purples: [],
+          blues: [],
+          browns: []
         }
       ];
 
@@ -1467,6 +1498,15 @@
 
       // NEW: blue blocks that only affect teleporting
       let blues = [];
+
+      // NEW: color change blocks and player color state
+      let cyanBlocks = [];
+      let orangeColorBlocks = []; // bright orange
+      let pinkBlocks = [];
+      let playerColors = ["cyan", "orange", "pink"];
+      let colorIndex = 0;
+      let cubeOutlineColor = playerColors[colorIndex];
+      let hasShownColorPopup = false;
 
       // Grey lifts used in Stage 2 Level 5
       let lifts = [];
@@ -1682,6 +1722,26 @@
           maxX: (b.maxX !== undefined ? b.maxX : 1) * canvas.width
         }));
 
+        // Map color change blocks
+        cyanBlocks = (lvl.cyans || []).map(b => ({
+          x: b.x * canvas.width,
+          y: b.y * canvas.height,
+          width: b.w * canvas.width,
+          height: b.h * canvas.height
+        }));
+        orangeColorBlocks = (lvl.orangeColors || []).map(b => ({
+          x: b.x * canvas.width,
+          y: b.y * canvas.height,
+          width: b.w * canvas.width,
+          height: b.h * canvas.height
+        }));
+        pinkBlocks = (lvl.pinks || []).map(b => ({
+          x: b.x * canvas.width,
+          y: b.y * canvas.height,
+          width: b.w * canvas.width,
+          height: b.h * canvas.height
+        }));
+
         // Map brown block definitions
         browns = (lvl.browns || []).map(b => ({
           x: b.x * canvas.width,
@@ -1767,7 +1827,11 @@
         // --------------------------------------------
         // FIX for Teleport Popup: Show it ONLY once on Stage 2 Level 1
         // --------------------------------------------
-        if (lvl.teleportLevel && !lvl.movingTarget && !hasShownTeleportPopup) {
+        if (lvl.colorChangeLevel && !hasShownColorPopup) {
+          hasShownColorPopup = true;
+          gamePaused = true;
+          document.getElementById("colorPopup").style.display = "block";
+        } else if (lvl.teleportLevel && !lvl.movingTarget && !hasShownTeleportPopup) {
           hasShownTeleportPopup = true; // So it won't appear again
           gamePaused = true;
           document.getElementById("teleportPopup").style.display = "block";
@@ -1780,6 +1844,7 @@
           showGimmickPopup = false;
           document.getElementById("gimmickPopup").style.display = "none";
           document.getElementById("teleportPopup").style.display = "none";
+          document.getElementById("colorPopup").style.display = "none";
         }
       }
 
@@ -1852,6 +1917,25 @@
           verticalMovement: b.verticalMovement || false,
           minX: (b.minX !== undefined ? b.minX : 0) * canvas.width,
           maxX: (b.maxX !== undefined ? b.maxX : 1) * canvas.width
+        }));
+
+        cyanBlocks = (lvl.cyans || []).map(b => ({
+          x: b.x * canvas.width,
+          y: b.y * canvas.height,
+          width: b.w * canvas.width,
+          height: b.h * canvas.height
+        }));
+        orangeColorBlocks = (lvl.orangeColors || []).map(b => ({
+          x: b.x * canvas.width,
+          y: b.y * canvas.height,
+          width: b.w * canvas.width,
+          height: b.h * canvas.height
+        }));
+        pinkBlocks = (lvl.pinks || []).map(b => ({
+          x: b.x * canvas.width,
+          y: b.y * canvas.height,
+          width: b.w * canvas.width,
+          height: b.h * canvas.height
         }));
         browns = (lvl.browns || []).map(b => ({
           x: b.x * canvas.width,
@@ -1935,12 +2019,15 @@
         }
 
         // If a popup is open, pressing Enter closes it
-        if (showGimmickPopup || document.getElementById("teleportPopup").style.display === "block") {
+        if (showGimmickPopup ||
+            document.getElementById("teleportPopup").style.display === "block" ||
+            document.getElementById("colorPopup").style.display === "block") {
           if (e.key === "Enter") {
             showGimmickPopup = false;
             gamePaused = false;
             document.getElementById("gimmickPopup").style.display = "none";
             document.getElementById("teleportPopup").style.display = "none";
+            document.getElementById("colorPopup").style.display = "none";
           }
           return;
         }
@@ -1972,6 +2059,12 @@
           deathSound.currentTime = 0;
           deathSound.play();
           loadLevel(currentLevel);
+          return;
+        }
+
+        if (levels[currentLevel].colorChangeLevel && e.key === " ") {
+          colorIndex = (colorIndex + 1) % playerColors.length;
+          cubeOutlineColor = playerColors[colorIndex];
           return;
         }
 
@@ -2607,6 +2700,38 @@
               loadLevel(currentLevel);
               return;
             }
+          }
+        }
+
+        // Check collisions with cyan/orange/pink blocks
+        for (let b of cyanBlocks) {
+          const r = { x: b.x, y: b.y, width: b.width, height: b.height };
+          if (rectIntersect(cubeRect, r) && cubeOutlineColor !== "cyan") {
+            dashReadyTime = Date.now();
+            deathSound.currentTime = 0;
+            deathSound.play();
+            loadLevel(currentLevel);
+            return;
+          }
+        }
+        for (let b of orangeColorBlocks) {
+          const r = { x: b.x, y: b.y, width: b.width, height: b.height };
+          if (rectIntersect(cubeRect, r) && cubeOutlineColor !== "orange") {
+            dashReadyTime = Date.now();
+            deathSound.currentTime = 0;
+            deathSound.play();
+            loadLevel(currentLevel);
+            return;
+          }
+        }
+        for (let b of pinkBlocks) {
+          const r = { x: b.x, y: b.y, width: b.width, height: b.height };
+          if (rectIntersect(cubeRect, r) && cubeOutlineColor !== "pink") {
+            dashReadyTime = Date.now();
+            deathSound.currentTime = 0;
+            deathSound.play();
+            loadLevel(currentLevel);
+            return;
           }
         }
 
@@ -3260,6 +3385,24 @@
           ctx.fillRect(b.x, b.y, b.width, b.height);
         }
       }
+      function drawCyanBlocks() {
+        ctx.fillStyle = "cyan";
+        for (let b of cyanBlocks) {
+          ctx.fillRect(b.x, b.y, b.width, b.height);
+        }
+      }
+      function drawOrangeColorBlocks() {
+        ctx.fillStyle = "orange";
+        for (let b of orangeColorBlocks) {
+          ctx.fillRect(b.x, b.y, b.width, b.height);
+        }
+      }
+      function drawPinkBlocks() {
+        ctx.fillStyle = "pink";
+        for (let b of pinkBlocks) {
+          ctx.fillRect(b.x, b.y, b.width, b.height);
+        }
+      }
       function drawBrowns() {
         ctx.fillStyle = "saddlebrown";
         for (let b of browns) {
@@ -3398,6 +3541,9 @@
       function drawCube() {
         ctx.fillStyle = (isDashing || isTeleporting) ? "blue" : "#fff";
         ctx.fillRect(cube.x - cube.size / 2, cube.y - cube.size / 2, cube.size, cube.size);
+        ctx.strokeStyle = cubeOutlineColor;
+        ctx.lineWidth = 4;
+        ctx.strokeRect(cube.x - cube.size / 2, cube.y - cube.size / 2, cube.size, cube.size);
         let arrowColor = "#000";
         if (currentMode === "easy") {
           arrowColor = "green";
@@ -3493,6 +3639,9 @@
        drawOranges();
        drawPurples();
        drawBlues();
+       drawCyanBlocks();
+       drawOrangeColorBlocks();
+       drawPinkBlocks();
        drawBrowns();
         drawLifts();
         drawFallingBrownBlocks();
