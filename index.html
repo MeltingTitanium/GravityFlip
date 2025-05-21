@@ -234,6 +234,18 @@
     </div>
 
     <!-- ======================================================
+         Color Popup: Instructions for the color cycling mechanic
+         ====================================================== -->
+    <div id="colorPopup" class="popup">
+      <h2>New Gimmick</h2>
+      <p>
+        <strong>Colored Blocks:</strong> Press <strong>Space</strong> to cycle your cube’s outline color.<br>
+        Only blocks matching your current color will let you pass.
+      </p>
+      <p><em>Press Enter to continue...</em></p>
+    </div>
+
+    <!-- ======================================================
          Full-Screen Level Selector Overlay: Allows players to choose a level.
          ====================================================== -->
     <div id="levelSelectorOverlay" class="overlay hidden">
@@ -618,6 +630,8 @@
       let showGimmickPopup = false; // Whether a gimmick popup (instructions) should be shown
       let gamePaused = true; // Game starts paused until the main menu is dismissed
       let levelSelectorActive = false; // Flag indicating if the level selector is active
+      let cubeColor = "cyan";
+      let hasShownColorPopup = false;
 
       const EPS = 0.01; // small vertical offset for lifts
       // -------------------------------------------------
@@ -1443,6 +1457,17 @@
           purples: [],
           blues: [],
           browns: []
+        },
+        {
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.05 },
+          colorLevel: true,
+          stage: 3,
+          platforms: [],
+          hazards: [],
+          cyans:   [{ x: 0.49, y: 0,    w: 0.02, h: 1 }],
+          oranges2:[{ x: 0.49, y:-0.20, w: 0.02, h: 1 }],
+          pinks:   [{ x: 0.49, y: 0.20, w: 0.02, h: 1 }]
         }
       ];
 
@@ -1467,6 +1492,10 @@
 
       // NEW: blue blocks that only affect teleporting
       let blues = [];
+
+      let cyans = [];
+      let oranges2 = [];
+      let pinks = [];
 
       // Grey lifts used in Stage 2 Level 5
       let lifts = [];
@@ -1668,6 +1697,39 @@
           verticalMovement: p.verticalMovement || false
         }));
 
+        cyans = (lvl.cyans || []).map(c => ({
+          x: c.x * canvas.width,
+          y: c.y * canvas.height,
+          width: c.w * canvas.width,
+          height: c.h * canvas.height,
+          dx: (c.moving && currentLevel === 9) ? currentOrangeDx : (c.dx || 0),
+          dy: c.dy || 0,
+          moving: c.moving || false,
+          verticalMovement: c.verticalMovement || false
+        }));
+
+        oranges2 = (lvl.oranges2 || []).map(o2 => ({
+          x: o2.x * canvas.width,
+          y: o2.y * canvas.height,
+          width: o2.w * canvas.width,
+          height: o2.h * canvas.height,
+          dx: (o2.moving && currentLevel === 9) ? currentOrangeDx : (o2.dx || 0),
+          dy: o2.dy || 0,
+          moving: o2.moving || false,
+          verticalMovement: o2.verticalMovement || false
+        }));
+
+        pinks = (lvl.pinks || []).map(p => ({
+          x: p.x * canvas.width,
+          y: p.y * canvas.height,
+          width: p.w * canvas.width,
+          height: p.h * canvas.height,
+          dx: (p.moving && currentLevel === 9) ? currentOrangeDx : (p.dx || 0),
+          dy: p.dy || 0,
+          moving: p.moving || false,
+          verticalMovement: p.verticalMovement || false
+        }));
+
         // Map blue block definitions (can optionally move like oranges/purples)
         blues = (lvl.blues || []).map(b => ({
           x: b.x * canvas.width,
@@ -1743,6 +1805,30 @@
             p.dy = applyGlobalMovementScale(p.dy);
           }
         });
+        cyans.forEach(c => {
+          if (c.moving && currentLevel !== 9) {
+            c.dx = applyGlobalMovementScale(c.dx);
+          }
+          if (c.verticalMovement) {
+            c.dy = applyGlobalMovementScale(c.dy);
+          }
+        });
+        oranges2.forEach(o2 => {
+          if (o2.moving && currentLevel !== 9) {
+            o2.dx = applyGlobalMovementScale(o2.dx);
+          }
+          if (o2.verticalMovement) {
+            o2.dy = applyGlobalMovementScale(o2.dy);
+          }
+        });
+        pinks.forEach(p => {
+          if (p.moving && currentLevel !== 9) {
+            p.dx = applyGlobalMovementScale(p.dx);
+          }
+          if (p.verticalMovement) {
+            p.dy = applyGlobalMovementScale(p.dy);
+          }
+        });
         // Scale blues the same way
         blues.forEach(b => {
           if (b.moving) {
@@ -1772,6 +1858,11 @@
           gamePaused = true;
           document.getElementById("teleportPopup").style.display = "block";
         }
+        else if (lvl.colorLevel && !hasShownColorPopup) {
+          hasShownColorPopup = true;
+          gamePaused = true;
+          document.getElementById("colorPopup").style.display = "block";
+        }
         else if (index === 7) {
           showGimmickPopup = true;
           gamePaused = true;
@@ -1780,6 +1871,7 @@
           showGimmickPopup = false;
           document.getElementById("gimmickPopup").style.display = "none";
           document.getElementById("teleportPopup").style.display = "none";
+          document.getElementById("colorPopup").style.display = "none";
         }
       }
 
@@ -1841,6 +1933,36 @@
           moving: p.moving || false,
           verticalMovement: p.verticalMovement || false
         }));
+        cyans = (lvl.cyans || []).map(c => ({
+          x: c.x * canvas.width,
+          y: c.y * canvas.height,
+          width: c.w * canvas.width,
+          height: c.h * canvas.height,
+          dx: (c.moving && currentLevel === 9) ? currentOrangeDx : (c.dx || 0),
+          dy: c.dy || 0,
+          moving: c.moving || false,
+          verticalMovement: c.verticalMovement || false
+        }));
+        oranges2 = (lvl.oranges2 || []).map(o2 => ({
+          x: o2.x * canvas.width,
+          y: o2.y * canvas.height,
+          width: o2.w * canvas.width,
+          height: o2.h * canvas.height,
+          dx: (o2.moving && currentLevel === 9) ? currentOrangeDx : (o2.dx || 0),
+          dy: o2.dy || 0,
+          moving: o2.moving || false,
+          verticalMovement: o2.verticalMovement || false
+        }));
+        pinks = (lvl.pinks || []).map(p => ({
+          x: p.x * canvas.width,
+          y: p.y * canvas.height,
+          width: p.w * canvas.width,
+          height: p.h * canvas.height,
+          dx: (p.moving && currentLevel === 9) ? currentOrangeDx : (p.dx || 0),
+          dy: p.dy || 0,
+          moving: p.moving || false,
+          verticalMovement: p.verticalMovement || false
+        }));
         blues = (lvl.blues || []).map(b => ({
           x: b.x * canvas.width,
           y: b.y * canvas.height,
@@ -1893,6 +2015,30 @@
             p.dy = applyGlobalMovementScale(p.dy);
           }
         });
+        cyans.forEach(c => {
+          if (c.moving && currentLevel !== 9) {
+            c.dx = applyGlobalMovementScale(c.dx);
+          }
+          if (c.verticalMovement) {
+            c.dy = applyGlobalMovementScale(c.dy);
+          }
+        });
+        oranges2.forEach(o2 => {
+          if (o2.moving && currentLevel !== 9) {
+            o2.dx = applyGlobalMovementScale(o2.dx);
+          }
+          if (o2.verticalMovement) {
+            o2.dy = applyGlobalMovementScale(o2.dy);
+          }
+        });
+        pinks.forEach(p => {
+          if (p.moving && currentLevel !== 9) {
+            p.dx = applyGlobalMovementScale(p.dx);
+          }
+          if (p.verticalMovement) {
+            p.dy = applyGlobalMovementScale(p.dy);
+          }
+        });
         blues.forEach(b => {
           if (b.moving) {
             b.dx = applyGlobalMovementScale(b.dx);
@@ -1935,12 +2081,15 @@
         }
 
         // If a popup is open, pressing Enter closes it
-        if (showGimmickPopup || document.getElementById("teleportPopup").style.display === "block") {
+        if (showGimmickPopup ||
+            document.getElementById("teleportPopup").style.display === "block" ||
+            document.getElementById("colorPopup").style.display === "block") {
           if (e.key === "Enter") {
             showGimmickPopup = false;
             gamePaused = false;
             document.getElementById("gimmickPopup").style.display = "none";
             document.getElementById("teleportPopup").style.display = "none";
+            document.getElementById("colorPopup").style.display = "none";
           }
           return;
         }
@@ -1975,7 +2124,12 @@
           return;
         }
 
-        // Teleport or dash logic
+        // Teleport, dash, or color cycling logic
+        if (levels[currentLevel].colorLevel && e.key === " ") {
+          cubeColor = cubeColor === "cyan" ? "orange" :
+                     cubeColor === "orange" ? "pink" : "cyan";
+          return;
+        }
         if (levels[currentLevel].teleportLevel && e.key === " " && !isTeleporting) {
           attemptTeleport();
         }
@@ -2081,6 +2235,9 @@
         let lastSafeY = cube.y;
         let hitRed = false;
         let hitBlue = false;
+        let hitCyan = false;
+        let hitOrange2 = false;
+        let hitPink = false;
         while (true) {
           let nextX = currentX + dirX * step;
           let nextY = currentY + dirY * step;
@@ -2138,6 +2295,21 @@
             return rectIntersect(candidate, bRect);
           });
           if (hitBlue) break;
+          hitCyan = cyans.some(c => {
+            let r = { x: c.x, y: c.y, width: c.width, height: c.height };
+            return rectIntersect(candidate, r) && cubeColor !== "cyan";
+          });
+          if (hitCyan) break;
+          hitOrange2 = oranges2.some(o2 => {
+            let r = { x: o2.x, y: o2.y, width: o2.width, height: o2.height };
+            return rectIntersect(candidate, r) && cubeColor !== "orange";
+          });
+          if (hitOrange2) break;
+          hitPink = pinks.some(p => {
+            let r = { x: p.x, y: p.y, width: p.width, height: p.height };
+            return rectIntersect(candidate, r) && cubeColor !== "pink";
+          });
+          if (hitPink) break;
           if (nextX - cube.size / 2 < 0 || nextX + cube.size / 2 > canvas.width ||
               nextY - cube.size / 2 < 0 || nextY + cube.size / 2 > canvas.height) {
             lastSafeX = Math.max(cube.size / 2, Math.min(nextX, canvas.width - cube.size / 2));
@@ -2149,7 +2321,7 @@
           currentX = nextX;
           currentY = nextY;
         }
-        if (hitRed || hitBlue) {
+        if (hitRed || hitBlue || hitCyan || hitOrange2 || hitPink) {
           deathSound.currentTime = 0;
           deathSound.play();
           loadLevel(currentLevel);
@@ -2424,6 +2596,78 @@
           }
         });
 
+        cyans.forEach(c => {
+          if (c.moving) {
+            if (c.verticalMovement) {
+              c.y += c.dy;
+              if (c.y < 0) {
+                c.y = 0;
+                c.dy = -c.dy;
+              } else if (c.y + c.height > canvas.height) {
+                c.y = canvas.height - c.height;
+                c.dy = -c.dy;
+              }
+            } else {
+              c.x += c.dx;
+              if (c.x < 0) {
+                c.x = 0;
+                c.dx = -c.dx;
+              } else if (c.x + c.width > canvas.width) {
+                c.x = canvas.width - c.width;
+                c.dx = -c.dx;
+              }
+            }
+          }
+        });
+
+        oranges2.forEach(o2 => {
+          if (o2.moving) {
+            if (o2.verticalMovement) {
+              o2.y += o2.dy;
+              if (o2.y < 0) {
+                o2.y = 0;
+                o2.dy = -o2.dy;
+              } else if (o2.y + o2.height > canvas.height) {
+                o2.y = canvas.height - o2.height;
+                o2.dy = -o2.dy;
+              }
+            } else {
+              o2.x += o2.dx;
+              if (o2.x < 0) {
+                o2.x = 0;
+                o2.dx = -o2.dx;
+              } else if (o2.x + o2.width > canvas.width) {
+                o2.x = canvas.width - o2.width;
+                o2.dx = -o2.dx;
+              }
+            }
+          }
+        });
+
+        pinks.forEach(p => {
+          if (p.moving) {
+            if (p.verticalMovement) {
+              p.y += p.dy;
+              if (p.y < 0) {
+                p.y = 0;
+                p.dy = -p.dy;
+              } else if (p.y + p.height > canvas.height) {
+                p.y = canvas.height - p.height;
+                p.dy = -p.dy;
+              }
+            } else {
+              p.x += p.dx;
+              if (p.x < 0) {
+                p.x = 0;
+                p.dx = -p.dx;
+              } else if (p.x + p.width > canvas.width) {
+                p.x = canvas.width - p.width;
+                p.dx = -p.dx;
+              }
+            }
+          }
+        });
+
         // Apply similar movement rules for blues
         blues.forEach(b => {
           if (b.moving) {
@@ -2607,6 +2851,39 @@
               loadLevel(currentLevel);
               return;
             }
+          }
+        }
+
+        for (let c of cyans) {
+          const r = { x: c.x, y: c.y, width: c.width, height: c.height };
+          if (rectIntersect(cubeRect, r) && cubeColor !== "cyan") {
+            dashReadyTime = Date.now();
+            deathSound.currentTime = 0;
+            deathSound.play();
+            loadLevel(currentLevel);
+            return;
+          }
+        }
+
+        for (let o2 of oranges2) {
+          const r = { x: o2.x, y: o2.y, width: o2.width, height: o2.height };
+          if (rectIntersect(cubeRect, r) && cubeColor !== "orange") {
+            dashReadyTime = Date.now();
+            deathSound.currentTime = 0;
+            deathSound.play();
+            loadLevel(currentLevel);
+            return;
+          }
+        }
+
+        for (let p of pinks) {
+          const r = { x: p.x, y: p.y, width: p.width, height: p.height };
+          if (rectIntersect(cubeRect, r) && cubeColor !== "pink") {
+            dashReadyTime = Date.now();
+            deathSound.currentTime = 0;
+            deathSound.play();
+            loadLevel(currentLevel);
+            return;
           }
         }
 
@@ -3253,6 +3530,27 @@
         }
       }
 
+      function drawCyans() {
+        ctx.fillStyle = "cyan";
+        for (let c of cyans) {
+          ctx.fillRect(c.x, c.y, c.width, c.height);
+        }
+      }
+
+      function drawOrange2() {
+        ctx.fillStyle = "#ffa500";
+        for (let o2 of oranges2) {
+          ctx.fillRect(o2.x, o2.y, o2.width, o2.height);
+        }
+      }
+
+      function drawPinks() {
+        ctx.fillStyle = "pink";
+        for (let p of pinks) {
+          ctx.fillRect(p.x, p.y, p.width, p.height);
+        }
+      }
+
       // Draw blue blocks
       function drawBlues() {
         ctx.fillStyle = "blue";
@@ -3398,6 +3696,9 @@
       function drawCube() {
         ctx.fillStyle = (isDashing || isTeleporting) ? "blue" : "#fff";
         ctx.fillRect(cube.x - cube.size / 2, cube.y - cube.size / 2, cube.size, cube.size);
+        ctx.strokeStyle = cubeColor;
+        ctx.lineWidth = 4;
+        ctx.strokeRect(cube.x - cube.size / 2, cube.y - cube.size / 2, cube.size, cube.size);
         let arrowColor = "#000";
         if (currentMode === "easy") {
           arrowColor = "green";
@@ -3488,11 +3789,14 @@
           ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
         drawTarget();
-        drawPlatforms();
-       drawHazards();
-       drawOranges();
-       drawPurples();
-       drawBlues();
+       drawPlatforms();
+      drawHazards();
+      drawOranges();
+      drawPurples();
+      drawCyans();
+      drawOrange2();
+      drawPinks();
+      drawBlues();
        drawBrowns();
         drawLifts();
         drawFallingBrownBlocks();
