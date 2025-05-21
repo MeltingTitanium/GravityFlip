@@ -2859,7 +2859,8 @@
               height: cube.size,
               // STAGE 1 LEVEL 18 CHANGE: speed isn't affected by modes, so we use a constant:
               baseVy: 2,
-              vy: 2
+              vy: 2,
+              spawnTime: now
             });
             lastRedSpawnTime = now;
           }
@@ -2960,11 +2961,11 @@
 
             let spawnInterval;
             if (challengePhase === 1) {
-              spawnInterval = currentMode === "hard" ? 5500 : currentMode === "easy" ? 12500 : 7000;
+              spawnInterval = currentMode === "hard" ? 6000 : currentMode === "easy" ? 12500 : 7000;
             } else if (challengePhase === 2) {
-              spawnInterval = currentMode === "hard" ? 4500 : currentMode === "easy" ? 10500 : 5000;
+              spawnInterval = currentMode === "hard" ? 5000 : currentMode === "easy" ? 10500 : 6000;
             } else {
-              spawnInterval = currentMode === "hard" ? 3500 : currentMode === "easy" ? 8500 : 4000;
+              spawnInterval = currentMode === "hard" ? 4750 : currentMode === "easy" ? 9000 : 5250;
             }
 
               if (now - lastComboSpawn >= spawnInterval) {
@@ -3026,7 +3027,8 @@
                 y: -cube.size,
                 width: cube.size,
                 height: cube.size,
-                vy: challengeGreyBlockSpeed
+                vy: challengeGreyBlockSpeed,
+                spawnTime: now
               });
               lastGreyBlockSpawn = now;
             }
@@ -3071,7 +3073,7 @@
               continue;
             }
             let blockRect = { x: gb.x, y: gb.y, width: gb.width, height: gb.height };
-            if (rectIntersect(cubeRect, blockRect)) {
+            if (now - gb.spawnTime >= 500 && rectIntersect(cubeRect, blockRect)) {
               if (!(isDashing || now < dashGraceUntil)) {
                 deathSound.currentTime = 0;
                 deathSound.play();
@@ -3113,6 +3115,7 @@
                 block.y = Math.random() * (canvas.height - cube.size);
                 block.vx = -2;
               }
+              block.spawnTime = now;
               fallingRedBlocks.push(block);
             }
             lastRedSpawnTime = now;
@@ -3127,7 +3130,7 @@
               continue;
             }
             let blockRect = { x: block.x, y: block.y, width: block.width, height: block.height };
-            if (rectIntersect(cubeRect, blockRect)) {
+            if (now - block.spawnTime >= 250 && rectIntersect(cubeRect, blockRect)) {
               if (!(isDashing || now < dashGraceUntil)) {
                 deathSound.currentTime = 0;
                 deathSound.play();
