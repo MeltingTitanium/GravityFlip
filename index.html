@@ -538,6 +538,8 @@
       let challengePausedTime = 0;
       let isChallengePaused = false;
       let lastChallengePauseStart = 0;
+      // Timeout handle for the delayed hazard in Stage 3 Level 3
+      let stage3Level3HazardTimeout = null;
       // =====================================================================
 
       // -------------------------------------------------
@@ -1593,6 +1595,10 @@
           clearTimeout(checkpointKillTimeout);
           checkpointKillTimeout = null;
         }
+        if (stage3Level3HazardTimeout) {
+          clearTimeout(stage3Level3HazardTimeout);
+          stage3Level3HazardTimeout = null;
+        }
 
         // Set teleport cooldown based on difficulty, with a special case for
         // the teleport challenge level which always uses 2 seconds
@@ -1736,6 +1742,15 @@
           minY: (h.minY !== undefined ? h.minY : 0) * canvas.height,
           maxY: (h.maxY !== undefined ? h.maxY : 1) * canvas.height
         }));
+        if (index === 33) {
+          const movingIndex = hazards.findIndex(h => h.moving);
+          if (movingIndex !== -1) {
+            const delayedHazard = hazards.splice(movingIndex, 1)[0];
+            stage3Level3HazardTimeout = setTimeout(() => {
+              hazards.push(delayedHazard);
+            }, 500);
+          }
+        }
         // Map orange (moving obstacles) definitions
         oranges = (lvl.oranges || []).map(o => ({
           x: o.x * canvas.width,
@@ -1936,6 +1951,15 @@
           minY: (h.minY !== undefined ? h.minY : 0) * canvas.height,
           maxY: (h.maxY !== undefined ? h.maxY : 1) * canvas.height
         }));
+        if (currentLevel === 33) {
+          const movingIndex = hazards.findIndex(h => h.moving);
+          if (movingIndex !== -1) {
+            const delayedHazard = hazards.splice(movingIndex, 1)[0];
+            stage3Level3HazardTimeout = setTimeout(() => {
+              hazards.push(delayedHazard);
+            }, 500);
+          }
+        }
         oranges = (lvl.oranges || []).map(o => ({
           x: o.x * canvas.width,
           y: o.y * canvas.height,
