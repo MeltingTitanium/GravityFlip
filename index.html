@@ -540,6 +540,21 @@
       let lastChallengePauseStart = 0;
       // Timeout handle for the delayed hazard in Stage 3 Level 3
       let stage3Level3HazardTimeout = null;
+      // Variables for Stage 3 Level 4
+      const stage3Level4TargetPositions = [
+        { x: 0.5, y: 0.5 },
+        { x: 0.1, y: 0.1 },
+        { x: 0.1, y: 0.9 },
+        { x: 0.9, y: 0.9 },
+        { x: 0.9, y: 0.1 },
+        { x: 0.5, y: 0.5 }
+      ];
+      let stage3Level4Index = 0;
+      let stage3Level4Lines = [];
+      let stage3Level4Triggered = false;
+      let stage3Level4LastSpawn = 0;
+      let stage3Level4NextColor = "cyan";
+      const stage3Level4LineSpeed = 2;
       // =====================================================================
 
       // -------------------------------------------------
@@ -1527,10 +1542,23 @@
             { x: 0.84, y: 0.25, w: 0.02, h: 0.5 }
           ],
           yellows: [
-            { x: 0.40, y: 0.0,  w: 0.02, h: 0.9 },
-            { x: 0.70, y: 0.3,  w: 0.02, h: 0.4 },
-            { x: 0.90, y: 0.0,  w: 0.02, h: 0.8 }
-          ]
+        { x: 0.40, y: 0.0,  w: 0.02, h: 0.9 },
+        { x: 0.70, y: 0.3,  w: 0.02, h: 0.4 },
+        { x: 0.90, y: 0.0,  w: 0.02, h: 0.8 }
+      ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 4 (index 34)
+          // Falling color lines triggered by the moving target
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.5 },
+          colorLevel: true,
+          stage: 3,
+          stage3Level4: true,
+          platforms: [],
+          hazards: []
         }
       ];
 
@@ -1699,6 +1727,17 @@
           target = {
             x: level13TargetPositions[0].x * canvas.width,
             y: level13TargetPositions[0].y * canvas.height,
+            size: cube.size
+          };
+        } else if (lvl.stage3Level4) {
+          stage3Level4Index = 0;
+          stage3Level4Lines = [];
+          stage3Level4Triggered = false;
+          stage3Level4LastSpawn = Date.now();
+          stage3Level4NextColor = "cyan";
+          target = {
+            x: stage3Level4TargetPositions[0].x * canvas.width,
+            y: stage3Level4TargetPositions[0].y * canvas.height,
             size: cube.size
           };
         } else if (lvl.fallingBrownLevel) {
@@ -2701,6 +2740,22 @@
           }
         }
 
+        if (levels[currentLevel].stage3Level4 && stage3Level4Triggered) {
+          if (now - stage3Level4LastSpawn >= 1500) {
+            const h = 0.02 * canvas.height;
+            stage3Level4Lines.push({ x: 0, y: -h, width: canvas.width, height: h, dy: stage3Level4LineSpeed, color: stage3Level4NextColor });
+            stage3Level4LastSpawn = now;
+            stage3Level4NextColor = stage3Level4NextColor === "cyan" ? "yellow" : "cyan";
+          }
+          for (let i = stage3Level4Lines.length - 1; i >= 0; i--) {
+            let line = stage3Level4Lines[i];
+            line.y += line.dy;
+            if (line.y > canvas.height) {
+              stage3Level4Lines.splice(i, 1);
+            }
+          }
+        }
+
         // If there's a moving target
         if (levels[currentLevel].movingTarget && target) {
           target.x += target.dx;
@@ -2777,6 +2832,20 @@
               deathSound.play();
               loadLevel(currentLevel);
               return;
+            }
+          }
+        }
+
+        if (currentLevel === 34) {
+          for (let line of stage3Level4Lines) {
+            const lRect = { x: line.x, y: line.y, width: line.width, height: line.height };
+            if (rectIntersect(cubeRect, lRect)) {
+              if (outlineColor !== line.color) {
+                deathSound.currentTime = 0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
             }
           }
         }
@@ -2881,6 +2950,35 @@
             };
             if (levels[currentLevel].fallingBrownLevel && (now - target.spawnTime < 500)) {
               // do nothing for half a second
+            } else if (currentLevel === 34 && rectIntersect(cubeRect, targetRect)) {
+              if (!stage3Level4Triggered) {
+                stage3Level4Triggered = true;
+                stage3Level4LastSpawn = now;
+              }
+              stage3Level4Index++;
+              if (stage3Level4Index < stage3Level4TargetPositions.length - 1) {
+                target.x = stage3Level4TargetPositions[stage3Level4Index].x * canvas.width;
+                target.y = stage3Level4TargetPositions[stage3Level4Index].y * canvas.height;
+                return;
+              } else {
+                if (currentMode === "hard") {
+                  let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
+                  if (!hardModeStars.includes(currentLevel)) {
+                    hardModeStars.push(currentLevel);
+                  }
+                  localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
+                }
+                winSound.currentTime = 0;
+                winSound.play();
+                currentLevel++;
+                if (currentLevel < levels.length) {
+                  loadLevel(currentLevel);
+                } else {
+                  showWinScreen();
+                  return;
+                }
+                return;
+              }
             } else if ((currentLevel === 26 || currentLevel === 28) && rectIntersect(cubeRect, targetRect)) {
               if (!(target.x < 50 && target.y > canvas.height - 50)) {
                 target.x = cube.size / 2;
@@ -3445,6 +3543,15 @@
           ctx.fillRect(y.x, y.y, y.width, y.height);
         }
       }
+
+      function drawStage3Level4Lines() {
+        if (currentLevel === 34) {
+          for (let line of stage3Level4Lines) {
+            ctx.fillStyle = line.color;
+            ctx.fillRect(line.x, line.y, line.width, line.height);
+          }
+        }
+      }
       function drawBrowns() {
         ctx.fillStyle = "saddlebrown";
         for (let b of browns) {
@@ -3684,6 +3791,7 @@
       drawPurples();
       drawCyans();
       drawYellows();
+      drawStage3Level4Lines();
       drawBlues();
       drawBrowns();
         drawLifts();
