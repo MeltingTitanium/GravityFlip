@@ -554,7 +554,10 @@
       let stage3Level4Triggered = false;
       let stage3Level4LastSpawn = 0;
       let stage3Level4NextColor = "cyan";
-      const stage3Level4LineSpeed = 2;
+      const baseStage3Level4LineSpeed = 2;
+      let stage3Level4LineSpeed = baseStage3Level4LineSpeed;
+      const baseStage3Level4SpawnInterval = 825;
+      let stage3Level4SpawnInterval = baseStage3Level4SpawnInterval;
       // =====================================================================
 
       // -------------------------------------------------
@@ -1735,6 +1738,10 @@
           stage3Level4Triggered = false;
           stage3Level4LastSpawn = Date.now();
           stage3Level4NextColor = "cyan";
+          stage3Level4LineSpeed =
+            baseStage3Level4LineSpeed * (currentMode === "easy" ? 0.6 : currentMode === "hard" ? 1.2 : 1);
+          stage3Level4SpawnInterval =
+            baseStage3Level4SpawnInterval + (currentMode === "easy" ? 500 : 0);
           target = {
             x: stage3Level4TargetPositions[0].x * canvas.width,
             y: stage3Level4TargetPositions[0].y * canvas.height,
@@ -2741,7 +2748,7 @@
         }
 
         if (levels[currentLevel].stage3Level4 && stage3Level4Triggered) {
-          if (now - stage3Level4LastSpawn >= 825) {
+          if (now - stage3Level4LastSpawn >= stage3Level4SpawnInterval) {
             const h = 0.02 * canvas.height;
             stage3Level4Lines.push({ x: 0, y: -h, width: canvas.width, height: h, dy: stage3Level4LineSpeed, color: stage3Level4NextColor });
             stage3Level4LastSpawn = now;
