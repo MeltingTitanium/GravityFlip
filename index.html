@@ -540,6 +540,11 @@
       let lastChallengePauseStart = 0;
       // Timeout handle for the delayed hazard in Stage 3 Level 3
       let stage3Level3HazardTimeout = null;
+      // Globals for Stage 3 Level 4 falling color lines
+      let stage3Level4Lines = [];
+      let stage3Level4LastSpawn = 0;
+      let stage3Level4NextColor = "cyan";
+      let stage3Level4Active = false;
       // =====================================================================
 
       // -------------------------------------------------
@@ -1531,6 +1536,24 @@
             { x: 0.70, y: 0.3,  w: 0.02, h: 0.4 },
             { x: 0.90, y: 0.0,  w: 0.02, h: 0.8 }
           ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 4 (index 34)
+          // Teleport version of Level 13 with falling color lines
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.5 },
+          teleportLevel: true,
+          level13: true,
+          colorLevel: true,
+          stage: 3,
+          halfSpeedPillars: true,
+          platforms: [],
+          hazards: [],
+          oranges: [],
+          browns: [],
+          purples: []
         }
       ];
 
@@ -1644,6 +1667,10 @@
         blues = [];
         cyans = [];
         yellows = [];
+        stage3Level4Lines = [];
+        stage3Level4Active = false;
+        stage3Level4LastSpawn = Date.now();
+        stage3Level4NextColor = "cyan";
 
         // Special handling for challenge levels or levels with unique behavior
         if (lvl.challengeDashingLevel) {
@@ -2781,6 +2808,40 @@
           }
         }
 
+        // Stage 3 Level 4 falling color lines
+        if (currentLevel === 34) {
+          if (stage3Level4Active && now - stage3Level4LastSpawn >= 1000) {
+            const lineHeight = 0.02 * canvas.height;
+            stage3Level4Lines.push({
+              x: 0,
+              y: -lineHeight,
+              width: canvas.width,
+              height: lineHeight,
+              vy: 1.5,
+              color: stage3Level4NextColor
+            });
+            stage3Level4LastSpawn = now;
+            stage3Level4NextColor = stage3Level4NextColor === "cyan" ? "yellow" : "cyan";
+          }
+          for (let i = stage3Level4Lines.length - 1; i >= 0; i--) {
+            let line = stage3Level4Lines[i];
+            line.y += line.vy;
+            if (line.y > canvas.height) {
+              stage3Level4Lines.splice(i, 1);
+              continue;
+            }
+            let lineRect = { x: line.x, y: line.y, width: line.width, height: line.height };
+            if (rectIntersect(cubeRect, lineRect)) {
+              if (outlineColor !== line.color) {
+                deathSound.currentTime = 0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
+            }
+          }
+        }
+
         // If level 11, check collisions with fallingOranges
         if (currentLevel === 11) {
           for (let fo of fallingOranges) {
@@ -2844,6 +2905,11 @@
             height: target.size
           })) {
             if (level13Stage < 5) {
+              if (currentLevel === 34 && level13Stage === 0) {
+                stage3Level4Active = true;
+                stage3Level4LastSpawn = now;
+                stage3Level4NextColor = "cyan";
+              }
               level13Stage++;
               target.x = level13TargetPositions[level13Stage].x * canvas.width;
               target.y = level13TargetPositions[level13Stage].y * canvas.height;
@@ -3504,6 +3570,14 @@
           }
         }
       }
+      function drawStage3Level4Lines() {
+        if (currentLevel === 34) {
+          for (let line of stage3Level4Lines) {
+            ctx.fillStyle = line.color;
+            ctx.fillRect(line.x, line.y, line.width, line.height);
+          }
+        }
+      }
       function drawChallengeGreenBlock() {
         if ((levels[currentLevel].challengeDashingLevel ||
              (levels[currentLevel].challengeTeleportLevel && challengePhase === 3)) && challengeGreenBlock) {
@@ -3684,6 +3758,7 @@
       drawPurples();
       drawCyans();
       drawYellows();
+      drawStage3Level4Lines();
       drawBlues();
       drawBrowns();
         drawLifts();
