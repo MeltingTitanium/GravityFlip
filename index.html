@@ -1531,6 +1531,25 @@
             { x: 0.70, y: 0.3,  w: 0.02, h: 0.4 },
             { x: 0.90, y: 0.0,  w: 0.02, h: 0.8 }
           ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 4 (index 34)
+          // Teleporting target with falling color lines
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.5 },
+          colorLevel: true,
+          level13: true,
+          halfSpeedPillars: true,
+          stage: 3,
+          platforms: [],
+          hazards: [],
+          oranges: [],
+          browns: [],
+          purples: [],
+          cyans: [],
+          yellows: []
         }
       ];
 
@@ -1569,6 +1588,12 @@
       // Variables for falling oranges (Level 11)
       let lastFallingOrangeSpawn = 0;
       let fallingOranges = [];
+
+      // Falling cyan/yellow lines for Stage 3 Level 4
+      let stage3Level4Lines = [];
+      let stage3Level4Active = false;
+      let stage3Level4LastSpawn = 0;
+      let stage3Level4NextColor = "cyan";
 
       // -------------------------------------------------
       // 8. Stage Selector: Current Stage Variable (Default Stage 1)
@@ -1644,6 +1669,13 @@
         blues = [];
         cyans = [];
         yellows = [];
+
+        if (index === 34) {
+          stage3Level4Lines = [];
+          stage3Level4Active = false;
+          stage3Level4LastSpawn = Date.now();
+          stage3Level4NextColor = "cyan";
+        }
 
         // Special handling for challenge levels or levels with unique behavior
         if (lvl.challengeDashingLevel) {
@@ -2656,6 +2688,20 @@
           }
         }
 
+        if (currentLevel === 34 && stage3Level4Active) {
+          if (now - stage3Level4LastSpawn >= 2000) {
+            spawnStage3Level4Line();
+            stage3Level4LastSpawn = now;
+          }
+          for (let i = stage3Level4Lines.length - 1; i >= 0; i--) {
+            let line = stage3Level4Lines[i];
+            line.y += line.dy;
+            if (line.y > canvas.height) {
+              stage3Level4Lines.splice(i, 1);
+            }
+          }
+        }
+
         // If level has fallingBrownLevel
         if (levels[currentLevel].fallingBrownLevel) {
           if (now >= fallingBrownTextStart + 1500 && now - lastBrownSpawnTime >= 1500) {
@@ -2797,6 +2843,20 @@
           }
         }
 
+        if (currentLevel === 34) {
+          for (let line of stage3Level4Lines) {
+            const rect = { x: line.x, y: line.y, width: line.width, height: line.height };
+            if (rectIntersect(cubeRect, rect)) {
+              if (outlineColor !== line.color) {
+                deathSound.currentTime = 0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
+            }
+          }
+        }
+
         // If level 13, handle special pillars
         if (levels[currentLevel].level13) {
           if (!level13PillarsSpawned && level13Stage >= 1) {
@@ -2844,6 +2904,11 @@
             height: target.size
           })) {
             if (level13Stage < 5) {
+              if (currentLevel === 34 && level13Stage === 0) {
+                stage3Level4Active = true;
+                stage3Level4LastSpawn = now;
+                spawnStage3Level4Line();
+              }
               level13Stage++;
               target.x = level13TargetPositions[level13Stage].x * canvas.width;
               target.y = level13TargetPositions[level13Stage].y * canvas.height;
@@ -3445,6 +3510,15 @@
           ctx.fillRect(y.x, y.y, y.width, y.height);
         }
       }
+
+      function drawStage3Level4Lines() {
+        if (currentLevel === 34) {
+          for (let line of stage3Level4Lines) {
+            ctx.fillStyle = line.color;
+            ctx.fillRect(line.x, line.y, line.width, line.height);
+          }
+        }
+      }
       function drawBrowns() {
         ctx.fillStyle = "saddlebrown";
         for (let b of browns) {
@@ -3649,6 +3723,20 @@
         level13Pillars.push(horizontalPillar);
       }
 
+      function spawnStage3Level4Line() {
+        const thickness = 0.02 * canvas.height;
+        const color = stage3Level4NextColor;
+        stage3Level4Lines.push({
+          x: 0,
+          y: -thickness,
+          width: canvas.width,
+          height: thickness,
+          dy: currentFallingOrangeDy,
+          color
+        });
+        stage3Level4NextColor = stage3Level4NextColor === "cyan" ? "yellow" : "cyan";
+      }
+
       // -------------------------------------------------
       // 16. FIXED GAME LOOP (ENFORCE 60 FPS LOGIC SPEED)
       // -------------------------------------------------
@@ -3684,6 +3772,7 @@
       drawPurples();
       drawCyans();
       drawYellows();
+      drawStage3Level4Lines();
       drawBlues();
       drawBrowns();
         drawLifts();
