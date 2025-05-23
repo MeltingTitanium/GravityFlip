@@ -1491,11 +1491,31 @@
             { x: 0.45, y: 0, w: 0.02, h: 1 },
             { x: 0.75, y: 0, w: 0.02, h: 1 }
           ],
-          yellows: [
-            { x: 0.30, y: 0, w: 0.02, h: 1 },
-            { x: 0.60, y: 0, w: 0.02, h: 1 },
-            { x: 0.90, y: 0, w: 0.02, h: 1 }
-          ]
+        yellows: [
+          { x: 0.30, y: 0, w: 0.02, h: 1 },
+          { x: 0.60, y: 0, w: 0.02, h: 1 },
+          { x: 0.90, y: 0, w: 0.02, h: 1 }
+        ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 3 (index 33)
+          // Teleporting target with diagonal color pillars
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.5 },
+          teleportLevel: true,
+          level13: true,
+          colorLevel: true,
+          stage: 3,
+          halfSpeedPillars: true,
+          diagonalColorPillars: true,
+          platforms: [],
+          hazards: [],
+          oranges: [],
+          browns: [],
+          cyans: [],
+          yellows: []
         }
       ];
 
@@ -1828,6 +1848,20 @@
           }
           if (b.verticalMovement) {
             b.dy = applyGlobalMovementScale(b.dy);
+          }
+        });
+
+        // Scale cyan and yellow blocks similarly if they move
+        cyans.forEach(c => {
+          if (c.moving) {
+            c.dx = applyGlobalMovementScale(c.dx);
+            c.dy = applyGlobalMovementScale(c.dy);
+          }
+        });
+        yellows.forEach(y => {
+          if (y.moving) {
+            y.dx = applyGlobalMovementScale(y.dx);
+            y.dy = applyGlobalMovementScale(y.dy);
           }
         });
 
@@ -2535,6 +2569,48 @@
                 b.x = maxX - b.width;
                 b.dx = -Math.abs(b.dx);
               }
+            }
+          }
+        });
+
+        // Handle moving cyan and yellow blocks (can move diagonally)
+        cyans.forEach(c => {
+          if (c.moving) {
+            c.x += c.dx;
+            c.y += c.dy;
+            if (c.x < 0) {
+              c.x = 0;
+              c.dx = Math.abs(c.dx);
+            } else if (c.x + c.width > canvas.width) {
+              c.x = canvas.width - c.width;
+              c.dx = -Math.abs(c.dx);
+            }
+            if (c.y < 0) {
+              c.y = 0;
+              c.dy = Math.abs(c.dy);
+            } else if (c.y + c.height > canvas.height) {
+              c.y = canvas.height - c.height;
+              c.dy = -Math.abs(c.dy);
+            }
+          }
+        });
+        yellows.forEach(y => {
+          if (y.moving) {
+            y.x += y.dx;
+            y.y += y.dy;
+            if (y.x < 0) {
+              y.x = 0;
+              y.dx = Math.abs(y.dx);
+            } else if (y.x + y.width > canvas.width) {
+              y.x = canvas.width - y.width;
+              y.dx = -Math.abs(y.dx);
+            }
+            if (y.y < 0) {
+              y.y = 0;
+              y.dy = Math.abs(y.dy);
+            } else if (y.y + y.height > canvas.height) {
+              y.y = canvas.height - y.height;
+              y.dy = -Math.abs(y.dy);
             }
           }
         });
@@ -3570,26 +3646,49 @@
       function spawnLevel13Pillars() {
         level13PillarsSpawned = true;
         const speedMult = levels[currentLevel].halfSpeedPillars ? .8 : 1;
-        let verticalPillarWidth = 0.02 * canvas.width;
-        let verticalPillarHeight = canvas.height;
-        let verticalPillar = {
-          x: 0,
-          y: 0,
-          width: verticalPillarWidth,
-          height: verticalPillarHeight,
-          dx: currentPillarDx * speedMult
-        };
-        let horizontalPillarHeight = 0.02 * canvas.height;
-        let horizontalPillarWidth = canvas.width;
-        let horizontalPillar = {
-          x: 0,
-          y: 0,
-          width: horizontalPillarWidth,
-          height: horizontalPillarHeight,
-          dy: currentPillarDy * speedMult
-        };
-        level13Pillars.push(verticalPillar);
-        level13Pillars.push(horizontalPillar);
+        if (levels[currentLevel].diagonalColorPillars) {
+          const lineWidth = 0.02 * canvas.width;
+          const lineHeight = canvas.height;
+          cyans.push({
+            x: 0,
+            y: 0,
+            width: lineWidth,
+            height: lineHeight,
+            dx: currentPillarDx * speedMult,
+            dy: -currentPillarDy * speedMult,
+            moving: true
+          });
+          yellows.push({
+            x: canvas.width - lineWidth,
+            y: 0,
+            width: lineWidth,
+            height: lineHeight,
+            dx: -currentPillarDx * speedMult,
+            dy: currentPillarDy * speedMult,
+            moving: true
+          });
+        } else {
+          let verticalPillarWidth = 0.02 * canvas.width;
+          let verticalPillarHeight = canvas.height;
+          let verticalPillar = {
+            x: 0,
+            y: 0,
+            width: verticalPillarWidth,
+            height: verticalPillarHeight,
+            dx: currentPillarDx * speedMult
+          };
+          let horizontalPillarHeight = 0.02 * canvas.height;
+          let horizontalPillarWidth = canvas.width;
+          let horizontalPillar = {
+            x: 0,
+            y: 0,
+            width: horizontalPillarWidth,
+            height: horizontalPillarHeight,
+            dy: currentPillarDy * speedMult
+          };
+          level13Pillars.push(verticalPillar);
+          level13Pillars.push(horizontalPillar);
+        }
       }
 
       // -------------------------------------------------
