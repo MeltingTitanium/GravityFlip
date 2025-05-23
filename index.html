@@ -540,6 +540,11 @@
       let lastChallengePauseStart = 0;
       // Timeout handle for the delayed hazard in Stage 3 Level 3
       let stage3Level3HazardTimeout = null;
+      // Falling color lines for Stage 3 Level 4
+      let stage3Level4Lines = [];
+      let stage3Level4LastSpawn = 0;
+      let stage3Level4Started = false;
+      let stage3Level4ColorIndex = 0;
       // =====================================================================
 
       // -------------------------------------------------
@@ -1531,6 +1536,23 @@
             { x: 0.70, y: 0.3,  w: 0.02, h: 0.4 },
             { x: 0.90, y: 0.0,  w: 0.02, h: 0.8 }
           ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 4 (index 34)
+          // Level 13 with color change and falling color lines
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.5 },
+          level13: true,
+          halfSpeedPillars: true,
+          colorLevel: true,
+          stage: 3,
+          platforms: [],
+          hazards: [],
+          oranges: [],
+          browns: [],
+          purples: []
         }
       ];
 
@@ -1644,6 +1666,10 @@
         blues = [];
         cyans = [];
         yellows = [];
+        stage3Level4Lines = [];
+        stage3Level4LastSpawn = Date.now();
+        stage3Level4Started = false;
+        stage3Level4ColorIndex = 0;
 
         // Special handling for challenge levels or levels with unique behavior
         if (lvl.challengeDashingLevel) {
@@ -2727,6 +2753,35 @@
           }
         }
 
+        // Stage 3 Level 4: handle falling color lines
+        if (currentLevel === 34 && stage3Level4Started) {
+          const lineHeight = 0.02 * canvas.height;
+          const speed = 1;
+          if (now - stage3Level4LastSpawn >= 1000) {
+            const color = (stage3Level4ColorIndex % 2 === 0) ? "cyan" : "yellow";
+            stage3Level4Lines.push({ x: 0, y: -lineHeight, width: canvas.width, height: lineHeight, dy: speed, color });
+            stage3Level4ColorIndex++;
+            stage3Level4LastSpawn = now;
+          }
+          for (let i = stage3Level4Lines.length - 1; i >= 0; i--) {
+            let line = stage3Level4Lines[i];
+            line.y += line.dy;
+            if (line.y > canvas.height) {
+              stage3Level4Lines.splice(i, 1);
+              continue;
+            }
+            const lineRect = { x: line.x, y: line.y, width: line.width, height: line.height };
+            if (rectIntersect(cubeRect, lineRect)) {
+              if (outlineColor !== line.color) {
+                deathSound.currentTime = 0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
+            }
+          }
+        }
+
         // Check collisions with oranges
         for (let o of oranges) {
           const orangeRect = { x: o.x, y: o.y, width: o.width, height: o.height };
@@ -2845,6 +2900,10 @@
           })) {
             if (level13Stage < 5) {
               level13Stage++;
+              if (currentLevel === 34 && level13Stage === 1) {
+                stage3Level4Started = true;
+                stage3Level4LastSpawn = now;
+              }
               target.x = level13TargetPositions[level13Stage].x * canvas.width;
               target.y = level13TargetPositions[level13Stage].y * canvas.height;
               return;
@@ -3496,6 +3555,14 @@
           }
         }
       }
+      function drawStage3Level4Lines() {
+        if (currentLevel === 34) {
+          for (let line of stage3Level4Lines) {
+            ctx.fillStyle = line.color;
+            ctx.fillRect(line.x, line.y, line.width, line.height);
+          }
+        }
+      }
       function drawChallengeGreyBlocks() {
         if (levels[currentLevel].challengeTeleportLevel) {
           ctx.fillStyle = "purple";
@@ -3677,9 +3744,10 @@
           ctx.fillStyle = "black";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
-       drawTarget();
-       drawPlatforms();
+      drawTarget();
+      drawPlatforms();
       drawHazards();
+      drawStage3Level4Lines();
       drawOranges();
       drawPurples();
       drawCyans();
