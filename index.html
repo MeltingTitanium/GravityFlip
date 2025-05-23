@@ -1496,6 +1496,34 @@
             { x: 0.60, y: 0, w: 0.02, h: 1 },
             { x: 0.90, y: 0, w: 0.02, h: 1 }
           ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 3 (index 33)
+          // "The Color Maze" with moving color blocks
+          // -------------------------------------------------
+          spawn: { x: 0.05, y: 0.95 },
+          target: { x: 0.95, y: 0.05 },
+          colorLevel: true,
+          stage: 3,
+          platforms: [],
+          hazards: [],
+          cyans: [
+            { x: 0.2, y: 0,   w: 0.02, h: 0.8 },
+            { x: 0.4, y: 0.2, w: 0.02, h: 0.8 },
+            { x: 0.6, y: 0,   w: 0.02, h: 0.8 },
+            { x: 0.8, y: 0.2, w: 0.02, h: 0.8 },
+            { x: 0,    y: 0.85, w: 0.15, h: 0.02, moving: true, dx: 0.8 },
+            { x: 0.85, y: 0.45, w: 0.15, h: 0.02, moving: true, dx: -0.8 }
+          ],
+          yellows: [
+            { x: 0.3, y: 0.2, w: 0.02, h: 0.8 },
+            { x: 0.5, y: 0,   w: 0.02, h: 0.8 },
+            { x: 0.7, y: 0.2, w: 0.02, h: 0.8 },
+            { x: 0.9, y: 0,   w: 0.02, h: 0.8 },
+            { x: 0.1, y: 1,   w: 0.02, h: 0.15, moving: true, dy: -0.8, verticalMovement: true },
+            { x: 0.65, y: 0,  w: 0.02, h: 0.15, moving: true, dy: 0.8, verticalMovement: true }
+          ]
         }
       ];
 
@@ -1731,19 +1759,31 @@
           verticalMovement: p.verticalMovement || false
         }));
 
-        // Map cyan and yellow block definitions
+        // Map cyan and yellow block definitions (some may move)
         cyans = (lvl.cyans || []).map(c => ({
           x: c.x * canvas.width,
           y: c.y * canvas.height,
           width: c.w * canvas.width,
-          height: c.h * canvas.height
+          height: c.h * canvas.height,
+          dx: c.dx || 0,
+          dy: c.dy || 0,
+          moving: c.moving || false,
+          verticalMovement: c.verticalMovement || false,
+          minX: (c.minX !== undefined ? c.minX : 0) * canvas.width,
+          maxX: (c.maxX !== undefined ? c.maxX : 1) * canvas.width
         }));
 
         yellows = (lvl.yellows || []).map(y => ({
           x: y.x * canvas.width,
           y: y.y * canvas.height,
           width: y.w * canvas.width,
-          height: y.h * canvas.height
+          height: y.h * canvas.height,
+          dx: y.dx || 0,
+          dy: y.dy || 0,
+          moving: y.moving || false,
+          verticalMovement: y.verticalMovement || false,
+          minX: (y.minX !== undefined ? y.minX : 0) * canvas.width,
+          maxX: (y.maxX !== undefined ? y.maxX : 1) * canvas.width
         }));
 
         // Map blue block definitions (can optionally move like oranges/purples)
@@ -1828,6 +1868,23 @@
           }
           if (b.verticalMovement) {
             b.dy = applyGlobalMovementScale(b.dy);
+          }
+        });
+        // Scale moving cyan and yellow blocks
+        cyans.forEach(c => {
+          if (c.moving) {
+            c.dx = applyGlobalMovementScale(c.dx);
+          }
+          if (c.verticalMovement) {
+            c.dy = applyGlobalMovementScale(c.dy);
+          }
+        });
+        yellows.forEach(y => {
+          if (y.moving) {
+            y.dx = applyGlobalMovementScale(y.dx);
+          }
+          if (y.verticalMovement) {
+            y.dy = applyGlobalMovementScale(y.dy);
           }
         });
 
@@ -1935,6 +1992,31 @@
           minX: (b.minX !== undefined ? b.minX : 0) * canvas.width,
           maxX: (b.maxX !== undefined ? b.maxX : 1) * canvas.width
         }));
+        cyans = (lvl.cyans || []).map(c => ({
+          x: c.x * canvas.width,
+          y: c.y * canvas.height,
+          width: c.w * canvas.width,
+          height: c.h * canvas.height,
+          dx: c.dx || 0,
+          dy: c.dy || 0,
+          moving: c.moving || false,
+          verticalMovement: c.verticalMovement || false,
+          minX: (c.minX !== undefined ? c.minX : 0) * canvas.width,
+          maxX: (c.maxX !== undefined ? c.maxX : 1) * canvas.width
+        }));
+
+        yellows = (lvl.yellows || []).map(y => ({
+          x: y.x * canvas.width,
+          y: y.y * canvas.height,
+          width: y.w * canvas.width,
+          height: y.h * canvas.height,
+          dx: y.dx || 0,
+          dy: y.dy || 0,
+          moving: y.moving || false,
+          verticalMovement: y.verticalMovement || false,
+          minX: (y.minX !== undefined ? y.minX : 0) * canvas.width,
+          maxX: (y.maxX !== undefined ? y.maxX : 1) * canvas.width
+        }));
         browns = (lvl.browns || []).map(b => ({
           x: b.x * canvas.width,
           y: b.y * canvas.height,
@@ -1981,6 +2063,22 @@
           }
           if (b.verticalMovement) {
             b.dy = applyGlobalMovementScale(b.dy);
+          }
+        });
+        cyans.forEach(c => {
+          if (c.moving) {
+            c.dx = applyGlobalMovementScale(c.dx);
+          }
+          if (c.verticalMovement) {
+            c.dy = applyGlobalMovementScale(c.dy);
+          }
+        });
+        yellows.forEach(y => {
+          if (y.moving) {
+            y.dx = applyGlobalMovementScale(y.dx);
+          }
+          if (y.verticalMovement) {
+            y.dy = applyGlobalMovementScale(y.dy);
           }
         });
         lifts.forEach(l => {
@@ -2534,6 +2632,60 @@
               } else if (b.x + b.width > maxX) {
                 b.x = maxX - b.width;
                 b.dx = -Math.abs(b.dx);
+              }
+            }
+          }
+        });
+
+        // Move cyan blocks if applicable
+        cyans.forEach(c => {
+          if (c.moving) {
+            if (c.verticalMovement) {
+              c.y += c.dy;
+              if (c.y < 0) {
+                c.y = 0;
+                c.dy = -c.dy;
+              } else if (c.y + c.height > canvas.height) {
+                c.y = canvas.height - c.height;
+                c.dy = -c.dy;
+              }
+            } else {
+              c.x += c.dx;
+              const minX = c.minX || 0;
+              const maxX = c.maxX || canvas.width;
+              if (c.x < minX) {
+                c.x = minX;
+                c.dx = Math.abs(c.dx);
+              } else if (c.x + c.width > maxX) {
+                c.x = maxX - c.width;
+                c.dx = -Math.abs(c.dx);
+              }
+            }
+          }
+        });
+
+        // Move yellow blocks if applicable
+        yellows.forEach(y => {
+          if (y.moving) {
+            if (y.verticalMovement) {
+              y.y += y.dy;
+              if (y.y < 0) {
+                y.y = 0;
+                y.dy = -y.dy;
+              } else if (y.y + y.height > canvas.height) {
+                y.y = canvas.height - y.height;
+                y.dy = -y.dy;
+              }
+            } else {
+              y.x += y.dx;
+              const minX = y.minX || 0;
+              const maxX = y.maxX || canvas.width;
+              if (y.x < minX) {
+                y.x = minX;
+                y.dx = Math.abs(y.dx);
+              } else if (y.x + y.width > maxX) {
+                y.x = maxX - y.width;
+                y.dx = -Math.abs(y.dx);
               }
             }
           }
