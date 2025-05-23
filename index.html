@@ -388,6 +388,8 @@
           currentPillarDy          = easyParams.pillarDy;
           currentDashCooldown      = easyParams.dashCooldown;
           currentTeleportCooldown  = 2000; // Teleport cooldown is 2 seconds in easy mode
+          stage3Level4LineSpeed    = baseStage3Level4LineSpeed * 0.6; // 40% slower
+          stage3Level4SpawnInterval = baseStage3Level4SpawnInterval + 500; // add 0.5s
         } else if (currentMode === "hard") {
           currentAcceleration      = hardParams.acceleration;
           currentDashDistance      = hardParams.dashDistance;
@@ -400,6 +402,8 @@
           currentPillarDy          = hardParams.pillarDy;
           currentDashCooldown      = hardParams.dashCooldown;
           currentTeleportCooldown  = 2000; // Teleport cooldown is 2 seconds in hard mode
+          stage3Level4LineSpeed    = baseStage3Level4LineSpeed * 1.2; // 20% faster
+          stage3Level4SpawnInterval = baseStage3Level4SpawnInterval; // no change
         } else {
           // Normal mode parameters
           currentAcceleration      = normalParams.acceleration;
@@ -413,6 +417,8 @@
           currentPillarDy          = normalParams.pillarDy;
           currentDashCooldown      = normalParams.dashCooldown;
           currentTeleportCooldown  = 4000; // Teleport cooldown is 4 seconds in normal mode
+          stage3Level4LineSpeed    = baseStage3Level4LineSpeed;
+          stage3Level4SpawnInterval = baseStage3Level4SpawnInterval;
         }
       }
       // Initialize game parameters with the default mode
@@ -554,7 +560,10 @@
       let stage3Level4Triggered = false;
       let stage3Level4LastSpawn = 0;
       let stage3Level4NextColor = "cyan";
-      const stage3Level4LineSpeed = 2;
+      const baseStage3Level4LineSpeed = 2;
+      let stage3Level4LineSpeed = baseStage3Level4LineSpeed;
+      const baseStage3Level4SpawnInterval = 825;
+      let stage3Level4SpawnInterval = baseStage3Level4SpawnInterval;
       // =====================================================================
 
       // -------------------------------------------------
@@ -2741,7 +2750,7 @@
         }
 
         if (levels[currentLevel].stage3Level4 && stage3Level4Triggered) {
-          if (now - stage3Level4LastSpawn >= 825) {
+          if (now - stage3Level4LastSpawn >= stage3Level4SpawnInterval) {
             const h = 0.02 * canvas.height;
             stage3Level4Lines.push({ x: 0, y: -h, width: canvas.width, height: h, dy: stage3Level4LineSpeed, color: stage3Level4NextColor });
             stage3Level4LastSpawn = now;
