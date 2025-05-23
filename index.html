@@ -554,7 +554,8 @@
       let stage3Level4Triggered = false;
       let stage3Level4LastSpawn = 0;
       let stage3Level4NextColor = "cyan";
-      const stage3Level4LineSpeed = 2;
+      const stage3Level4BaseLineSpeed = 2;
+      let stage3Level4LineSpeed = stage3Level4BaseLineSpeed;
       // =====================================================================
 
       // -------------------------------------------------
@@ -1735,6 +1736,12 @@
           stage3Level4Triggered = false;
           stage3Level4LastSpawn = Date.now();
           stage3Level4NextColor = "cyan";
+          stage3Level4LineSpeed = stage3Level4BaseLineSpeed;
+          if (currentMode === "easy") {
+            stage3Level4LineSpeed *= 0.6;
+          } else if (currentMode === "hard") {
+            stage3Level4LineSpeed *= 1.2;
+          }
           target = {
             x: stage3Level4TargetPositions[0].x * canvas.width,
             y: stage3Level4TargetPositions[0].y * canvas.height,
