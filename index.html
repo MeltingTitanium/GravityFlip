@@ -558,6 +558,13 @@
       let stage3Level4LineSpeed = baseStage3Level4LineSpeed;
       const baseStage3Level4SpawnInterval = 825;
       let stage3Level4SpawnInterval = baseStage3Level4SpawnInterval;
+
+      // Variables for Stage 3 Level 5
+      const stage3Level5SegmentColors = ["cyan","yellow","cyan","yellow","cyan","yellow","cyan","yellow","cyan","yellow","cyan"];
+      let stage3Level5Segments = [];
+      let stage3Level5Angle = 0;
+      const baseStage3Level5AngularSpeed = Math.PI / 360;
+      let stage3Level5AngularSpeed = baseStage3Level5AngularSpeed;
       // =====================================================================
 
       // -------------------------------------------------
@@ -1562,6 +1569,19 @@
           stage3Level4: true,
           platforms: [],
           hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 5 (index 35)
+          // Rotating cyan/yellow line obstacle
+          // -------------------------------------------------
+          spawn: { x: 0.05, y: 0.95 },
+          target: { x: 0.95, y: 0.05 },
+          colorLevel: true,
+          stage: 3,
+          stage3Level5: true,
+          platforms: [],
+          hazards: []
         }
       ];
 
@@ -1745,6 +1765,27 @@
           target = {
             x: stage3Level4TargetPositions[0].x * canvas.width,
             y: stage3Level4TargetPositions[0].y * canvas.height,
+            size: cube.size
+          };
+        } else if (lvl.stage3Level5) {
+          stage3Level5Angle = 0;
+          stage3Level5Segments = [];
+          const count = stage3Level5SegmentColors.length;
+          const segH = canvas.height / count;
+          const segW = 0.02 * canvas.width;
+          for (let i = 0; i < count; i++) {
+            stage3Level5Segments.push({
+              offset: (i - (count - 1) / 2) * segH,
+              width: segW,
+              height: segH,
+              color: stage3Level5SegmentColors[i]
+            });
+          }
+          stage3Level5AngularSpeed =
+            baseStage3Level5AngularSpeed * (currentMode === "easy" ? 0.6 : currentMode === "hard" ? 1.2 : 1);
+          target = {
+            x: lvl.target.x * canvas.width,
+            y: lvl.target.y * canvas.height,
             size: cube.size
           };
         } else if (lvl.fallingBrownLevel) {
@@ -2763,6 +2804,10 @@
           }
         }
 
+        if (levels[currentLevel].stage3Level5) {
+          stage3Level5Angle -= stage3Level5AngularSpeed;
+        }
+
         // If there's a moving target
         if (levels[currentLevel].movingTarget && target) {
           target.x += target.dx;
@@ -2848,6 +2893,32 @@
             const lRect = { x: line.x, y: line.y, width: line.width, height: line.height };
             if (rectIntersect(cubeRect, lRect)) {
               if (outlineColor !== line.color) {
+                deathSound.currentTime = 0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
+            }
+          }
+        }
+
+        if (currentLevel === 35) {
+          const pivotX = canvas.width / 2;
+          const pivotY = canvas.height / 2;
+          function rotPtGlobal(x, y, ang) {
+            return { x: x * Math.cos(ang) - y * Math.sin(ang), y: x * Math.sin(ang) + y * Math.cos(ang) };
+          }
+          const rc = rotPtGlobal(cube.x - pivotX, cube.y - pivotY, -stage3Level5Angle);
+          const rotCubeRect = { x: rc.x + pivotX - cube.size / 2, y: rc.y + pivotY - cube.size / 2, width: cube.size, height: cube.size };
+          for (let seg of stage3Level5Segments) {
+            const segRect = {
+              x: pivotX - seg.width / 2,
+              y: pivotY + seg.offset - seg.height / 2,
+              width: seg.width,
+              height: seg.height
+            };
+            if (rectIntersect(rotCubeRect, segRect)) {
+              if (outlineColor !== seg.color) {
                 deathSound.currentTime = 0;
                 deathSound.play();
                 loadLevel(currentLevel);
@@ -3559,6 +3630,21 @@
           }
         }
       }
+
+      function drawStage3Level5Line() {
+        if (currentLevel === 35) {
+          const pivotX = canvas.width / 2;
+          const pivotY = canvas.height / 2;
+          ctx.save();
+          ctx.translate(pivotX, pivotY);
+          ctx.rotate(stage3Level5Angle);
+          for (let seg of stage3Level5Segments) {
+            ctx.fillStyle = seg.color;
+            ctx.fillRect(-seg.width / 2, seg.offset - seg.height / 2, seg.width, seg.height);
+          }
+          ctx.restore();
+        }
+      }
       function drawBrowns() {
         ctx.fillStyle = "saddlebrown";
         for (let b of browns) {
@@ -3799,6 +3885,7 @@
       drawCyans();
       drawYellows();
       drawStage3Level4Lines();
+      drawStage3Level5Line();
       drawBlues();
       drawBrowns();
         drawLifts();
