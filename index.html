@@ -558,6 +558,11 @@
       let stage3Level4LineSpeed = baseStage3Level4LineSpeed;
       const baseStage3Level4SpawnInterval = 825;
       let stage3Level4SpawnInterval = baseStage3Level4SpawnInterval;
+      // Variables for Stage 3 Level 5 rotating line
+      let stage3Level5Angle = 0;
+      const stage3Level5Speed = 0.02;
+      const stage3Level5Segments = 8;
+      let stage3Level5Length = 0;
       // =====================================================================
 
       // -------------------------------------------------
@@ -1562,6 +1567,19 @@
           stage3Level4: true,
           platforms: [],
           hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 5 (index 35)
+          // Rotating alternating color line
+          // -------------------------------------------------
+          spawn: { x: 0, y: 0.95 },
+          target: { x: 0.95, y: 0.05 },
+          colorLevel: true,
+          stage: 3,
+          stage3Level5: true,
+          platforms: [],
+          hazards: []
         }
       ];
 
@@ -1745,6 +1763,16 @@
           target = {
             x: stage3Level4TargetPositions[0].x * canvas.width,
             y: stage3Level4TargetPositions[0].y * canvas.height,
+            size: cube.size
+          };
+        } else if (lvl.stage3Level5) {
+          stage3Level5Angle = 0;
+          stage3Level5Length = Math.min(canvas.width, canvas.height) * 0.9;
+          cyans = cyans.filter(c => !c.stage3Level5);
+          yellows = yellows.filter(y => !y.stage3Level5);
+          target = {
+            x: lvl.target.x * canvas.width,
+            y: lvl.target.y * canvas.height,
             size: cube.size
           };
         } else if (lvl.fallingBrownLevel) {
@@ -2763,6 +2791,41 @@
           }
         }
 
+        if (levels[currentLevel].stage3Level5) {
+          cyans = cyans.filter(c => !c.stage3Level5);
+          yellows = yellows.filter(y => !y.stage3Level5);
+          stage3Level5Angle -= stage3Level5Speed;
+          const pivotX = canvas.width / 2;
+          const pivotY = canvas.height / 2;
+          const thickness = 20;
+          const segLength = stage3Level5Length / stage3Level5Segments;
+          for (let i = 0; i < stage3Level5Segments; i++) {
+            const color = i % 2 === 0 ? "cyan" : "yellow";
+            const start = -stage3Level5Length / 2 + i * segLength;
+            let corners = [
+              { x: start, y: -thickness / 2 },
+              { x: start + segLength, y: -thickness / 2 },
+              { x: start + segLength, y: thickness / 2 },
+              { x: start, y: thickness / 2 }
+            ];
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            for (let c of corners) {
+              let rx = c.x * Math.cos(stage3Level5Angle) - c.y * Math.sin(stage3Level5Angle) + pivotX;
+              let ry = c.x * Math.sin(stage3Level5Angle) + c.y * Math.cos(stage3Level5Angle) + pivotY;
+              if (rx < minX) minX = rx;
+              if (ry < minY) minY = ry;
+              if (rx > maxX) maxX = rx;
+              if (ry > maxY) maxY = ry;
+            }
+            const rect = { x: minX, y: minY, width: maxX - minX, height: maxY - minY, stage3Level5: true };
+            if (color === "cyan") {
+              cyans.push(rect);
+            } else {
+              yellows.push(rect);
+            }
+          }
+        }
+
         // If there's a moving target
         if (levels[currentLevel].movingTarget && target) {
           target.x += target.dx;
@@ -3559,6 +3622,23 @@
           }
         }
       }
+
+      function drawStage3Level5Line() {
+        if (levels[currentLevel].stage3Level5) {
+          const pivotX = canvas.width / 2;
+          const pivotY = canvas.height / 2;
+          const thickness = 20;
+          const segLength = stage3Level5Length / stage3Level5Segments;
+          ctx.save();
+          ctx.translate(pivotX, pivotY);
+          ctx.rotate(stage3Level5Angle);
+          for (let i = 0; i < stage3Level5Segments; i++) {
+            ctx.fillStyle = i % 2 === 0 ? "cyan" : "yellow";
+            ctx.fillRect(-stage3Level5Length / 2 + i * segLength, -thickness / 2, segLength, thickness);
+          }
+          ctx.restore();
+        }
+      }
       function drawBrowns() {
         ctx.fillStyle = "saddlebrown";
         for (let b of browns) {
@@ -3799,6 +3879,7 @@
       drawCyans();
       drawYellows();
       drawStage3Level4Lines();
+      drawStage3Level5Line();
       drawBlues();
       drawBrowns();
         drawLifts();
