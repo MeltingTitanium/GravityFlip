@@ -1772,8 +1772,8 @@
           stage3Level5Segments = [];
           const count = stage3Level5SegmentColors.length;
           const baseSegH = canvas.height / count;
-          const segH = baseSegH * 1.5; // 50% longer segments
-          const segSpacing = segH; // spacing matches new segment length
+          const segH = baseSegH * 3; // segments are now twice as long
+          const segSpacing = segH; // spacing matches new (longer) segment length
           const segW = 0.02 * canvas.width;
           for (let i = 0; i < count; i++) {
             stage3Level5Segments.push({
