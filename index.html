@@ -1835,6 +1835,9 @@
           const movingIndex = hazards.findIndex(h => h.moving);
           if (movingIndex !== -1) {
             const delayedHazard = hazards.splice(movingIndex, 1)[0];
+            if (currentMode === "easy") {
+              delayedHazard.dx *= 0.25; // Slow hazard wall in easy mode
+            }
             stage3Level3HazardTimeout = setTimeout(() => {
               hazards.push(delayedHazard);
             }, 1000);
@@ -2044,6 +2047,9 @@
           const movingIndex = hazards.findIndex(h => h.moving);
           if (movingIndex !== -1) {
             const delayedHazard = hazards.splice(movingIndex, 1)[0];
+            if (currentMode === "easy") {
+              delayedHazard.dx *= 0.25; // Slow hazard wall in easy mode
+            }
             stage3Level3HazardTimeout = setTimeout(() => {
               hazards.push(delayedHazard);
             }, 500);
