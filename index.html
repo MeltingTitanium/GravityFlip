@@ -1582,6 +1582,22 @@
           stage3Level5: true,
           platforms: [],
           hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 6 (index 36)
+          // Stage 1 Level 3 layout with rotating cyan/yellow center
+          // -------------------------------------------------
+          spawn: { x: 0.1, y: 0.95 },
+          target: { x: 0.9, y: 0.05 },
+          colorLevel: true,
+          stage: 3,
+          stage3Level5: true,
+          platforms: [
+            { x: 0.2, y: 0.7, w: 0.25, h: 0.03 },
+            { x: 0.55, y: 0.4, w: 0.3, h: 0.03 }
+          ],
+          hazards: []
         }
       ];
 
@@ -2910,7 +2926,7 @@
           }
         }
 
-        if (currentLevel === 35) {
+        if (levels[currentLevel].stage3Level5) {
           const pivotX = canvas.width / 2;
           const pivotY = canvas.height / 2;
           function rotPtGlobal(x, y, ang) {
@@ -3640,7 +3656,7 @@
       }
 
       function drawStage3Level5Line() {
-        if (currentLevel === 35) {
+        if (levels[currentLevel].stage3Level5) {
           const pivotX = canvas.width / 2;
           const pivotY = canvas.height / 2;
           ctx.save();
