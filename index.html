@@ -1582,6 +1582,24 @@
           stage3Level5: true,
           platforms: [],
           hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 6 (index 36)
+          // Vertical shaft maze with rotating color line
+          // -------------------------------------------------
+          spawn: { x: 0.95, y: 0.95 },
+          target: { x: 0.05, y: 0.05 },
+          colorLevel: true,
+          stage: 3,
+          stage3Level5: true,
+          platforms: [
+            { x: 0.05, y: 0.75, w: 0.95, h: 0.02 },
+            { x: 0.0,  y: 0.5,  w: 0.49, h: 0.02 },
+            { x: 0.51, y: 0.5,  w: 0.49, h: 0.02 },
+            { x: 0.05, y: 0.25, w: 0.95, h: 0.02 }
+          ],
+          hazards: []
         }
       ];
 
@@ -2910,7 +2928,7 @@
           }
         }
 
-        if (currentLevel === 35) {
+        if (levels[currentLevel].stage3Level5) {
           const pivotX = canvas.width / 2;
           const pivotY = canvas.height / 2;
           function rotPtGlobal(x, y, ang) {
@@ -3640,7 +3658,7 @@
       }
 
       function drawStage3Level5Line() {
-        if (currentLevel === 35) {
+        if (levels[currentLevel].stage3Level5) {
           const pivotX = canvas.width / 2;
           const pivotY = canvas.height / 2;
           ctx.save();
