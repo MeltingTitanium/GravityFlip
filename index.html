@@ -1562,19 +1562,6 @@
         {
           // -------------------------------------------------
           // NEW LEVEL: Stage 3 - Level 4 (index 34)
-          // Falling color lines triggered by the moving target
-          // -------------------------------------------------
-          spawn: { x: 0.5, y: 0.95 },
-          target: { x: 0.5, y: 0.5 },
-          colorLevel: true,
-          stage: 3,
-          stage3Level4: true,
-          platforms: [],
-          hazards: []
-        },
-        {
-          // -------------------------------------------------
-          // NEW LEVEL: Stage 3 - Level 5 (index 35)
           // Rotating cyan/yellow line obstacle
           // -------------------------------------------------
           spawn: { x: 0.05, y: 0.95 },
@@ -1582,6 +1569,19 @@
           colorLevel: true,
           stage: 3,
           stage3Level5: true,
+          platforms: [],
+          hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 5 (index 35)
+          // Falling color lines triggered by the moving target
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.5 },
+          colorLevel: true,
+          stage: 3,
+          stage3Level4: true,
           platforms: [],
           hazards: []
         },
@@ -2981,7 +2981,7 @@
           }
         }
 
-        if (currentLevel === 34) {
+        if (levels[currentLevel].stage3Level4) {
           for (let line of stage3Level4Lines) {
             const lRect = { x: line.x, y: line.y, width: line.width, height: line.height };
             if (rectIntersect(cubeRect, lRect)) {
@@ -3121,7 +3121,7 @@
             };
             if (levels[currentLevel].fallingBrownLevel && (now - target.spawnTime < 500)) {
               // do nothing for half a second
-            } else if (currentLevel === 34 && rectIntersect(cubeRect, targetRect)) {
+            } else if (levels[currentLevel].stage3Level4 && rectIntersect(cubeRect, targetRect)) {
               if (!stage3Level4Triggered) {
                 stage3Level4Triggered = true;
                 stage3Level4LastSpawn = now;
@@ -3716,7 +3716,7 @@
       }
 
       function drawStage3Level4Lines() {
-        if (currentLevel === 34) {
+        if (levels[currentLevel].stage3Level4) {
           for (let line of stage3Level4Lines) {
             ctx.fillStyle = line.color;
             ctx.fillRect(line.x, line.y, line.width, line.height);
