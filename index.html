@@ -3781,9 +3781,15 @@
             ctx.fillStyle = line.color === "purple" ? "purple" : "blue";
             if (line.segments) {
               for (let seg of line.segments) {
+                if (isNaN(seg.x) || isNaN(seg.y) || isNaN(seg.width) || isNaN(seg.height)) {
+                  continue;
+                }
                 ctx.fillRect(seg.x, seg.y, seg.width, seg.height);
               }
             } else {
+              if (isNaN(line.obj.x) || isNaN(line.obj.y) || isNaN(line.obj.width) || isNaN(line.obj.height)) {
+                continue;
+              }
               ctx.fillRect(line.obj.x, line.obj.y, line.obj.width, line.obj.height);
             }
           }
