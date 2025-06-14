@@ -1527,36 +1527,39 @@
         {
           // -------------------------------------------------
           // NEW LEVEL: Stage 3 - Level 3 (index 33)
-          // Moving hazard wall and alternating color barriers
+          // Zigzag maze with alternating color gates
           // -------------------------------------------------
-          spawn:  { x: 0.05, y: 0.5 },
-          target: { x: 0.97, y: 0.5 },
+          spawn:  { x: 0.05, y: 0.95 },
+          target: { x: 0.95, y: 0.05 },
           colorLevel: true,
           stage: 3,
           platforms: [
-            { x: 0.05, y: 0.25, w: 0.12, h: 0.02 },
-            { x: 0.25, y: 0.75, w: 0.12, h: 0.02 },
-            { x: 0.50, y: 0.5,  w: 0.12, h: 0.02 },
-            { x: 0.72, y: 0.25, w: 0.12, h: 0.02 },
-            { x: 0.92, y: 0.75, w: 0.06, h: 0.02 }
+            { x: 0.0,  y: 0.85, w: 0.35, h: 0.02 },
+            { x: 0.65, y: 0.85, w: 0.35, h: 0.02 },
+            { x: 0.35, y: 0.65, w: 0.30, h: 0.02 },
+            { x: 0.0,  y: 0.45, w: 0.35, h: 0.02 },
+            { x: 0.65, y: 0.45, w: 0.35, h: 0.02 },
+            { x: 0.35, y: 0.25, w: 0.30, h: 0.02 }
           ],
           hazards: [
-            { x: -0.10, y: 0,    w: 0.10, h: 1,   dx: 2, moving: true, minX: -0.1, maxX: 2 },
-            { x: 0.43, y: 0.60, w: 0.05, h: 0.05 },
-            { x: 0.76, y: 0.35, w: 0.05, h: 0.05 },
-            { x: 0.94, y: 0.45, w: 0.05, h: 0.05 }
+            { x: 0.50, y: 0.80, w: 0.05, h: 0.05 },
+            { x: 0.20, y: 0.60, w: 0.05, h: 0.05 },
+            { x: 0.80, y: 0.40, w: 0.05, h: 0.05 }
           ],
           cyans: [
-            { x: 0.20, y: 0.5,  w: 0.02, h: 0.5 },
-            { x: 0.64, y: 0.0,  w: 0.02, h: 0.5 },
-            { x: 0.84, y: 0.25, w: 0.02, h: 0.5 }
+            { x: 0.35, y: 0.65, w: 0.02, h: 0.20 },
+            { x: 0.65, y: 0.45, w: 0.02, h: 0.20 },
+            { x: 0.35, y: 0.25, w: 0.02, h: 0.20 },
+            { x: 0.65, y: 0.05, w: 0.02, h: 0.20 }
           ],
           yellows: [
-        { x: 0.40, y: 0.0,  w: 0.02, h: 0.9 },
-        { x: 0.70, y: 0.3,  w: 0.02, h: 0.4 },
-        { x: 0.90, y: 0.0,  w: 0.02, h: 0.8 }
-      ]
-        },
+            { x: 0.65, y: 0.65, w: 0.02, h: 0.20 },
+            { x: 0.35, y: 0.45, w: 0.02, h: 0.20 },
+            { x: 0.65, y: 0.25, w: 0.02, h: 0.20 },
+            { x: 0.35, y: 0.05, w: 0.02, h: 0.20 }
+          ]
+        }
+,
         {
           // -------------------------------------------------
           // NEW LEVEL: Stage 3 - Level 4 (index 34)
@@ -1608,39 +1611,36 @@
         {
           // -------------------------------------------------
           // NEW LEVEL: Stage 3 - Level 7 (index 37)
-          // Zigzag maze with alternating color gates
+          // Moving hazard wall and alternating color barriers
           // -------------------------------------------------
-          spawn:  { x: 0.05, y: 0.95 },
-          target: { x: 0.95, y: 0.05 },
+          spawn:  { x: 0.05, y: 0.5 },
+          target: { x: 0.97, y: 0.5 },
           colorLevel: true,
           stage: 3,
           platforms: [
-            { x: 0.0,  y: 0.85, w: 0.35, h: 0.02 },
-            { x: 0.65, y: 0.85, w: 0.35, h: 0.02 },
-            { x: 0.35, y: 0.65, w: 0.30, h: 0.02 },
-            { x: 0.0,  y: 0.45, w: 0.35, h: 0.02 },
-            { x: 0.65, y: 0.45, w: 0.35, h: 0.02 },
-            { x: 0.35, y: 0.25, w: 0.30, h: 0.02 }
+            { x: 0.05, y: 0.25, w: 0.12, h: 0.02 },
+            { x: 0.25, y: 0.75, w: 0.12, h: 0.02 },
+            { x: 0.50, y: 0.5,  w: 0.12, h: 0.02 },
+            { x: 0.72, y: 0.25, w: 0.12, h: 0.02 },
+            { x: 0.92, y: 0.75, w: 0.06, h: 0.02 }
           ],
           hazards: [
-            { x: 0.50, y: 0.80, w: 0.05, h: 0.05 },
-            { x: 0.20, y: 0.60, w: 0.05, h: 0.05 },
-            { x: 0.80, y: 0.40, w: 0.05, h: 0.05 }
+            { x: -0.10, y: 0,    w: 0.10, h: 1,   dx: 2, moving: true, minX: -0.1, maxX: 2 },
+            { x: 0.43, y: 0.60, w: 0.05, h: 0.05 },
+            { x: 0.76, y: 0.35, w: 0.05, h: 0.05 },
+            { x: 0.94, y: 0.45, w: 0.05, h: 0.05 }
           ],
           cyans: [
-            { x: 0.35, y: 0.65, w: 0.02, h: 0.20 },
-            { x: 0.65, y: 0.45, w: 0.02, h: 0.20 },
-            { x: 0.35, y: 0.25, w: 0.02, h: 0.20 },
-            { x: 0.65, y: 0.05, w: 0.02, h: 0.20 }
+            { x: 0.20, y: 0.5,  w: 0.02, h: 0.5 },
+            { x: 0.64, y: 0.0,  w: 0.02, h: 0.5 },
+            { x: 0.84, y: 0.25, w: 0.02, h: 0.5 }
           ],
           yellows: [
-            { x: 0.65, y: 0.65, w: 0.02, h: 0.20 },
-            { x: 0.35, y: 0.45, w: 0.02, h: 0.20 },
-            { x: 0.65, y: 0.25, w: 0.02, h: 0.20 },
-            { x: 0.35, y: 0.05, w: 0.02, h: 0.20 }
-          ]
-        }
-      ];
+        { x: 0.40, y: 0.0,  w: 0.02, h: 0.9 },
+        { x: 0.70, y: 0.3,  w: 0.02, h: 0.4 },
+        { x: 0.90, y: 0.0,  w: 0.02, h: 0.8 }
+      ]
+        }      ];
 
       // -------------------------------------------------
       // 8. Update maxUnlockedLevel if currentLevel exceeds it
@@ -1888,7 +1888,7 @@
           minY: (h.minY !== undefined ? h.minY : 0) * canvas.height,
           maxY: (h.maxY !== undefined ? h.maxY : 1) * canvas.height
         }));
-        if (index === 33) {
+        if (index === 37) {
           const movingIndex = hazards.findIndex(h => h.moving);
           if (movingIndex !== -1) {
             const delayedHazard = hazards.splice(movingIndex, 1)[0];
@@ -2100,7 +2100,7 @@
           minY: (h.minY !== undefined ? h.minY : 0) * canvas.height,
           maxY: (h.maxY !== undefined ? h.maxY : 1) * canvas.height
         }));
-        if (currentLevel === 33) {
+        if (currentLevel === 37) {
           const movingIndex = hazards.findIndex(h => h.moving);
           if (movingIndex !== -1) {
             const delayedHazard = hazards.splice(movingIndex, 1)[0];
