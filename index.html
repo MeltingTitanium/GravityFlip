@@ -565,6 +565,17 @@
       let stage3Level5Angle = 0;
       const baseStage3Level5AngularSpeed = Math.PI / 360;
       let stage3Level5AngularSpeed = baseStage3Level5AngularSpeed;
+
+      // Variables for Stage 3 Level 7
+      let stage3Level7Segments = [];
+      let stage3Level7Bars = [];
+      let stage3Level7Angle = 0;
+      const baseStage3Level7AngularSpeed = Math.PI / 360;
+      let stage3Level7AngularSpeed = baseStage3Level7AngularSpeed;
+      const baseStage3Level7BarSpeed = 2;
+      let stage3Level7BarSpeed = baseStage3Level7BarSpeed;
+      let stage3Level7LastQuadrant = null;
+      const stage3Level7QuadrantColors = ["cyan", "yellow", "yellow", "cyan"];
       // =====================================================================
 
       // -------------------------------------------------
@@ -1667,6 +1678,19 @@
             { x: 0.4, y: 0.2, w: 0.6, h: 0.02 }
           ],
           hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 7 (index 37)
+          // Rotating cross with falling bars
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.05 },
+          colorLevel: true,
+          stage: 3,
+          stage3Level7: true,
+          platforms: [],
+          hazards: []
         }
       ];
 
@@ -1870,6 +1894,28 @@
           }
           stage3Level5AngularSpeed =
             baseStage3Level5AngularSpeed * (currentMode === "easy" ? 0.6 : currentMode === "hard" ? 1.2 : 1);
+          target = {
+            x: lvl.target.x * canvas.width,
+            y: lvl.target.y * canvas.height,
+            size: cube.size
+          };
+        } else if (lvl.stage3Level7) {
+          stage3Level7Angle = 0;
+          stage3Level7Bars = [];
+          stage3Level7Segments = [];
+          stage3Level7LastQuadrant = null;
+          const segW = 0.02 * canvas.width;
+          const segL = 0.45 * canvas.height;
+          stage3Level7Segments = [
+            { x: -segW / 2, y: -segL, width: segW, height: segL, color: "cyan" },
+            { x: -segW / 2, y: 0, width: segW, height: segL, color: "yellow" },
+            { x: -segL, y: -segW / 2, width: segL, height: segW, color: "cyan" },
+            { x: 0, y: -segW / 2, width: segL, height: segW, color: "yellow" }
+          ];
+          stage3Level7AngularSpeed =
+            baseStage3Level7AngularSpeed * (currentMode === "easy" ? 0.6 : currentMode === "hard" ? 1.2 : 1);
+          stage3Level7BarSpeed =
+            baseStage3Level7BarSpeed * (currentMode === "easy" ? 0.6 : currentMode === "hard" ? 1.2 : 1);
           target = {
             x: lvl.target.x * canvas.width,
             y: lvl.target.y * canvas.height,
@@ -2901,6 +2947,70 @@
           stage3Level5Angle -= stage3Level5AngularSpeed;
         }
 
+        if (levels[currentLevel].stage3Level7) {
+          const pivotX = canvas.width / 2;
+          const pivotY = canvas.height / 2;
+          function rotPtGlobal(x, y, ang) {
+            return { x: x * Math.cos(ang) - y * Math.sin(ang), y: x * Math.sin(ang) + y * Math.cos(ang) };
+          }
+          const rc = rotPtGlobal(cube.x - pivotX, cube.y - pivotY, -stage3Level7Angle);
+          const rotCubeRect = { x: rc.x + pivotX - cube.size / 2, y: rc.y + pivotY - cube.size / 2, width: cube.size, height: cube.size };
+          for (let seg of stage3Level7Segments) {
+            const segRect = { x: pivotX + seg.x, y: pivotY + seg.y, width: seg.width, height: seg.height };
+            if (rectIntersect(rotCubeRect, segRect)) {
+              if (outlineColor !== seg.color) {
+                deathSound.currentTime = 0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
+            }
+          }
+          for (let bar of stage3Level7Bars) {
+            const bRect = { x: bar.x, y: bar.y, width: bar.width, height: bar.height };
+            if (rectIntersect(cubeRect, bRect)) {
+              if (outlineColor !== bar.color) {
+                deathSound.currentTime = 0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
+            }
+          }
+        }
+
+        if (levels[currentLevel].stage3Level7) {
+          stage3Level7Angle -= stage3Level7AngularSpeed;
+          const pivotX = canvas.width / 2;
+          const pivotY = canvas.height / 2;
+          function rotPtGlobal(x, y, ang) {
+            return { x: x * Math.cos(ang) - y * Math.sin(ang), y: x * Math.sin(ang) + y * Math.cos(ang) };
+          }
+          const rc = rotPtGlobal(cube.x - pivotX, cube.y - pivotY, -stage3Level7Angle);
+          const quadrant = rc.x < 0 ? (rc.y < 0 ? 0 : 3) : (rc.y < 0 ? 1 : 2);
+          if (stage3Level7LastQuadrant === null) stage3Level7LastQuadrant = quadrant;
+          if (quadrant !== stage3Level7LastQuadrant) {
+            const oppColor = stage3Level7QuadrantColors[quadrant] === "cyan" ? "yellow" : "cyan";
+            const t = 0.02 * canvas.height;
+            if (quadrant < 2) {
+              stage3Level7Bars.push({ x: 0, y: -t, width: canvas.width, height: t, dx: 0, dy: stage3Level7BarSpeed, color: oppColor });
+            } else if (quadrant === 2) {
+              stage3Level7Bars.push({ x: canvas.width, y: 0, width: t, height: canvas.height, dx: -stage3Level7BarSpeed, dy: 0, color: oppColor });
+            } else {
+              stage3Level7Bars.push({ x: -t, y: 0, width: t, height: canvas.height, dx: stage3Level7BarSpeed, dy: 0, color: oppColor });
+            }
+            stage3Level7LastQuadrant = quadrant;
+          }
+          for (let i = stage3Level7Bars.length - 1; i >= 0; i--) {
+            let b = stage3Level7Bars[i];
+            b.x += b.dx;
+            b.y += b.dy;
+            if (b.x > canvas.width || b.x + b.width < 0 || b.y > canvas.height || b.y + b.height < 0) {
+              stage3Level7Bars.splice(i, 1);
+            }
+          }
+        }
+
         // If there's a moving target
         if (levels[currentLevel].movingTarget && target) {
           target.x += target.dx;
@@ -3738,6 +3848,30 @@
           ctx.restore();
         }
       }
+
+      function drawStage3Level7Cross() {
+        if (levels[currentLevel].stage3Level7) {
+          const pivotX = canvas.width / 2;
+          const pivotY = canvas.height / 2;
+          ctx.save();
+          ctx.translate(pivotX, pivotY);
+          ctx.rotate(stage3Level7Angle);
+          for (let seg of stage3Level7Segments) {
+            ctx.fillStyle = seg.color;
+            ctx.fillRect(seg.x, seg.y, seg.width, seg.height);
+          }
+          ctx.restore();
+        }
+      }
+
+      function drawStage3Level7Bars() {
+        if (levels[currentLevel].stage3Level7) {
+          for (let bar of stage3Level7Bars) {
+            ctx.fillStyle = bar.color;
+            ctx.fillRect(bar.x, bar.y, bar.width, bar.height);
+          }
+        }
+      }
       function drawBrowns() {
         ctx.fillStyle = "saddlebrown";
         for (let b of browns) {
@@ -3979,6 +4113,8 @@
       drawYellows();
       drawStage3Level4Lines();
       drawStage3Level5Line();
+      drawStage3Level7Cross();
+      drawStage3Level7Bars();
       drawBlues();
       drawBrowns();
         drawLifts();
