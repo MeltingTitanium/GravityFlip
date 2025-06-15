@@ -1667,6 +1667,31 @@
             { x: 0.4, y: 0.2, w: 0.6, h: 0.02 }
           ],
           hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 9 (index 39)
+          // Alternating color gauntlet with crossing horizontal gates
+          // -------------------------------------------------
+          spawn:  { x: 0.05, y: 0.95 },
+          target: { x: 0.95, y: 0.05 },
+          colorLevel: true,
+          stage: 3,
+          platforms: [],
+          hazards: [
+            { x: 0.3, y: 0.85, w: 0.05, h: 0.05 },
+            { x: 0.65, y: 0.25, w: 0.05, h: 0.05, moving: true, dx: 0.4, minX: 0.55, maxX: 0.85 }
+          ],
+          cyans: [
+            { x: 0.2, y: 0, w: 0.02, h: 1 },
+            { x: 0.6, y: 0, w: 0.02, h: 1 },
+            { x: 0.0, y: 0.35, w: 1, h: 0.02 }
+          ],
+          yellows: [
+            { x: 0.4, y: 0, w: 0.02, h: 1 },
+            { x: 0.8, y: 0, w: 0.02, h: 1 },
+            { x: 0.0, y: 0.65, w: 1, h: 0.02 }
+          ]
         }
       ];
 
