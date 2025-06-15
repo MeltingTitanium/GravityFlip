@@ -2882,8 +2882,8 @@
           cube.vy = 0;
         }
 
-        // Update hazards (levels 2-6 have horizontally moving hazards)
-        if ([2, 3, 4, 5, 6, 21].includes(currentLevel)) {
+        // Update hazards (levels 2-6 plus some later levels have horizontally moving hazards)
+        if ([2, 3, 4, 5, 6, 21, 40].includes(currentLevel)) {
           hazards.forEach(h => {
             h.x += h.vx;
             if (h.x < h.minX || h.x > h.maxX) {
