@@ -1712,6 +1712,7 @@
           // -------------------------------------------------
           // NEW LEVEL: Stage 3 - Level 9 (index 39)
           // Based on Level 6 but with a delayed moving hazard
+          // The hazard spawns after 3s on easy/normal or 2s on hard
           // -------------------------------------------------
           spawn:  { x: 0.05, y: 0.95 },
           target: { x: 0.95, y: 0.05 },
@@ -2012,11 +2013,12 @@
             if (currentMode === "easy") {
               delayedHazard.dx *= 0.25; // Apply easy mode slowdown
             }
+            const delay = currentMode === "hard" ? 2000 : 3000;
             stage3Level9HazardTimeout = setTimeout(() => {
               delayedHazard.savedDx = delayedHazard.dx;
               delayedHazard.pauseUntil = null;
               hazards.push(delayedHazard);
-            }, 4000);
+            }, delay);
           }
         }
         // Map orange (moving obstacles) definitions
@@ -2240,11 +2242,12 @@
             if (currentMode === "easy") {
               delayedHazard.dx *= 0.25; // Apply easy mode slowdown
             }
+            const delay = currentMode === "hard" ? 2000 : 3000;
             stage3Level9HazardTimeout = setTimeout(() => {
               delayedHazard.savedDx = delayedHazard.dx;
               delayedHazard.pauseUntil = null;
               hazards.push(delayedHazard);
-            }, 4000);
+            }, delay);
           }
         }
         oranges = (lvl.oranges || []).map(o => ({
