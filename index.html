@@ -164,6 +164,18 @@
         font-size: 72px;
           font-family: "Press Start 2P", monospace;
       }
+      #autoColorMessage {
+        position: absolute;
+        top: 10px;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        font-size: 48px;
+        font-family: "Press Start 2P", monospace;
+        color: cyan;
+        z-index: 50;
+        pointer-events: none;
+      }
     </style>
   </head>
   <body>
@@ -294,6 +306,7 @@
       </div>
     </div>
     <div id="checkpointPopup" class="overlay hidden">Checkpoint Reached</div>
+    <div id="autoColorMessage" class="hidden">automatic color switching unlocked</div>
 
     <!-- ======================================================
          JavaScript Section: Contains all game logic and functionality.
@@ -481,6 +494,11 @@
 
       // Outline color for color-change gimmick ("cyan" or "yellow")
       let outlineColor = null;
+
+      // Secret auto color switching mode
+      let autoColorEnabled = false;
+      let autoColorBuffer = "";
+      const autoColorCode = "autocolor";
 
       // -------------------------------------------------
       //  NEW GLOBALS FOR THE CHALLENGE LEVEL (after level 17)
@@ -2346,6 +2364,19 @@
       // 10. Key Handling (No Diagonals) + Special Keys for Level Selector, Clear Storage, and "R" to die
       // -------------------------------------------------
       document.addEventListener("keydown", e => {
+        if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          autoColorBuffer += e.key.toLowerCase();
+          if (!autoColorCode.startsWith(autoColorBuffer)) {
+            autoColorBuffer = e.key.toLowerCase() === autoColorCode[0] ? e.key.toLowerCase() : "";
+          }
+          if (autoColorBuffer === autoColorCode) {
+            autoColorEnabled = true;
+            autoColorBuffer = "";
+            const msg = document.getElementById("autoColorMessage");
+            msg.classList.remove("hidden");
+            setTimeout(() => msg.classList.add("hidden"), 1500);
+          }
+        }
         // ======================
         // SHIFT+5 EMULATES NUMPAD5 (using e.code)
         // ======================
@@ -2611,6 +2642,52 @@
           r2.y >= r1.y + r1.height ||
           r2.y + r2.height <= r1.y
         );
+      }
+
+      function rectDistance(px, py, rect) {
+        const dx = Math.max(rect.x - px, 0, px - (rect.x + rect.width));
+        const dy = Math.max(rect.y - py, 0, py - (rect.y + rect.height));
+        return Math.hypot(dx, dy);
+      }
+
+      function closestColor() {
+        let minCyan = Infinity;
+        let minYellow = Infinity;
+
+        cyans.forEach(c => {
+          minCyan = Math.min(minCyan, rectDistance(cube.x, cube.y, c));
+        });
+        yellows.forEach(y => {
+          minYellow = Math.min(minYellow, rectDistance(cube.x, cube.y, y));
+        });
+
+        if (levels[currentLevel].stage3Level4) {
+          stage3Level4Lines.forEach(l => {
+            const rect = { x: l.x, y: l.y, width: l.width, height: l.height };
+            const d = rectDistance(cube.x, cube.y, rect);
+            if (l.color === "cyan") minCyan = Math.min(minCyan, d);
+            else minYellow = Math.min(minYellow, d);
+          });
+        }
+
+        if (levels[currentLevel].stage3Level5) {
+          const pivotX = canvas.width / 2;
+          const pivotY = canvas.height / 2;
+          function rotPt(x, y, ang) {
+            return { x: x * Math.cos(ang) - y * Math.sin(ang), y: x * Math.sin(ang) + y * Math.cos(ang) };
+          }
+          const rc = rotPt(cube.x - pivotX, cube.y - pivotY, -stage3Level5Angle);
+          const rotX = rc.x + pivotX;
+          const rotY = rc.y + pivotY;
+          stage3Level5Segments.forEach(seg => {
+            const rect = { x: pivotX - seg.width / 2, y: pivotY + seg.offset - seg.height / 2, width: seg.width, height: seg.height };
+            const d = rectDistance(rotX, rotY, rect);
+            if (seg.color === "cyan") minCyan = Math.min(minCyan, d);
+            else minYellow = Math.min(minYellow, d);
+          });
+        }
+
+        return minCyan <= minYellow ? "cyan" : "yellow";
       }
 
       // -------------------------------------------------
@@ -3062,6 +3139,10 @@
             target.x = canvas.width - target.size / 2;
             target.dx = -target.dx;
           }
+        }
+
+        if (autoColorEnabled && levels[currentLevel].colorLevel) {
+          outlineColor = closestColor();
         }
 
         // Check collisions with hazards
