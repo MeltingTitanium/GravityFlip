@@ -716,14 +716,14 @@
       function spawnGreyParticles(rect) {
         const centerX = rect.x + rect.width / 2;
         const centerY = rect.y + rect.height / 2;
-        for (let i = 0; i < 12; i++) {
+        for (let i = 0; i < 24; i++) {
           greyParticles.push({
             x: centerX,
             y: centerY,
             vx: (Math.random() - 0.5) * 4,
             vy: -Math.random() * 3,
             alpha: 1.0,
-            size: 5
+            size: 10
           });
         }
       }
@@ -747,7 +747,7 @@
           p.x += p.vx;
           p.y += p.vy;
           p.vy += 0.2;
-          p.alpha -= 0.02;
+          p.alpha -= 0.01;
           if (p.alpha <= 0) {
             greyParticles.splice(i, 1);
           }
@@ -1713,6 +1713,7 @@
           // NEW LEVEL: Stage 3 - Level 9 (index 39)
           // Based on Level 6 but with a delayed moving hazard
           // The hazard spawns after 3s on easy/normal or 2s on hard
+          // It pauses on grey pillars for 1.5s before breaking them with particles
           // -------------------------------------------------
           spawn:  { x: 0.05, y: 0.95 },
           target: { x: 0.95, y: 0.05 },
@@ -1992,7 +1993,8 @@
           minY: (h.minY !== undefined ? h.minY : 0) * canvas.height,
           maxY: (h.maxY !== undefined ? h.maxY : 1) * canvas.height,
           savedDx: h.dx || 0,
-          pauseUntil: null
+          pauseUntil: null,
+          pausePlatform: null
         }));
         if (index === 37) {
           const movingIndex = hazards.findIndex(h => h.moving);
@@ -2221,7 +2223,8 @@
           minY: (h.minY !== undefined ? h.minY : 0) * canvas.height,
           maxY: (h.maxY !== undefined ? h.maxY : 1) * canvas.height,
           savedDx: h.dx || 0,
-          pauseUntil: null
+          pauseUntil: null,
+          pausePlatform: null
         }));
         if (currentLevel === 37) {
           const movingIndex = hazards.findIndex(h => h.moving);
@@ -2810,11 +2813,20 @@
         if (currentLevel === 39) {
           for (let h of hazards) {
             if (!h.moving) continue;
-            if (h.pauseUntil && now >= h.pauseUntil) {
-              h.dx = h.savedDx;
-              h.pauseUntil = null;
+            if (h.pauseUntil) {
+              if (now >= h.pauseUntil) {
+                if (h.pausePlatform) {
+                  spawnGreyParticles(h.pausePlatform);
+                  const idx = platforms.indexOf(h.pausePlatform);
+                  if (idx !== -1) platforms.splice(idx, 1);
+                  h.pausePlatform = null;
+                }
+                h.dx = h.savedDx;
+                h.pauseUntil = null;
+              } else {
+                continue;
+              }
             }
-            if (h.pauseUntil) continue;
             const hRect = { x: h.x, y: h.y, width: h.width, height: h.height };
             for (let i = 0; i < platforms.length; i++) {
               const p = platforms[i];
@@ -2828,8 +2840,7 @@
                 h.savedDx = h.dx;
                 h.dx = 0;
                 h.pauseUntil = now + 1500;
-                spawnGreyParticles(p);
-                platforms.splice(i, 1);
+                h.pausePlatform = p;
                 break;
               }
             }
