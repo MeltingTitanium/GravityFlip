@@ -1666,7 +1666,37 @@
             { x: 0.0, y: 0.2, w: 0.1, h: 0.02 },
             { x: 0.4, y: 0.2, w: 0.6, h: 0.02 }
           ],
-          hazards: []
+        hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 10 (index 39)
+          // Stage 3 Level 6 with a delayed moving hazard
+          // -------------------------------------------------
+          spawn:  { x: 0.05, y: 0.95 },
+          target: { x: 0.95, y: 0.05 },
+          colorLevel: true,
+          stage: 3,
+          platforms: [
+            { x: 0.20, y: 0.30, w: 0.05, h: 0.70 },
+            { x: 0.50, y: 0.00, w: 0.05, h: 0.70 },
+            { x: 0.80, y: 0.30, w: 0.05, h: 0.70 }
+          ],
+          hazards: [
+            { x: -0.10, y: 0, w: 0.10, h: 1, dx: 1, moving: true, minX: -0.1, maxX: 2 }
+          ],
+          cyans: [
+            { x: 0.00, y: 0.60, w: 1.00, h: 0.02 },
+            { x: 0.00, y: 0.20, w: 1.00, h: 0.02 },
+            { x: 0.30, y: 0.00, w: 0.02, h: 1.00 },
+            { x: 0.60, y: 0.00, w: 0.02, h: 1.00 }
+          ],
+          yellows: [
+            { x: 0.00, y: 0.80, w: 1.00, h: 0.02 },
+            { x: 0.00, y: 0.40, w: 1.00, h: 0.02 },
+            { x: 0.40, y: 0.00, w: 0.02, h: 1.00 },
+            { x: 0.70, y: 0.00, w: 0.02, h: 1.00 }
+          ]
         }
       ];
 
@@ -1916,16 +1946,17 @@
           minY: (h.minY !== undefined ? h.minY : 0) * canvas.height,
           maxY: (h.maxY !== undefined ? h.maxY : 1) * canvas.height
         }));
-        if (index === 37) {
+        if (index === 37 || index === 39) {
           const movingIndex = hazards.findIndex(h => h.moving);
           if (movingIndex !== -1) {
             const delayedHazard = hazards.splice(movingIndex, 1)[0];
             if (currentMode === "easy") {
               delayedHazard.dx *= 0.25; // Slow hazard wall in easy mode
             }
+            const delay = (index === 37) ? 1000 : 2500;
             stage3Level3HazardTimeout = setTimeout(() => {
               hazards.push(delayedHazard);
-            }, 1000);
+            }, delay);
           }
         }
         // Map orange (moving obstacles) definitions
@@ -2128,16 +2159,17 @@
           minY: (h.minY !== undefined ? h.minY : 0) * canvas.height,
           maxY: (h.maxY !== undefined ? h.maxY : 1) * canvas.height
         }));
-        if (currentLevel === 37) {
+        if (currentLevel === 37 || currentLevel === 39) {
           const movingIndex = hazards.findIndex(h => h.moving);
           if (movingIndex !== -1) {
             const delayedHazard = hazards.splice(movingIndex, 1)[0];
             if (currentMode === "easy") {
               delayedHazard.dx *= 0.25; // Slow hazard wall in easy mode
             }
+            const delay = (currentLevel === 37) ? 500 : 2500;
             stage3Level3HazardTimeout = setTimeout(() => {
               hazards.push(delayedHazard);
-            }, 500);
+            }, delay);
           }
         }
         oranges = (lvl.oranges || []).map(o => ({
