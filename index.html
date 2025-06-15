@@ -695,6 +695,7 @@
       // 6. Particles for Broken Brown Obstacles
       // -------------------------------------------------
       let brownParticles = []; // Array to hold particle objects
+      let greyParticles = []; // Array for disappearing pillar particles
 
       function spawnBrownParticles(obstacle) {
         const centerX = obstacle.x + obstacle.width / 2;
@@ -702,6 +703,21 @@
         // Generate 12 particles with random velocities and fading transparency
         for (let i = 0; i < 12; i++) {
           brownParticles.push({
+            x: centerX,
+            y: centerY,
+            vx: (Math.random() - 0.5) * 4,
+            vy: -Math.random() * 3,
+            alpha: 1.0,
+            size: 5
+          });
+        }
+      }
+
+      function spawnGreyParticles(rect) {
+        const centerX = rect.x + rect.width / 2;
+        const centerY = rect.y + rect.height / 2;
+        for (let i = 0; i < 12; i++) {
+          greyParticles.push({
             x: centerX,
             y: centerY,
             vx: (Math.random() - 0.5) * 4,
@@ -725,6 +741,19 @@
         }
       }
 
+      function updateGreyParticles() {
+        for (let i = greyParticles.length - 1; i >= 0; i--) {
+          const p = greyParticles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.2;
+          p.alpha -= 0.02;
+          if (p.alpha <= 0) {
+            greyParticles.splice(i, 1);
+          }
+        }
+      }
+
       function drawBrownParticles() {
         ctx.fillStyle = "brown";
         brownParticles.forEach(p => {
@@ -732,6 +761,15 @@
           ctx.fillRect(p.x, p.y, p.size, p.size);
         });
         ctx.globalAlpha = 1.0; // Reset global alpha after drawing particles
+      }
+
+      function drawGreyParticles() {
+        ctx.fillStyle = "grey";
+        greyParticles.forEach(p => {
+          ctx.globalAlpha = p.alpha;
+          ctx.fillRect(p.x, p.y, p.size, p.size);
+        });
+        ctx.globalAlpha = 1.0;
       }
 
       // -------------------------------------------------
@@ -1811,6 +1849,7 @@
 
         // Clear particles and falling objects from previous level
         brownParticles = [];
+        greyParticles = [];
         fallingOranges = [];
         lastFallingOrangeSpawn = Date.now();
         blues = [];
@@ -1950,7 +1989,9 @@
           minX: (h.minX !== undefined ? h.minX : 0) * canvas.width,
           maxX: (h.maxX !== undefined ? h.maxX : 1) * canvas.width,
           minY: (h.minY !== undefined ? h.minY : 0) * canvas.height,
-          maxY: (h.maxY !== undefined ? h.maxY : 1) * canvas.height
+          maxY: (h.maxY !== undefined ? h.maxY : 1) * canvas.height,
+          savedDx: h.dx || 0,
+          pauseUntil: null
         }));
         if (index === 37) {
           const movingIndex = hazards.findIndex(h => h.moving);
@@ -1973,6 +2014,8 @@
               delayedHazard.dx *= 0.25; // Apply easy mode slowdown
             }
             stage3Level9HazardTimeout = setTimeout(() => {
+              delayedHazard.savedDx = delayedHazard.dx;
+              delayedHazard.pauseUntil = null;
               hazards.push(delayedHazard);
             }, 4000);
           }
@@ -2175,7 +2218,9 @@
           minX: (h.minX !== undefined ? h.minX : 0) * canvas.width,
           maxX: (h.maxX !== undefined ? h.maxX : 1) * canvas.width,
           minY: (h.minY !== undefined ? h.minY : 0) * canvas.height,
-          maxY: (h.maxY !== undefined ? h.maxY : 1) * canvas.height
+          maxY: (h.maxY !== undefined ? h.maxY : 1) * canvas.height,
+          savedDx: h.dx || 0,
+          pauseUntil: null
         }));
         if (currentLevel === 37) {
           const movingIndex = hazards.findIndex(h => h.moving);
@@ -2198,6 +2243,8 @@
               delayedHazard.dx *= 0.25; // Apply easy mode slowdown
             }
             stage3Level9HazardTimeout = setTimeout(() => {
+              delayedHazard.savedDx = delayedHazard.dx;
+              delayedHazard.pauseUntil = null;
               hazards.push(delayedHazard);
             }, 4000);
           }
@@ -2759,6 +2806,35 @@
           }
         });
 
+        if (currentLevel === 39) {
+          for (let h of hazards) {
+            if (!h.moving) continue;
+            if (h.pauseUntil && now >= h.pauseUntil) {
+              h.dx = h.savedDx;
+              h.pauseUntil = null;
+            }
+            if (h.pauseUntil) continue;
+            const hRect = { x: h.x, y: h.y, width: h.width, height: h.height };
+            for (let i = 0; i < platforms.length; i++) {
+              const p = platforms[i];
+              const pRect = { x: p.x, y: p.y, width: p.width, height: p.height };
+              if (rectIntersect(hRect, pRect)) {
+                if (h.dx > 0) {
+                  h.x = p.x - h.width;
+                } else {
+                  h.x = p.x + p.width;
+                }
+                h.savedDx = h.dx;
+                h.dx = 0;
+                h.pauseUntil = now + 1500;
+                spawnGreyParticles(p);
+                platforms.splice(i, 1);
+                break;
+              }
+            }
+          }
+        }
+
         // -------------------------------
         // REWORKED MOVEMENT FOR ORANGES & PURPLES
         // -------------------------------
@@ -3260,6 +3336,7 @@
         }
 
         updateBrownParticles();
+        updateGreyParticles();
 
         // Handle any challenge-dashing-level logic (Level 18)
         if (levels[currentLevel].challengeDashingLevel) {
@@ -4051,6 +4128,7 @@
         }
         drawCube();
         drawBrownParticles();
+        drawGreyParticles();
         drawLevelText();
         drawCooldown();
         if (levels[currentLevel].challengeDashingLevel ||
