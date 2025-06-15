@@ -3419,7 +3419,7 @@
                 return;
               }
             } else if (levels[currentLevel].teleportToCenter && rectIntersect(cubeRect, targetRect) && !stage3Level10Teleported) {
-              target.x = canvas.width / 2;
+              target.x = canvas.width / 2 - 100;  // shift 100px left of center
               target.y = canvas.height / 2;
               stage3Level10Teleported = true;
               return;
