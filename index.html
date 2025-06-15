@@ -540,6 +540,8 @@
       let lastChallengePauseStart = 0;
       // Timeout handle for the delayed hazard in Stage 3 Level 3
       let stage3Level3HazardTimeout = null;
+      // Timeout handle for the delayed hazard in Stage 3 Level 9
+      let stage3Level9HazardTimeout = null;
       // Variables for Stage 3 Level 4
       const stage3Level4TargetPositions = [
         { x: 0.5, y: 0.5 },
@@ -693,6 +695,7 @@
       // 6. Particles for Broken Brown Obstacles
       // -------------------------------------------------
       let brownParticles = []; // Array to hold particle objects
+      let greyParticles = []; // Array for disappearing pillar particles
 
       function spawnBrownParticles(obstacle) {
         const centerX = obstacle.x + obstacle.width / 2;
@@ -710,6 +713,21 @@
         }
       }
 
+      function spawnGreyParticles(rect) {
+        const centerX = rect.x + rect.width / 2;
+        const centerY = rect.y + rect.height / 2;
+        for (let i = 0; i < 24; i++) {
+          greyParticles.push({
+            x: centerX,
+            y: centerY,
+            vx: (Math.random() - 0.5) * 4,
+            vy: -Math.random() * 3,
+            alpha: 1.0,
+            size: 10
+          });
+        }
+      }
+
       function updateBrownParticles() {
         for (let i = brownParticles.length - 1; i >= 0; i--) {
           const p = brownParticles[i];
@@ -723,6 +741,19 @@
         }
       }
 
+      function updateGreyParticles() {
+        for (let i = greyParticles.length - 1; i >= 0; i--) {
+          const p = greyParticles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.2;
+          p.alpha -= 0.01;
+          if (p.alpha <= 0) {
+            greyParticles.splice(i, 1);
+          }
+        }
+      }
+
       function drawBrownParticles() {
         ctx.fillStyle = "brown";
         brownParticles.forEach(p => {
@@ -730,6 +761,15 @@
           ctx.fillRect(p.x, p.y, p.size, p.size);
         });
         ctx.globalAlpha = 1.0; // Reset global alpha after drawing particles
+      }
+
+      function drawGreyParticles() {
+        ctx.fillStyle = "grey";
+        greyParticles.forEach(p => {
+          ctx.globalAlpha = p.alpha;
+          ctx.fillRect(p.x, p.y, p.size, p.size);
+        });
+        ctx.globalAlpha = 1.0;
       }
 
       // -------------------------------------------------
@@ -1667,6 +1707,38 @@
             { x: 0.4, y: 0.2, w: 0.6, h: 0.02 }
           ],
           hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 9 (index 39)
+          // Based on Level 6 but with a delayed moving hazard
+          // The hazard spawns after 3s on easy/normal or 2s on hard
+          // It pauses on grey pillars for 1.5s before breaking them with particles
+          // -------------------------------------------------
+          spawn:  { x: 0.05, y: 0.95 },
+          target: { x: 0.95, y: 0.05 },
+          colorLevel: true,
+          stage: 3,
+          platforms: [
+            { x: 0.20, y: 0.30, w: 0.05, h: 0.70 },
+            { x: 0.50, y: 0.00, w: 0.05, h: 0.70 },
+            { x: 0.80, y: 0.30, w: 0.05, h: 0.70 }
+          ],
+          hazards: [
+            { x: -0.10, y: 0, w: 0.10, h: 1, dx: 2, moving: true, minX: -0.1, maxX: 2 }
+          ],
+          cyans: [
+            { x: 0.00, y: 0.60, w: 1.00, h: 0.02 },
+            { x: 0.00, y: 0.20, w: 1.00, h: 0.02 },
+            { x: 0.30, y: 0.00, w: 0.02, h: 1.00 },
+            { x: 0.60, y: 0.00, w: 0.02, h: 1.00 }
+          ],
+          yellows: [
+            { x: 0.00, y: 0.80, w: 1.00, h: 0.02 },
+            { x: 0.00, y: 0.40, w: 1.00, h: 0.02 },
+            { x: 0.40, y: 0.00, w: 0.02, h: 1.00 },
+            { x: 0.70, y: 0.00, w: 0.02, h: 1.00 }
+          ]
         }
       ];
 
@@ -1735,6 +1807,10 @@
           clearTimeout(stage3Level3HazardTimeout);
           stage3Level3HazardTimeout = null;
         }
+        if (stage3Level9HazardTimeout) {
+          clearTimeout(stage3Level9HazardTimeout);
+          stage3Level9HazardTimeout = null;
+        }
 
         // Set teleport cooldown based on difficulty, with a special case for
         // the teleport challenge level which always uses 2 seconds
@@ -1775,6 +1851,7 @@
 
         // Clear particles and falling objects from previous level
         brownParticles = [];
+        greyParticles = [];
         fallingOranges = [];
         lastFallingOrangeSpawn = Date.now();
         blues = [];
@@ -1914,7 +1991,10 @@
           minX: (h.minX !== undefined ? h.minX : 0) * canvas.width,
           maxX: (h.maxX !== undefined ? h.maxX : 1) * canvas.width,
           minY: (h.minY !== undefined ? h.minY : 0) * canvas.height,
-          maxY: (h.maxY !== undefined ? h.maxY : 1) * canvas.height
+          maxY: (h.maxY !== undefined ? h.maxY : 1) * canvas.height,
+          savedDx: h.dx || 0,
+          pauseUntil: null,
+          pausePlatform: null
         }));
         if (index === 37) {
           const movingIndex = hazards.findIndex(h => h.moving);
@@ -1926,6 +2006,21 @@
             stage3Level3HazardTimeout = setTimeout(() => {
               hazards.push(delayedHazard);
             }, 1000);
+          }
+        }
+        if (index === 39) {
+          const movingIndex = hazards.findIndex(h => h.moving);
+          if (movingIndex !== -1) {
+            const delayedHazard = hazards.splice(movingIndex, 1)[0];
+            if (currentMode === "easy") {
+              delayedHazard.dx *= 0.25; // Apply easy mode slowdown
+            }
+            const delay = currentMode === "hard" ? 2000 : 3000;
+            stage3Level9HazardTimeout = setTimeout(() => {
+              delayedHazard.savedDx = delayedHazard.dx;
+              delayedHazard.pauseUntil = null;
+              hazards.push(delayedHazard);
+            }, delay);
           }
         }
         // Map orange (moving obstacles) definitions
@@ -2126,7 +2221,10 @@
           minX: (h.minX !== undefined ? h.minX : 0) * canvas.width,
           maxX: (h.maxX !== undefined ? h.maxX : 1) * canvas.width,
           minY: (h.minY !== undefined ? h.minY : 0) * canvas.height,
-          maxY: (h.maxY !== undefined ? h.maxY : 1) * canvas.height
+          maxY: (h.maxY !== undefined ? h.maxY : 1) * canvas.height,
+          savedDx: h.dx || 0,
+          pauseUntil: null,
+          pausePlatform: null
         }));
         if (currentLevel === 37) {
           const movingIndex = hazards.findIndex(h => h.moving);
@@ -2138,6 +2236,21 @@
             stage3Level3HazardTimeout = setTimeout(() => {
               hazards.push(delayedHazard);
             }, 500);
+          }
+        }
+        if (currentLevel === 39) {
+          const movingIndex = hazards.findIndex(h => h.moving);
+          if (movingIndex !== -1) {
+            const delayedHazard = hazards.splice(movingIndex, 1)[0];
+            if (currentMode === "easy") {
+              delayedHazard.dx *= 0.25; // Apply easy mode slowdown
+            }
+            const delay = currentMode === "hard" ? 2000 : 3000;
+            stage3Level9HazardTimeout = setTimeout(() => {
+              delayedHazard.savedDx = delayedHazard.dx;
+              delayedHazard.pauseUntil = null;
+              hazards.push(delayedHazard);
+            }, delay);
           }
         }
         oranges = (lvl.oranges || []).map(o => ({
@@ -2697,6 +2810,43 @@
           }
         });
 
+        if (currentLevel === 39) {
+          for (let h of hazards) {
+            if (!h.moving) continue;
+            if (h.pauseUntil) {
+              if (now >= h.pauseUntil) {
+                if (h.pausePlatform) {
+                  spawnGreyParticles(h.pausePlatform);
+                  const idx = platforms.indexOf(h.pausePlatform);
+                  if (idx !== -1) platforms.splice(idx, 1);
+                  h.pausePlatform = null;
+                }
+                h.dx = h.savedDx;
+                h.pauseUntil = null;
+              } else {
+                continue;
+              }
+            }
+            const hRect = { x: h.x, y: h.y, width: h.width, height: h.height };
+            for (let i = 0; i < platforms.length; i++) {
+              const p = platforms[i];
+              const pRect = { x: p.x, y: p.y, width: p.width, height: p.height };
+              if (rectIntersect(hRect, pRect)) {
+                if (h.dx > 0) {
+                  h.x = p.x - h.width;
+                } else {
+                  h.x = p.x + p.width;
+                }
+                h.savedDx = h.dx;
+                h.dx = 0;
+                h.pauseUntil = now + 1500;
+                h.pausePlatform = p;
+                break;
+              }
+            }
+          }
+        }
+
         // -------------------------------
         // REWORKED MOVEMENT FOR ORANGES & PURPLES
         // -------------------------------
@@ -3198,6 +3348,7 @@
         }
 
         updateBrownParticles();
+        updateGreyParticles();
 
         // Handle any challenge-dashing-level logic (Level 18)
         if (levels[currentLevel].challengeDashingLevel) {
@@ -3989,6 +4140,7 @@
         }
         drawCube();
         drawBrownParticles();
+        drawGreyParticles();
         drawLevelText();
         drawCooldown();
         if (levels[currentLevel].challengeDashingLevel ||
