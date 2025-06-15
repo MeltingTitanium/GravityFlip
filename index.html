@@ -585,6 +585,8 @@
       let stage3Level5Angle = 0;
       const baseStage3Level5AngularSpeed = Math.PI / 360;
       let stage3Level5AngularSpeed = baseStage3Level5AngularSpeed;
+      // Flag for Stage 3 Level 10 teleport mechanic
+      let stage3Level10Teleported = false;
       // =====================================================================
 
       // -------------------------------------------------
@@ -1757,6 +1759,37 @@
             { x: 0.40, y: 0.00, w: 0.02, h: 1.00 },
             { x: 0.70, y: 0.00, w: 0.02, h: 1.00 }
           ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 10 (index 40)
+          // Layout based on Stage 1 Level 4 with a slower rotating line
+          // The target teleports to the center when first touched
+          // -------------------------------------------------
+          spawn:  { x: 0.05, y: 0.1 },
+          target: { x: 0.95, y: 0.9 },
+          colorLevel: true,
+          stage: 3,
+          stage3Level5: true,
+          halfSpinSpeed: true,
+          teleportToCenter: true,
+          targetOnTop: true,
+          platforms: [
+            { x: 0.0, y: 0.0, w: 1.0, h: 0.02 },
+            { x: 0.0, y: 0.98, w: 1.0, h: 0.02 },
+            { x: 0, y: 594/1080, w: 40/1920, h: 160/1080 },
+            { x: 0.98, y: 0.0, w: 0.02, h: 1.0 },
+            { x: 0.1, y: 0.3, w: 0.6, h: 0.02 },
+            { x: 0.2, y: 0.6, w: 0.6, h: 0.02 },
+            { x: 0.5, y: 0.3, w: 0.02, h: 0.3 }
+          ],
+          hazards: [
+            { x: 0.25, y: 0.45, w: 0.05, h: 0.05 },
+            { x: 0.65, y: 0.55, w: 0.05, h: 0.05 },
+            { x: 0.40, y: 0.20, w: 0.05, h: 0.05 },
+            { x: 0.70, y: 0.75, w: 0.05, h: 0.05 },
+            { x: 0.15, y: 0.70, w: 0.05, h: 0.05 }
+          ]
         }
       ];
 
@@ -1964,7 +1997,7 @@
             });
           }
           stage3Level5AngularSpeed =
-            baseStage3Level5AngularSpeed * (currentMode === "easy" ? 0.6 : currentMode === "hard" ? 1.2 : 1);
+            baseStage3Level5AngularSpeed * (currentMode === "easy" ? 0.6 : currentMode === "hard" ? 1.2 : 1) * (lvl.halfSpinSpeed ? 0.5 : 1);
           target = {
             x: lvl.target.x * canvas.width,
             y: lvl.target.y * canvas.height,
@@ -1981,6 +2014,10 @@
             y: lvl.target.y * canvas.height,
             size: cube.size
           };
+        }
+
+        if (lvl.teleportToCenter) {
+          stage3Level10Teleported = false;
         }
 
         // If the level has the movingTarget flag, initialize the target’s horizontal velocity.
@@ -2119,7 +2156,7 @@
         }));
 
         // For specific levels (2 through 6), set up horizontal movement for hazards
-        if ([2, 3, 4, 5, 6, 21].includes(index)) {
+        if ([2, 3, 4, 5, 6, 21, 40].includes(index)) {
           hazards.forEach(h => {
             h.vx = currentHazardSpeed; // already scaled by difficulty
             h.minX = 0;
@@ -2310,7 +2347,7 @@
           height: b.h * canvas.height
         }));
 
-        if ([2, 3, 4, 5, 6, 21].includes(currentLevel)) {
+        if ([2, 3, 4, 5, 6, 21, 40].includes(currentLevel)) {
           hazards.forEach(h => {
             h.vx = currentHazardSpeed;
             h.minX = 0;
@@ -2845,8 +2882,8 @@
           cube.vy = 0;
         }
 
-        // Update hazards (levels 2-6 have horizontally moving hazards)
-        if ([2, 3, 4, 5, 6, 21].includes(currentLevel)) {
+        // Update hazards (levels 2-6 plus some later levels have horizontally moving hazards)
+        if ([2, 3, 4, 5, 6, 21, 40].includes(currentLevel)) {
           hazards.forEach(h => {
             h.x += h.vx;
             if (h.x < h.minX || h.x > h.maxX) {
@@ -3381,6 +3418,11 @@
                 }
                 return;
               }
+            } else if (levels[currentLevel].teleportToCenter && rectIntersect(cubeRect, targetRect) && !stage3Level10Teleported) {
+              target.x = canvas.width / 2;
+              target.y = canvas.height / 2;
+              stage3Level10Teleported = true;
+              return;
             } else if ((currentLevel === 26 || currentLevel === 28) && rectIntersect(cubeRect, targetRect)) {
               if (!(target.x < 50 && target.y > canvas.height - 50)) {
                 target.x = cube.size / 2;
@@ -4202,7 +4244,9 @@
           ctx.fillStyle = "black";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
-       drawTarget();
+       if (!(levels[currentLevel].targetOnTop && stage3Level10Teleported)) {
+         drawTarget();
+       }
        drawPlatforms();
       drawHazards();
       drawOranges();
@@ -4223,7 +4267,10 @@
         drawBrownParticles();
         drawGreyParticles();
         drawLevelText();
-        drawCooldown();
+      drawCooldown();
+      if (levels[currentLevel].targetOnTop && stage3Level10Teleported) {
+        drawTarget();
+      }
         if (levels[currentLevel].challengeDashingLevel ||
             (levels[currentLevel].challengeTeleportLevel && challengePhase >= 2)) {
           drawFallingRedBlocks();
