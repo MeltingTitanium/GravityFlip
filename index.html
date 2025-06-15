@@ -713,17 +713,20 @@
         }
       }
 
-      function spawnGreyParticles(rect) {
+      function spawnGreyParticles(rect, opts = {}) {
+        const count = opts.count || 12;
+        const fadeRate = opts.fadeRate || 0.02;
         const centerX = rect.x + rect.width / 2;
         const centerY = rect.y + rect.height / 2;
-        for (let i = 0; i < 12; i++) {
+        for (let i = 0; i < count; i++) {
           greyParticles.push({
             x: centerX,
             y: centerY,
             vx: (Math.random() - 0.5) * 4,
             vy: -Math.random() * 3,
             alpha: 1.0,
-            size: 5
+            size: 5,
+            fadeRate
           });
         }
       }
@@ -747,7 +750,7 @@
           p.x += p.vx;
           p.y += p.vy;
           p.vy += 0.2;
-          p.alpha -= 0.02;
+          p.alpha -= p.fadeRate;
           if (p.alpha <= 0) {
             greyParticles.splice(i, 1);
           }
@@ -1991,7 +1994,8 @@
           minY: (h.minY !== undefined ? h.minY : 0) * canvas.height,
           maxY: (h.maxY !== undefined ? h.maxY : 1) * canvas.height,
           savedDx: h.dx || 0,
-          pauseUntil: null
+          pauseUntil: null,
+          pendingPillar: null
         }));
         if (index === 37) {
           const movingIndex = hazards.findIndex(h => h.moving);
@@ -2009,7 +2013,7 @@
           const movingIndex = hazards.findIndex(h => h.moving);
           if (movingIndex !== -1) {
             const delayedHazard = hazards.splice(movingIndex, 1)[0];
-            delayedHazard.dx *= 0.5; // 2x slower than level 7 version
+            delayedHazard.dx *= 2; // 2x faster than level 7 version
             if (currentMode === "easy") {
               delayedHazard.dx *= 0.25; // Apply easy mode slowdown
             }
@@ -2220,7 +2224,8 @@
           minY: (h.minY !== undefined ? h.minY : 0) * canvas.height,
           maxY: (h.maxY !== undefined ? h.maxY : 1) * canvas.height,
           savedDx: h.dx || 0,
-          pauseUntil: null
+          pauseUntil: null,
+          pendingPillar: null
         }));
         if (currentLevel === 37) {
           const movingIndex = hazards.findIndex(h => h.moving);
@@ -2238,7 +2243,7 @@
           const movingIndex = hazards.findIndex(h => h.moving);
           if (movingIndex !== -1) {
             const delayedHazard = hazards.splice(movingIndex, 1)[0];
-            delayedHazard.dx *= 0.5; // 2x slower than level 7 version
+            delayedHazard.dx *= 2; // 2x faster than level 7 version
             if (currentMode === "easy") {
               delayedHazard.dx *= 0.25; // Apply easy mode slowdown
             }
@@ -2812,6 +2817,12 @@
             if (h.pauseUntil && now >= h.pauseUntil) {
               h.dx = h.savedDx;
               h.pauseUntil = null;
+              if (h.pendingPillar) {
+                spawnGreyParticles(h.pendingPillar, { count: 24, fadeRate: 0.01 });
+                const idx = platforms.indexOf(h.pendingPillar);
+                if (idx !== -1) platforms.splice(idx, 1);
+                h.pendingPillar = null;
+              }
             }
             if (h.pauseUntil) continue;
             const hRect = { x: h.x, y: h.y, width: h.width, height: h.height };
@@ -2827,8 +2838,7 @@
                 h.savedDx = h.dx;
                 h.dx = 0;
                 h.pauseUntil = now + 1500;
-                spawnGreyParticles(p);
-                platforms.splice(i, 1);
+                h.pendingPillar = p;
                 break;
               }
             }
