@@ -162,7 +162,15 @@
       /* Style for the checkpoint popup text */
       #checkpointPopup {
         font-size: 72px;
-          font-family: "Press Start 2P", monospace;
+        font-family: "Press Start 2P", monospace;
+      }
+
+      /* Style for the autocolor unlock popup */
+      #autocolorPopup {
+        font-size: 36px;
+        font-family: "Press Start 2P", monospace;
+        justify-content: flex-start;
+        padding-top: 40px;
       }
     </style>
   </head>
@@ -294,6 +302,7 @@
       </div>
     </div>
     <div id="checkpointPopup" class="overlay hidden">Checkpoint Reached</div>
+    <div id="autocolorPopup" class="overlay hidden">Automatic Color Switching Unlocked</div>
 
     <!-- ======================================================
          JavaScript Section: Contains all game logic and functionality.
@@ -468,6 +477,10 @@
       let maxUnlockedLevel = parseInt(localStorage.getItem('maxUnlockedLevel')) || 0;
       // Flag that indicates whether all levels are unlocked (for cheat mode)
       let allLevelsUnlocked = false;
+
+      // Secret automatic color switching flag and key sequence buffer
+      let autoColorEnabled = false;
+      let secretBuffer = "";
 
       // Flag to indicate if the level selector was accessed from the main menu
       let levelSelectorFromMainMenu = false;
@@ -2066,6 +2079,10 @@
           height: y.h * canvas.height
         }));
 
+        if (lvl.colorLevel && autoColorEnabled) {
+          outlineColor = getNearestColor();
+        }
+
         // Map blue block definitions (can optionally move like oranges/purples)
         blues = (lvl.blues || []).map(b => ({
           x: b.x * canvas.width,
@@ -2346,6 +2363,17 @@
       // 10. Key Handling (No Diagonals) + Special Keys for Level Selector, Clear Storage, and "R" to die
       // -------------------------------------------------
       document.addEventListener("keydown", e => {
+        if (e.key && e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+          secretBuffer += e.key.toLowerCase();
+          if (secretBuffer.length > 9) secretBuffer = secretBuffer.slice(-9);
+          if (!autoColorEnabled && secretBuffer === "autocolor") {
+            autoColorEnabled = true;
+            document.getElementById("autocolorPopup").classList.remove("hidden");
+            setTimeout(() => {
+              document.getElementById("autocolorPopup").classList.add("hidden");
+            }, 1500);
+          }
+        }
         // ======================
         // SHIFT+5 EMULATES NUMPAD5 (using e.code)
         // ======================
@@ -2611,6 +2639,48 @@
           r2.y >= r1.y + r1.height ||
           r2.y + r2.height <= r1.y
         );
+      }
+
+      function getNearestColor() {
+        let best = "cyan";
+        let bestDist = Infinity;
+        for (let c of cyans) {
+          const cx = c.x + c.width / 2;
+          const cy = c.y + c.height / 2;
+          const dist = Math.hypot(cx - cube.x, cy - cube.y);
+          if (dist < bestDist) {
+            bestDist = dist;
+            best = "cyan";
+          }
+        }
+        for (let y of yellows) {
+          const yx = y.x + y.width / 2;
+          const yy = y.y + y.height / 2;
+          const dist = Math.hypot(yx - cube.x, yy - cube.y);
+          if (dist < bestDist) {
+            bestDist = dist;
+            best = "yellow";
+          }
+        }
+        for (let seg of stage3Level5Segments) {
+          const sx = canvas.width / 2;
+          const sy = canvas.height / 2 + seg.offset;
+          const dist = Math.hypot(sx - cube.x, sy - cube.y);
+          if (dist < bestDist) {
+            bestDist = dist;
+            best = seg.color;
+          }
+        }
+        for (let line of stage3Level4Lines) {
+          const lx = line.x + line.width / 2;
+          const ly = line.y + line.height / 2;
+          const dist = Math.hypot(lx - cube.x, ly - cube.y);
+          if (dist < bestDist) {
+            bestDist = dist;
+            best = line.color;
+          }
+        }
+        return best;
       }
 
       // -------------------------------------------------
