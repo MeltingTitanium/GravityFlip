@@ -540,6 +540,8 @@
       let lastChallengePauseStart = 0;
       // Timeout handle for the delayed hazard in Stage 3 Level 3
       let stage3Level3HazardTimeout = null;
+      // Timeout handle for the delayed hazard in Stage 3 Level 9
+      let stage3Level9HazardTimeout = null;
       // Variables for Stage 3 Level 4
       const stage3Level4TargetPositions = [
         { x: 0.5, y: 0.5 },
@@ -1667,6 +1669,36 @@
             { x: 0.4, y: 0.2, w: 0.6, h: 0.02 }
           ],
           hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 9 (index 39)
+          // Based on Level 6 but with a delayed moving hazard
+          // -------------------------------------------------
+          spawn:  { x: 0.05, y: 0.95 },
+          target: { x: 0.95, y: 0.05 },
+          colorLevel: true,
+          stage: 3,
+          platforms: [
+            { x: 0.20, y: 0.30, w: 0.05, h: 0.70 },
+            { x: 0.50, y: 0.00, w: 0.05, h: 0.70 },
+            { x: 0.80, y: 0.30, w: 0.05, h: 0.70 }
+          ],
+          hazards: [
+            { x: -0.10, y: 0, w: 0.10, h: 1, dx: 2, moving: true, minX: -0.1, maxX: 2 }
+          ],
+          cyans: [
+            { x: 0.00, y: 0.60, w: 1.00, h: 0.02 },
+            { x: 0.00, y: 0.20, w: 1.00, h: 0.02 },
+            { x: 0.30, y: 0.00, w: 0.02, h: 1.00 },
+            { x: 0.60, y: 0.00, w: 0.02, h: 1.00 }
+          ],
+          yellows: [
+            { x: 0.00, y: 0.80, w: 1.00, h: 0.02 },
+            { x: 0.00, y: 0.40, w: 1.00, h: 0.02 },
+            { x: 0.40, y: 0.00, w: 0.02, h: 1.00 },
+            { x: 0.70, y: 0.00, w: 0.02, h: 1.00 }
+          ]
         }
       ];
 
@@ -1734,6 +1766,10 @@
         if (stage3Level3HazardTimeout) {
           clearTimeout(stage3Level3HazardTimeout);
           stage3Level3HazardTimeout = null;
+        }
+        if (stage3Level9HazardTimeout) {
+          clearTimeout(stage3Level9HazardTimeout);
+          stage3Level9HazardTimeout = null;
         }
 
         // Set teleport cooldown based on difficulty, with a special case for
@@ -1926,6 +1962,19 @@
             stage3Level3HazardTimeout = setTimeout(() => {
               hazards.push(delayedHazard);
             }, 1000);
+          }
+        }
+        if (index === 39) {
+          const movingIndex = hazards.findIndex(h => h.moving);
+          if (movingIndex !== -1) {
+            const delayedHazard = hazards.splice(movingIndex, 1)[0];
+            delayedHazard.dx *= 0.5; // 2x slower than level 7 version
+            if (currentMode === "easy") {
+              delayedHazard.dx *= 0.25; // Apply easy mode slowdown
+            }
+            stage3Level9HazardTimeout = setTimeout(() => {
+              hazards.push(delayedHazard);
+            }, 4000);
           }
         }
         // Map orange (moving obstacles) definitions
@@ -2138,6 +2187,19 @@
             stage3Level3HazardTimeout = setTimeout(() => {
               hazards.push(delayedHazard);
             }, 500);
+          }
+        }
+        if (currentLevel === 39) {
+          const movingIndex = hazards.findIndex(h => h.moving);
+          if (movingIndex !== -1) {
+            const delayedHazard = hazards.splice(movingIndex, 1)[0];
+            delayedHazard.dx *= 0.5; // 2x slower than level 7 version
+            if (currentMode === "easy") {
+              delayedHazard.dx *= 0.25; // Apply easy mode slowdown
+            }
+            stage3Level9HazardTimeout = setTimeout(() => {
+              hazards.push(delayedHazard);
+            }, 4000);
           }
         }
         oranges = (lvl.oranges || []).map(o => ({
