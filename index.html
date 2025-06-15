@@ -1754,8 +1754,34 @@
           yellows: [
             { x: 0.00, y: 0.80, w: 1.00, h: 0.02 },
             { x: 0.00, y: 0.40, w: 1.00, h: 0.02 },
+        { x: 0.40, y: 0.00, w: 0.02, h: 1.00 },
+        { x: 0.70, y: 0.00, w: 0.02, h: 1.00 }
+      ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 10 (index 40)
+          // Grid of alternating color lines that require many toggles
+          // -------------------------------------------------
+          spawn:  { x: 0.05, y: 0.95 },
+          target: { x: 0.95, y: 0.05 },
+          colorLevel: true,
+          stage: 3,
+          platforms: [],
+          hazards: [],
+          cyans: [
+            // Vertical and horizontal cyan barriers
+            { x: 0.25, y: 0.00, w: 0.02, h: 1.00 },
+            { x: 0.55, y: 0.35, w: 0.02, h: 0.65 },
+            { x: 0.00, y: 0.65, w: 1.00, h: 0.02 },
+            { x: 0.00, y: 0.25, w: 1.00, h: 0.02 }
+          ],
+          yellows: [
+            // Vertical and horizontal yellow barriers
             { x: 0.40, y: 0.00, w: 0.02, h: 1.00 },
-            { x: 0.70, y: 0.00, w: 0.02, h: 1.00 }
+            { x: 0.75, y: 0.00, w: 0.02, h: 1.00 },
+            { x: 0.00, y: 0.85, w: 1.00, h: 0.02 },
+            { x: 0.00, y: 0.45, w: 1.00, h: 0.02 }
           ]
         }
       ];
