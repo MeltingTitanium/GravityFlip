@@ -585,6 +585,8 @@
       let stage3Level5Angle = 0;
       const baseStage3Level5AngularSpeed = Math.PI / 360;
       let stage3Level5AngularSpeed = baseStage3Level5AngularSpeed;
+      // Flag for Stage 3 Level 10 target teleport
+      let stage3Level10Teleported = false;
       // =====================================================================
 
       // -------------------------------------------------
@@ -1757,6 +1759,35 @@
             { x: 0.40, y: 0.00, w: 0.02, h: 1.00 },
             { x: 0.70, y: 0.00, w: 0.02, h: 1.00 }
           ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 10 (index 40)
+          // Stage 1 Level 4 layout with a slow rotating line
+          // -------------------------------------------------
+          spawn:  { x: 0.05, y: 0.1 },
+          target: { x: 0.95, y: 0.9 },
+          colorLevel: true,
+          stage: 3,
+          stage3Level5: true,
+          halfSpinSpeed: true,
+          teleportTargetToCenter: true,
+          platforms: [
+            { x: 0.0, y: 0.0, w: 1.0, h: 0.02 },
+            { x: 0.0, y: 0.98, w: 1.0, h: 0.02 },
+            { x: 0, y: 594/1080, w: 40/1920, h: 160/1080 },
+            { x: 0.98, y: 0.0, w: 0.02, h: 1.0 },
+            { x: 0.1, y: 0.3, w: 0.6, h: 0.02 },
+            { x: 0.2, y: 0.6, w: 0.6, h: 0.02 },
+            { x: 0.5, y: 0.3, w: 0.02, h: 0.3 }
+          ],
+          hazards: [
+            { x: 0.25, y: 0.45, w: 0.05, h: 0.05 },
+            { x: 0.65, y: 0.55, w: 0.05, h: 0.05 },
+            { x: 0.40, y: 0.20, w: 0.05, h: 0.05 },
+            { x: 0.70, y: 0.75, w: 0.05, h: 0.05 },
+            { x: 0.15, y: 0.70, w: 0.05, h: 0.05 }
+          ]
         }
       ];
 
@@ -1815,6 +1846,7 @@
         currentLevel = index;
         updateUnlockedProgress();
         const lvl = levels[index];
+        stage3Level10Teleported = false;
 
         // Clear any pending checkpoint auto-kill
         if (checkpointKillTimeout) {
@@ -1965,6 +1997,9 @@
           }
           stage3Level5AngularSpeed =
             baseStage3Level5AngularSpeed * (currentMode === "easy" ? 0.6 : currentMode === "hard" ? 1.2 : 1);
+          if (lvl.halfSpinSpeed) {
+            stage3Level5AngularSpeed *= 0.5;
+          }
           target = {
             x: lvl.target.x * canvas.width,
             y: lvl.target.y * canvas.height,
@@ -3406,6 +3441,11 @@
                 }
                 return;
               }
+            } else if (levels[currentLevel].teleportTargetToCenter && rectIntersect(cubeRect, targetRect) && !stage3Level10Teleported) {
+              target.x = canvas.width / 2;
+              target.y = canvas.height / 2;
+              stage3Level10Teleported = true;
+              return;
             } else if (rectIntersect(cubeRect, targetRect)) {
               // NEW CODE ADDED: star if Hard Mode
               if (currentMode === "hard") {
