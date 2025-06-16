@@ -620,6 +620,8 @@
       let stage3Level15NextColor = "cyan";
       let stage3Level15LineSpeed = baseStage3Level4LineSpeed;
       let stage3Level15SpawnInterval = 4000;
+      // Timeout for starting the falling lines in Stage 3 Level 16
+      let stage3Level16Timeout = null;
       // Starting orientation for Stage 3 Level 12 so the rotating obstacle
       // begins as a "+" rather than an "x".
       const stage3Level12StartAngle = 0;
@@ -1938,9 +1940,28 @@
             { x: 0.8, y: 0.25, w: 0.05, h: 0.05 },
             { x: 0.15, y: 0.65, w: 0.05, h: 0.05 },
             { x: 0.35, y: 0.85, w: 0.05, h: 0.05 },
-            { x: 0.65, y: 0.15, w: 0.05, h: 0.05 },
-            { x: 0.85, y: 0.35, w: 0.05, h: 0.05 }
-          ]
+        { x: 0.65, y: 0.15, w: 0.05, h: 0.05 },
+        { x: 0.85, y: 0.35, w: 0.05, h: 0.05 }
+      ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 16 (index 46)
+          // Stage 1 Level 2 layout with combined color line spam
+          // -------------------------------------------------
+          spawn: { x: 0.1, y: 0.9 },
+          target: { x: 0.9, y: 0.1 },
+          colorLevel: true,
+          stage: 3,
+          stage3Level4: true,
+          stage3Level11: true,
+          platforms: [
+            { x: 0.1, y: 0.75, w: 0.7, h: 0.03 },
+            { x: 0.2, y: 0.55, w: 0.7, h: 0.03 },
+            { x: 0.1, y: 0.35, w: 0.7, h: 0.03 },
+            { x: 0.5, y: 0.35, w: 0.03, h: 0.4 }
+          ],
+          hazards: []
         }
       ];
 
@@ -2012,6 +2033,10 @@
         if (stage3Level9HazardTimeout) {
           clearTimeout(stage3Level9HazardTimeout);
           stage3Level9HazardTimeout = null;
+        }
+        if (stage3Level16Timeout) {
+          clearTimeout(stage3Level16Timeout);
+          stage3Level16Timeout = null;
         }
 
         // Set teleport cooldown based on difficulty, with a special case for
@@ -2133,6 +2158,13 @@
             y: stage3Level4TargetPositions[0].y * canvas.height,
             size: cube.size * (lvl.targetSizeMultiplier || 1)
           };
+          if (index === 46) {
+            stage3Level4Triggered = false;
+            stage3Level16Timeout = setTimeout(() => {
+              stage3Level4Triggered = true;
+              stage3Level4LastSpawn = Date.now();
+            }, 3000);
+          }
         } else if (lvl.stage3Level5) {
           stage3Level5Angle = lvl.stage3Level12 ? stage3Level12StartAngle : 0;
           stage3Level5Segments = [];
