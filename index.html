@@ -4576,18 +4576,21 @@
         currentMode = "easy";
         updateModeParameters();
         updateModeButtons();
+        localStorage.setItem('gravityFlipperMode', currentMode);
         console.log("Easy mode activated!");
       });
       normalModeButton.addEventListener("click", () => {
         currentMode = "normal";
         updateModeParameters();
         updateModeButtons();
+        localStorage.setItem('gravityFlipperMode', currentMode);
         console.log("Normal mode activated!");
       });
       hardModeButton.addEventListener("click", () => {
         currentMode = "hard";
         updateModeParameters();
         updateModeButtons();
+        localStorage.setItem('gravityFlipperMode', currentMode);
         console.log("Hard mode activated!");
       });
 
@@ -4606,6 +4609,24 @@
       if (savedSettings) {
         // Overwrite the default settings with what was saved
         settings = savedSettings;
+      }
+
+      const savedMode = localStorage.getItem('gravityFlipperMode');
+      if (savedMode) {
+        currentMode = savedMode;
+        updateModeParameters();
+        updateModeButtons();
+        if (settings.music) {
+          if (currentMode === "hard") {
+            bgHardMusic.play();
+            bgEasyNormalMusic.pause();
+            bgEasyNormalMusic.currentTime = 0;
+          } else {
+            bgEasyNormalMusic.play();
+            bgHardMusic.pause();
+            bgHardMusic.currentTime = 0;
+          }
+        }
       }
       // Immediately reflect them on the checkboxes
       toggleSoundEffects.checked = settings.soundEffects;
