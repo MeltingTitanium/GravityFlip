@@ -1848,7 +1848,7 @@
             { x: 0.7, y: 0.3, w: 0.1, h: 0.1 }
           ]
         },
-        {
+        { 
           // -------------------------------------------------
           // NEW LEVEL: Stage 3 - Level 12 (index 42)
           // Teleporting target around corners with rotating + obstacle
@@ -1862,6 +1862,20 @@
           doubleSpinLine: true,
           stage3Level12: true,
           targetOnTop: true,
+          platforms: [],
+          hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 13 (index 43)
+          // Charge block in the center that must be powered up
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.5 },
+          stage: 3,
+          chargeBlocks: [
+            { x: 0.45, y: 0.45, w: 0.1, h: 0.1, time: 3000 }
+          ],
           platforms: [],
           hazards: []
         }
@@ -1895,6 +1909,9 @@
 
       // Grey lifts used in Stage 2 Level 5
       let lifts = [];
+
+      // Light green charge blocks used in certain levels
+      let chargeBlocks = [];
 
       // Target object representing the level’s goal (if applicable)
       let target = { x: 0, y: 0, size: cube.size };
@@ -2250,6 +2267,16 @@
           vy: l.dy || 0,
           minY: (l.minY || 0) * canvas.height,
           maxY: (l.maxY || 1) * canvas.height
+        }));
+
+        // Map light green charge block definitions
+        chargeBlocks = (lvl.chargeBlocks || []).map(c => ({
+          x: c.x * canvas.width,
+          y: c.y * canvas.height,
+          width: c.w * canvas.width,
+          height: c.h * canvas.height,
+          requiredTime: c.time || 3000,
+          progress: 0
         }));
 
         // For specific levels (2 through 6), set up horizontal movement for hazards
@@ -3460,6 +3487,36 @@
           }
         }
 
+        // Handle light green charge blocks
+        if (chargeBlocks.length > 0) {
+          for (let cb of chargeBlocks) {
+            const cbRect = { x: cb.x, y: cb.y, width: cb.width, height: cb.height };
+            if (rectIntersect(cubeRect, cbRect)) {
+              cb.progress += step;
+              if (cb.progress > cb.requiredTime) cb.progress = cb.requiredTime;
+              if (cb.progress === cb.requiredTime) {
+                if (currentMode === "hard") {
+                  let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
+                  if (!hardModeStars.includes(currentLevel)) {
+                    hardModeStars.push(currentLevel);
+                  }
+                  localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
+                  updateStarProgress();
+                }
+                winSound.currentTime = 0;
+                winSound.play();
+                currentLevel++;
+                if (currentLevel < levels.length) {
+                  loadLevel(currentLevel);
+                } else {
+                  showWinScreen();
+                }
+                return;
+              }
+            }
+          }
+        }
+
         // If level 13, handle special pillars
         if (levels[currentLevel].level13) {
           if (!level13PillarsSpawned && level13Stage >= 1) {
@@ -4228,6 +4285,18 @@
           ctx.fillRect(l.x, l.y, l.width, l.height);
         }
       }
+
+      function drawChargeBlocks() {
+        if (chargeBlocks.length > 0) {
+          for (let cb of chargeBlocks) {
+            const t = cb.progress / cb.requiredTime;
+            const r = Math.round(200 * (1 - t));
+            const b = Math.round(200 * (1 - t));
+            ctx.fillStyle = `rgb(${r},255,${b})`;
+            ctx.fillRect(cb.x, cb.y, cb.width, cb.height);
+          }
+        }
+      }
       function drawFallingBrownBlocks() {
         if (levels[currentLevel].fallingBrownLevel) {
           ctx.fillStyle = "saddlebrown";
@@ -4358,6 +4427,15 @@
           ctx.textAlign = "center";
           ctx.fillText("You can't teleport through blue blocks", canvas.width / 2, 80);
         }
+        if (chargeBlocks.length > 0) {
+          ctx.textAlign = "left";
+          const pct = Math.floor((chargeBlocks[0].progress / chargeBlocks[0].requiredTime) * 100);
+          ctx.fillText(pct + "%", 10, 80);
+        }
+        if (currentLevel === 43) {
+          ctx.textAlign = "center";
+          ctx.fillText("Charge up light green blocks to progress", canvas.width / 2, 80);
+        }
       }
       function drawCube() {
         ctx.fillStyle = (isDashing || isTeleporting) ? "blue" : "#fff";
@@ -4471,6 +4549,7 @@
       drawBlues();
       drawBrowns();
         drawLifts();
+        drawChargeBlocks();
         drawFallingBrownBlocks();
         if (levels[currentLevel].challengeTeleportLevel) {
           drawChallengeGreyBlocks();
