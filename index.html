@@ -1939,8 +1939,28 @@
             { x: 0.15, y: 0.65, w: 0.05, h: 0.05 },
             { x: 0.35, y: 0.85, w: 0.05, h: 0.05 },
             { x: 0.65, y: 0.15, w: 0.05, h: 0.05 },
-            { x: 0.85, y: 0.35, w: 0.05, h: 0.05 }
-          ]
+          { x: 0.85, y: 0.35, w: 0.05, h: 0.05 }
+        ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 16 (index 46)
+          // Stage 1 Level 2 layout with delayed color line spam
+          // -------------------------------------------------
+          spawn: { x: 0.1, y: 0.9 },
+          target: { x: 0.9, y: 0.1 },
+          colorLevel: true,
+          stage: 3,
+          stage3Level11: true,
+          stage3Level4: true,
+          stage3Level16: true,
+          platforms: [
+            { x: 0.1, y: 0.75, w: 0.7, h: 0.03 },
+            { x: 0.2, y: 0.55, w: 0.7, h: 0.03 },
+            { x: 0.1, y: 0.35, w: 0.7, h: 0.03 },
+            { x: 0.5, y: 0.35, w: 0.03, h: 0.4 }
+          ],
+          hazards: []
         }
       ];
 
@@ -2118,7 +2138,7 @@
             y: level13TargetPositions[0].y * canvas.height,
             size: cube.size
           };
-        } else if (lvl.stage3Level4) {
+        } else if (lvl.stage3Level4 && !lvl.stage3Level16) {
           stage3Level4Index = 0;
           stage3Level4Lines = [];
           stage3Level4Triggered = lvl.chargingTarget ? true : false;
@@ -2166,7 +2186,7 @@
               size: cube.size * (lvl.targetSizeMultiplier || 1)
             };
           }
-        } else if (lvl.stage3Level11) {
+        } else if (lvl.stage3Level11 && !lvl.stage3Level16) {
           stage3Level11Lines = [];
           stage3Level11LastSpawn = Date.now();
           stage3Level11NextColor = "cyan";
@@ -2187,6 +2207,33 @@
             baseStage3Level4LineSpeed * (currentMode === "easy" ? 0.6 : currentMode === "hard" ? 1.2 : 1);
           stage3Level15SpawnInterval =
             currentMode === "easy" ? 7000 : currentMode === "hard" ? 3000 : 4000;
+          target = {
+            x: lvl.target.x * canvas.width,
+            y: lvl.target.y * canvas.height,
+            size: cube.size * (lvl.targetSizeMultiplier || 1)
+          };
+        } else if (lvl.stage3Level16) {
+          stage3Level4Index = 0;
+          stage3Level4Lines = [];
+          stage3Level4Triggered = true;
+          stage3Level4NextColor = "cyan";
+          stage3Level4LineSpeed =
+            baseStage3Level4LineSpeed *
+            (currentMode === "easy" ? 0.3 : currentMode === "hard" ? 0.5 : 0.4);
+          stage3Level4SpawnInterval =
+            (baseStage3Level4SpawnInterval + (currentMode === "easy" ? 500 : 0)) * 2;
+          stage3Level4LastSpawn =
+            Date.now() - stage3Level4SpawnInterval + 1500;
+
+          stage3Level11Lines = [];
+          stage3Level11NextColor = "cyan";
+          stage3Level11LineSpeed =
+            baseStage3Level4LineSpeed *
+            (currentMode === "easy" ? 0.3 : currentMode === "hard" ? 0.5 : 0.4);
+          stage3Level11SpawnInterval =
+            (baseStage3Level4SpawnInterval + (currentMode === "easy" ? 500 : 0)) * 2;
+          stage3Level11LastSpawn =
+            Date.now() - stage3Level11SpawnInterval + 200;
           target = {
             x: lvl.target.x * canvas.width,
             y: lvl.target.y * canvas.height,
@@ -3680,7 +3727,7 @@
             };
             if (levels[currentLevel].fallingBrownLevel && (now - target.spawnTime < 500)) {
               // do nothing for half a second
-            } else if (levels[currentLevel].stage3Level4 && !levels[currentLevel].chargingTarget && rectIntersect(cubeRect, targetRect)) {
+            } else if (levels[currentLevel].stage3Level4 && !levels[currentLevel].stage3Level16 && !levels[currentLevel].chargingTarget && rectIntersect(cubeRect, targetRect)) {
               if (!stage3Level4Triggered) {
                 stage3Level4Triggered = true;
                 stage3Level4LastSpawn = now;
