@@ -79,6 +79,21 @@
         color: #888;
         cursor: not-allowed;
       }
+
+      /* Improve level selector buttons so text stays nicely centered */
+      #levelSelectorContainer .bigButton {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        /* Keep text readable without strange line breaks */
+        white-space: normal;
+        overflow-wrap: break-word;
+        font-size: 24px;
+        /* Ensure consistent button dimensions */
+        min-height: 80px;
+        box-sizing: border-box;
+      }
       
       /* ======================================================
          Mode Selection Button Styles (Easy, Normal, Hard)
