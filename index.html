@@ -79,6 +79,17 @@
         color: #888;
         cursor: not-allowed;
       }
+
+      /* Ensure level selector buttons keep their text centered
+         and prevent overflow */
+      #levelSelectorContainer .bigButton {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+      }
       
       /* ======================================================
          Mode Selection Button Styles (Easy, Normal, Hard)
