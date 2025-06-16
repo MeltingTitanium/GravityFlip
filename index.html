@@ -80,15 +80,18 @@
         cursor: not-allowed;
       }
 
-      /* Ensure level selector buttons keep their text centered
-         and prevent overflow */
+      /* Improve level selector buttons so text stays nicely centered */
       #levelSelectorContainer .bigButton {
         display: flex;
         justify-content: center;
         align-items: center;
         text-align: center;
-        white-space: nowrap;
-        overflow: hidden;
+        /* Allow text to wrap rather than spill out */
+        white-space: normal;
+        overflow-wrap: anywhere;
+        /* Ensure consistent button dimensions */
+        min-height: 80px;
+        box-sizing: border-box;
       }
       
       /* ======================================================
