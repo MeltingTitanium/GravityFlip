@@ -1860,6 +1860,7 @@
           halfSpinSpeed: true,
           doubleSpinLine: true,
           stage3Level12: true,
+          targetOnTop: true,
           platforms: [],
           hazards: []
         }
@@ -4449,7 +4450,9 @@
           ctx.fillStyle = "black";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
-       if (!(levels[currentLevel].targetOnTop && stage3Level10Teleported)) {
+       const targetShouldBeOnTop = levels[currentLevel].targetOnTop &&
+         (!levels[currentLevel].teleportToCenter || stage3Level10Teleported);
+       if (!targetShouldBeOnTop) {
          drawTarget();
        }
        drawPlatforms();
@@ -4474,7 +4477,7 @@
         drawGreyParticles();
         drawLevelText();
       drawCooldown();
-      if (levels[currentLevel].targetOnTop && stage3Level10Teleported) {
+      if (targetShouldBeOnTop) {
         drawTarget();
       }
         if (levels[currentLevel].challengeDashingLevel ||
