@@ -585,6 +585,7 @@
       let stage3Level5Angle = 0;
       const baseStage3Level5AngularSpeed = Math.PI / 360;
       let stage3Level5AngularSpeed = baseStage3Level5AngularSpeed;
+      let stage3DoubleLine = false;
       // Flag for Stage 3 Level 10 teleport mechanic
       let stage3Level10Teleported = false;
       // =====================================================================
@@ -1772,6 +1773,7 @@
           stage: 3,
           stage3Level5: true,
           halfSpinSpeed: true,
+          doubleSpinLine: true,
           teleportToCenter: true,
           targetOnTop: true,
           platforms: [
@@ -1983,6 +1985,7 @@
         } else if (lvl.stage3Level5) {
           stage3Level5Angle = 0;
           stage3Level5Segments = [];
+          stage3DoubleLine = !!lvl.doubleSpinLine;
           const count = stage3Level5SegmentColors.length;
           const baseSegH = canvas.height / count;
           const segH = baseSegH * 3; // segments are now twice as long
@@ -2713,14 +2716,17 @@
           function rotPt(x, y, ang) {
             return { x: x * Math.cos(ang) - y * Math.sin(ang), y: x * Math.sin(ang) + y * Math.cos(ang) };
           }
-          const rc = rotPt(cube.x - pivotX, cube.y - pivotY, -stage3Level5Angle);
-          const rotX = rc.x + pivotX;
-          const rotY = rc.y + pivotY;
-          stage3Level5Segments.forEach(seg => {
-            const rect = { x: pivotX - seg.width / 2, y: pivotY + seg.offset - seg.height / 2, width: seg.width, height: seg.height };
-            const d = rectDistance(rotX, rotY, rect);
-            if (seg.color === "cyan") minCyan = Math.min(minCyan, d);
-            else minYellow = Math.min(minYellow, d);
+          const angles = stage3DoubleLine ? [stage3Level5Angle, stage3Level5Angle + Math.PI / 2] : [stage3Level5Angle];
+          angles.forEach(angle => {
+            const rc = rotPt(cube.x - pivotX, cube.y - pivotY, -angle);
+            const rotX = rc.x + pivotX;
+            const rotY = rc.y + pivotY;
+            stage3Level5Segments.forEach(seg => {
+              const rect = { x: pivotX - seg.width / 2, y: pivotY + seg.offset - seg.height / 2, width: seg.width, height: seg.height };
+              const d = rectDistance(rotX, rotY, rect);
+              if (seg.color === "cyan") minCyan = Math.min(minCyan, d);
+              else minYellow = Math.min(minYellow, d);
+            });
           });
         }
 
@@ -3269,21 +3275,24 @@
           function rotPtGlobal(x, y, ang) {
             return { x: x * Math.cos(ang) - y * Math.sin(ang), y: x * Math.sin(ang) + y * Math.cos(ang) };
           }
-          const rc = rotPtGlobal(cube.x - pivotX, cube.y - pivotY, -stage3Level5Angle);
-          const rotCubeRect = { x: rc.x + pivotX - cube.size / 2, y: rc.y + pivotY - cube.size / 2, width: cube.size, height: cube.size };
-          for (let seg of stage3Level5Segments) {
-            const segRect = {
-              x: pivotX - seg.width / 2,
-              y: pivotY + seg.offset - seg.height / 2,
-              width: seg.width,
-              height: seg.height
-            };
-            if (rectIntersect(rotCubeRect, segRect)) {
-              if (outlineColor !== seg.color) {
-                deathSound.currentTime = 0;
-                deathSound.play();
-                loadLevel(currentLevel);
-                return;
+          const angles = stage3DoubleLine ? [stage3Level5Angle, stage3Level5Angle + Math.PI / 2] : [stage3Level5Angle];
+          for (const angle of angles) {
+            const rc = rotPtGlobal(cube.x - pivotX, cube.y - pivotY, -angle);
+            const rotCubeRect = { x: rc.x + pivotX - cube.size / 2, y: rc.y + pivotY - cube.size / 2, width: cube.size, height: cube.size };
+            for (let seg of stage3Level5Segments) {
+              const segRect = {
+                x: pivotX - seg.width / 2,
+                y: pivotY + seg.offset - seg.height / 2,
+                width: seg.width,
+                height: seg.height
+              };
+              if (rectIntersect(rotCubeRect, segRect)) {
+                if (outlineColor !== seg.color) {
+                  deathSound.currentTime = 0;
+                  deathSound.play();
+                  loadLevel(currentLevel);
+                  return;
+                }
               }
             }
           }
@@ -4004,10 +4013,15 @@
           const pivotY = canvas.height / 2;
           ctx.save();
           ctx.translate(pivotX, pivotY);
-          ctx.rotate(stage3Level5Angle);
-          for (let seg of stage3Level5Segments) {
-            ctx.fillStyle = seg.color;
-            ctx.fillRect(-seg.width / 2, seg.offset - seg.height / 2, seg.width, seg.height);
+          const angles = stage3DoubleLine ? [stage3Level5Angle, stage3Level5Angle + Math.PI / 2] : [stage3Level5Angle];
+          for (const ang of angles) {
+            ctx.save();
+            ctx.rotate(ang);
+            for (let seg of stage3Level5Segments) {
+              ctx.fillStyle = seg.color;
+              ctx.fillRect(-seg.width / 2, seg.offset - seg.height / 2, seg.width, seg.height);
+            }
+            ctx.restore();
           }
           ctx.restore();
         }
