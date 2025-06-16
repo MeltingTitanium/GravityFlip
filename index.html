@@ -613,6 +613,17 @@
       let stage3Level11NextColor = "cyan";
       let stage3Level11LineSpeed = baseStage3Level4LineSpeed;
       let stage3Level11SpawnInterval = baseStage3Level4SpawnInterval;
+      // Starting orientation for Stage 3 Level 12 so the rotating obstacle is
+      // initially pointed further away from the player's spawn.
+      const stage3Level12StartAngle = -Math.PI / 2;
+      const stage3Level12TargetPositions = [
+        { x: 0.95, y: 0.05 },
+        { x: 0.05, y: 0.05 },
+        { x: 0.05, y: 0.95 },
+        { x: 0.95, y: 0.95 },
+        { x: 0.5, y: 0.5 }
+      ];
+      let stage3Level12Index = 0;
       // =====================================================================
 
       // -------------------------------------------------
@@ -1836,6 +1847,23 @@
             { x: 0.4, y: 0.6, w: 0.1, h: 0.1 },
             { x: 0.7, y: 0.3, w: 0.1, h: 0.1 }
           ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 12 (index 42)
+          // Teleporting target around corners with rotating + obstacle
+          // -------------------------------------------------
+          spawn: { x: 0.03, y: 0.97 },
+          target: { x: 0.95, y: 0.05 },
+          colorLevel: true,
+          stage: 3,
+          stage3Level5: true,
+          halfSpinSpeed: true,
+          doubleSpinLine: true,
+          stage3Level12: true,
+          targetOnTop: true,
+          platforms: [],
+          hazards: []
         }
       ];
 
@@ -2027,7 +2055,7 @@
             size: cube.size
           };
         } else if (lvl.stage3Level5) {
-          stage3Level5Angle = 0;
+          stage3Level5Angle = lvl.stage3Level12 ? stage3Level12StartAngle : 0;
           stage3Level5Segments = [];
           stage3DoubleLine = !!lvl.doubleSpinLine;
           const count = stage3Level5SegmentColors.length;
@@ -2045,11 +2073,20 @@
           }
           stage3Level5AngularSpeed =
             baseStage3Level5AngularSpeed * (currentMode === "easy" ? 0.6 : currentMode === "hard" ? 1.2 : 1) * (lvl.halfSpinSpeed ? 0.5 : 1);
-          target = {
-            x: lvl.target.x * canvas.width,
-            y: lvl.target.y * canvas.height,
-            size: cube.size
-          };
+          if (lvl.stage3Level12) {
+            stage3Level12Index = 0;
+            target = {
+              x: stage3Level12TargetPositions[0].x * canvas.width,
+              y: stage3Level12TargetPositions[0].y * canvas.height,
+              size: cube.size
+            };
+          } else {
+            target = {
+              x: lvl.target.x * canvas.width,
+              y: lvl.target.y * canvas.height,
+              size: cube.size
+            };
+          }
         } else if (lvl.stage3Level11) {
           stage3Level11Lines = [];
           stage3Level11LastSpawn = Date.now();
@@ -2076,7 +2113,7 @@
           };
         }
 
-        if (lvl.teleportToCenter) {
+        if (lvl.teleportToCenter || lvl.stage3Level12) {
           stage3Level10Teleported = false;
         }
 
@@ -3517,6 +3554,35 @@
               if (stage3Level4Index < stage3Level4TargetPositions.length - 1) {
                 target.x = stage3Level4TargetPositions[stage3Level4Index].x * canvas.width;
                 target.y = stage3Level4TargetPositions[stage3Level4Index].y * canvas.height;
+                return;
+              } else {
+                if (currentMode === "hard") {
+                  let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
+                  if (!hardModeStars.includes(currentLevel)) {
+                    hardModeStars.push(currentLevel);
+                  }
+                  localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
+                  updateStarProgress();
+                }
+                winSound.currentTime = 0;
+                winSound.play();
+                currentLevel++;
+                if (currentLevel < levels.length) {
+                  loadLevel(currentLevel);
+                } else {
+                  showWinScreen();
+                  return;
+                }
+                return;
+              }
+            } else if (levels[currentLevel].stage3Level12 && rectIntersect(cubeRect, targetRect)) {
+              stage3Level12Index++;
+              if (stage3Level12Index < stage3Level12TargetPositions.length) {
+                target.x = stage3Level12TargetPositions[stage3Level12Index].x * canvas.width;
+                target.y = stage3Level12TargetPositions[stage3Level12Index].y * canvas.height;
+                if (stage3Level12Index === stage3Level12TargetPositions.length - 1) {
+                  stage3Level10Teleported = true;
+                }
                 return;
               } else {
                 if (currentMode === "hard") {
