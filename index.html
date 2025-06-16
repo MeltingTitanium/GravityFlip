@@ -754,7 +754,7 @@
       function drawChargeProgress() {
         if (levels[currentLevel].chargingTarget) {
           ctx.fillStyle = "#fff";
-          ctx.font = "20px sans-serif";
+          ctx.font = "30px sans-serif";
           ctx.textAlign = "left";
           const percent = Math.floor((chargeProgress / chargeDuration) * 100);
           ctx.fillText(percent + "%", 10, 80);
@@ -1881,14 +1881,17 @@
         {
           // -------------------------------------------------
           // NEW LEVEL: Stage 3 - Level 13 (index 43)
-          // Charge-up green block
+          // Large charge block with falling color lines
           // -------------------------------------------------
           spawn: { x: 0.5, y: 0.95 },
           target: { x: 0.5, y: 0.5 },
           colorLevel: true,
           stage: 3,
+          stage3Level4: true,
+          stage3InstantLines: true,
           chargingTarget: true,
-          chargeTime: 3000,
+          chargeTime: 20000,
+          doubleTargetSize: true,
           platforms: [],
           hazards: []
         }
@@ -2078,6 +2081,10 @@
             baseStage3Level4LineSpeed * (currentMode === "easy" ? 0.6 : currentMode === "hard" ? 1.2 : 1);
           stage3Level4SpawnInterval =
             baseStage3Level4SpawnInterval + (currentMode === "easy" ? 500 : 0);
+          if (lvl.stage3InstantLines) {
+            stage3Level4Triggered = false;
+            stage3Level4LastSpawn -= stage3Level4SpawnInterval;
+          }
           target = {
             x: stage3Level4TargetPositions[0].x * canvas.width,
             y: stage3Level4TargetPositions[0].y * canvas.height,
@@ -2140,6 +2147,10 @@
             y: lvl.target.y * canvas.height,
             size: cube.size
           };
+        }
+
+        if (lvl.doubleTargetSize && target) {
+          target.size = cube.size * 2;
         }
 
         if (lvl.teleportToCenter || lvl.stage3Level12) {
@@ -3296,7 +3307,7 @@
           }
         }
 
-        if (levels[currentLevel].stage3Level4 && stage3Level4Triggered) {
+        if (levels[currentLevel].stage3Level4 && (stage3Level4Triggered || levels[currentLevel].stage3InstantLines)) {
           if (now - stage3Level4LastSpawn >= stage3Level4SpawnInterval) {
             const h = 0.02 * canvas.height;
             stage3Level4Lines.push({ x: 0, y: -h, width: canvas.width, height: h, dy: stage3Level4LineSpeed, color: stage3Level4NextColor });
@@ -3574,7 +3585,7 @@
             };
             if (levels[currentLevel].fallingBrownLevel && (now - target.spawnTime < 500)) {
               // do nothing for half a second
-            } else if (levels[currentLevel].stage3Level4 && rectIntersect(cubeRect, targetRect)) {
+            } else if (levels[currentLevel].stage3Level4 && !levels[currentLevel].stage3InstantLines && rectIntersect(cubeRect, targetRect)) {
               if (!stage3Level4Triggered) {
                 stage3Level4Triggered = true;
                 stage3Level4LastSpawn = now;
