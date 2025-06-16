@@ -2347,7 +2347,9 @@
         // For specific levels (2 through 6), set up horizontal movement for hazards
         if ([2, 3, 4, 5, 6, 21, 40, 41, 45].includes(index)) {
           hazards.forEach(h => {
-            h.vx = currentHazardSpeed; // already scaled by difficulty
+            let speed = currentHazardSpeed;
+            if (index === 45) speed *= 0.7; // Stage 3 Level 15 slower hazards
+            h.vx = speed; // already scaled by difficulty
             h.minX = 0;
             h.maxX = canvas.width - h.width;
           });
@@ -2538,7 +2540,9 @@
 
         if ([2, 3, 4, 5, 6, 21, 40, 41, 45].includes(currentLevel)) {
           hazards.forEach(h => {
-            h.vx = currentHazardSpeed;
+            let speed = currentHazardSpeed;
+            if (currentLevel === 45) speed *= 0.7; // Stage 3 Level 15 slower hazards
+            h.vx = speed;
             h.minX = 0;
             h.maxX = canvas.width - h.width;
           });
