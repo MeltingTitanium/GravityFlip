@@ -753,11 +753,11 @@
 
       function drawChargeProgress() {
         if (levels[currentLevel].chargingTarget) {
-          ctx.fillStyle = "#fff";
-          ctx.font = "20px sans-serif";
-          ctx.textAlign = "left";
-          const percent = Math.floor((chargeProgress / chargeDuration) * 100);
-          ctx.fillText(percent + "%", 10, 80);
+        ctx.fillStyle = "#fff";
+        ctx.font = "28px sans-serif";
+        ctx.textAlign = "left";
+        const percent = Math.floor((chargeProgress / chargeDuration) * 100);
+        ctx.fillText(percent + "%", 10, 80);
         }
       }
 
@@ -1891,6 +1891,22 @@
           chargeTime: 3000,
           platforms: [],
           hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 14 (index 44)
+          // Large charge block with falling color lines
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.5 },
+          colorLevel: true,
+          stage: 3,
+          chargingTarget: true,
+          chargeTime: 10000,
+          stage3Level4: true,
+          targetSizeMultiplier: 2,
+          platforms: [],
+          hazards: []
         }
       ];
 
@@ -2071,7 +2087,7 @@
         } else if (lvl.stage3Level4) {
           stage3Level4Index = 0;
           stage3Level4Lines = [];
-          stage3Level4Triggered = false;
+          stage3Level4Triggered = lvl.chargingTarget ? true : false;
           stage3Level4LastSpawn = Date.now();
           stage3Level4NextColor = "cyan";
           stage3Level4LineSpeed =
@@ -2081,7 +2097,7 @@
           target = {
             x: stage3Level4TargetPositions[0].x * canvas.width,
             y: stage3Level4TargetPositions[0].y * canvas.height,
-            size: cube.size
+            size: cube.size * (lvl.targetSizeMultiplier || 1)
           };
         } else if (lvl.stage3Level5) {
           stage3Level5Angle = lvl.stage3Level12 ? stage3Level12StartAngle : 0;
@@ -2107,13 +2123,13 @@
             target = {
               x: stage3Level12TargetPositions[0].x * canvas.width,
               y: stage3Level12TargetPositions[0].y * canvas.height,
-              size: cube.size
+              size: cube.size * (lvl.targetSizeMultiplier || 1)
             };
           } else {
             target = {
               x: lvl.target.x * canvas.width,
               y: lvl.target.y * canvas.height,
-              size: cube.size
+              size: cube.size * (lvl.targetSizeMultiplier || 1)
             };
           }
         } else if (lvl.stage3Level11) {
@@ -2127,7 +2143,7 @@
           target = {
             x: lvl.target.x * canvas.width,
             y: lvl.target.y * canvas.height,
-            size: cube.size
+            size: cube.size * (lvl.targetSizeMultiplier || 1)
           };
         } else if (lvl.fallingBrownLevel) {
           fallingBrownBlocks = [];
@@ -2138,7 +2154,7 @@
           target = {
             x: lvl.target.x * canvas.width,
             y: lvl.target.y * canvas.height,
-            size: cube.size
+            size: cube.size * (lvl.targetSizeMultiplier || 1)
           };
         }
 
@@ -2374,13 +2390,13 @@
           target = {
             x: level13TargetPositions[level13Stage].x * canvas.width,
             y: level13TargetPositions[level13Stage].y * canvas.height,
-            size: cube.size
+            size: cube.size * (lvl.targetSizeMultiplier || 1)
           };
         } else if (!lvl.fallingBrownLevel && !lvl.challengeDashingLevel) {
           target = {
             x: lvl.target.x * canvas.width,
             y: lvl.target.y * canvas.height,
-            size: cube.size
+            size: cube.size * (lvl.targetSizeMultiplier || 1)
           };
         }
         platforms = (lvl.platforms || []).map(p => ({
@@ -3574,7 +3590,7 @@
             };
             if (levels[currentLevel].fallingBrownLevel && (now - target.spawnTime < 500)) {
               // do nothing for half a second
-            } else if (levels[currentLevel].stage3Level4 && rectIntersect(cubeRect, targetRect)) {
+            } else if (levels[currentLevel].stage3Level4 && !levels[currentLevel].chargingTarget && rectIntersect(cubeRect, targetRect)) {
               if (!stage3Level4Triggered) {
                 stage3Level4Triggered = true;
                 stage3Level4LastSpawn = now;
