@@ -624,6 +624,9 @@
         { x: 0.5, y: 0.5 }
       ];
       let stage3Level12Index = 0;
+      // Variables for Stage 3 Level 13 charge block
+      let chargeProgress = 0;
+      let chargeDuration = 3000;
       // =====================================================================
 
       // -------------------------------------------------
@@ -746,6 +749,16 @@
         // Adjust y-position for the cooldown text based on current level
         let yPos = (currentLevel === 13) ? 120 : 80;
         ctx.fillText(text, 10, yPos);
+      }
+
+      function drawChargeProgress() {
+        if (levels[currentLevel].chargingTarget) {
+          ctx.fillStyle = "#fff";
+          ctx.font = "20px sans-serif";
+          ctx.textAlign = "left";
+          const percent = Math.floor((chargeProgress / chargeDuration) * 100);
+          ctx.fillText(percent + "%", 10, 80);
+        }
       }
 
       // -------------------------------------------------
@@ -1864,6 +1877,20 @@
           targetOnTop: true,
           platforms: [],
           hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 13 (index 43)
+          // Charge-up green block
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.5 },
+          colorLevel: true,
+          stage: 3,
+          chargingTarget: true,
+          chargeTime: 3000,
+          platforms: [],
+          hazards: []
         }
       ];
 
@@ -1982,6 +2009,8 @@
         blues = [];
         cyans = [];
         yellows = [];
+        chargeProgress = 0;
+        chargeDuration = lvl.chargeTime || 3000;
 
         // Special handling for challenge levels or levels with unique behavior
         if (lvl.challengeDashingLevel) {
@@ -3635,6 +3664,28 @@
                 }
                 return;
               }
+            } else if (levels[currentLevel].chargingTarget && rectIntersect(cubeRect, targetRect)) {
+              chargeProgress += step;
+              if (chargeProgress >= chargeDuration) {
+                chargeProgress = chargeDuration;
+                if (currentMode === "hard") {
+                  let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
+                  if (!hardModeStars.includes(currentLevel)) {
+                    hardModeStars.push(currentLevel);
+                  }
+                  localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
+                  updateStarProgress();
+                }
+                winSound.currentTime = 0;
+                winSound.play();
+                currentLevel++;
+                if (currentLevel < levels.length) {
+                  loadLevel(currentLevel);
+                } else {
+                  showWinScreen();
+                  return;
+                }
+              }
             } else if (rectIntersect(cubeRect, targetRect)) {
               // NEW CODE ADDED: star if Hard Mode
               if (currentMode === "hard") {
@@ -4114,7 +4165,13 @@
       // -------------------------------------------------
       function drawTarget() {
         if (target) {
-          ctx.fillStyle = "green";
+          if (levels[currentLevel].chargingTarget) {
+            const pct = Math.min(1, chargeProgress / chargeDuration);
+            const lightness = 90 - 40 * pct;
+            ctx.fillStyle = `hsl(120,100%,${lightness}%)`;
+          } else {
+            ctx.fillStyle = "green";
+          }
           ctx.fillRect(target.x - target.size / 2, target.y - target.size / 2, target.size, target.size);
         }
       }
@@ -4354,6 +4411,10 @@
           ctx.textAlign = "center";
           ctx.fillText("One of these brown blocks hides a green block", canvas.width / 2, 80);
         }
+        if (currentLevel === 43) {
+          ctx.textAlign = "center";
+          ctx.fillText("Charge up light green blocks to progress", canvas.width / 2, 80);
+        }
         if (currentLevel === 27) {
           ctx.textAlign = "center";
           ctx.fillText("You can't teleport through blue blocks", canvas.width / 2, 80);
@@ -4481,6 +4542,7 @@
         drawGreyParticles();
         drawLevelText();
       drawCooldown();
+      drawChargeProgress();
       if (levels[currentLevel].targetOnTop && stage3Level10Teleported) {
         drawTarget();
       }
