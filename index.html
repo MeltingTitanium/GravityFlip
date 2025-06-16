@@ -2496,6 +2496,18 @@
           return;
         }
 
+        // -------------------------------
+        // NEW: Toggle fullscreen with 'F'
+        // -------------------------------
+        if (e.key === "f" || e.key === "F") {
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+          } else {
+            document.exitFullscreen();
+          }
+          return;
+        }
+
         // Teleport or dash logic
         if (levels[currentLevel].teleportLevel && e.key === " " && !isTeleporting) {
           attemptTeleport();
@@ -4162,6 +4174,14 @@
           } else {
             ctx.fillText("Level: " + (currentLevel + 1), 10, 40);
           }
+        }
+        if (currentLevel === 0) {
+          ctx.textAlign = "center";
+          ctx.fillText("Click F for full screen", canvas.width / 2, 80);
+        }
+        if (currentLevel === 1) {
+          ctx.textAlign = "center";
+          ctx.fillText("Click R to retry", canvas.width / 2, 80);
         }
         if (currentLevel === 10) {
           ctx.textAlign = "center";
