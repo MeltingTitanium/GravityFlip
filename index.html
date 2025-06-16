@@ -174,6 +174,11 @@
         z-index: 30;
       }
 
+      /* Pause menu should appear above most overlays */
+      #pauseMenu {
+        z-index: 25;
+      }
+
       /* Style for the checkpoint popup text */
       #checkpointPopup {
         font-size: 72px;
@@ -318,6 +323,15 @@
       <div style="margin-top:30px;">
         <div id="settingsBackButton" class="bigButton">Back</div>
       </div>
+    </div>
+    <!-- ======================================================
+         Pause Menu Overlay: Allows the player to pause the game
+         ====================================================== -->
+    <div id="pauseMenu" class="overlay hidden">
+      <h1 style="font-size:64px; margin-bottom:40px;">Paused</h1>
+      <div id="pauseResumeButton" class="bigButton">Resume</div>
+      <div id="pauseRestartButton" class="bigButton">Restart Level</div>
+      <div id="pauseMainMenuButton" class="bigButton">Main Menu</div>
     </div>
     <div id="checkpointPopup" class="overlay hidden">Checkpoint Reached</div>
     <div id="autoColorMessage" class="hidden">automatic color switching unlocked</div>
@@ -2483,6 +2497,14 @@
           e.preventDefault();
           return;
         }
+        else if (!levelSelectorActive && (e.key === "Escape" || e.key === "p" || e.key === "P")) {
+          if (document.getElementById("pauseMenu").classList.contains("hidden")) {
+            showPauseMenu();
+          } else {
+            hidePauseMenu();
+          }
+          return;
+        }
 
         // -------------------------------
         // ADDED: If 'R' is pressed, kill the player (restart current level)
@@ -4549,6 +4571,35 @@
       });
 
       clearNo.addEventListener("click", hideClearStoragePrompt);
+
+      // -------------------------------
+      // Pause Menu Functions
+      // -------------------------------
+      const pauseMenu = document.getElementById("pauseMenu");
+      const pauseResumeButton = document.getElementById("pauseResumeButton");
+      const pauseRestartButton = document.getElementById("pauseRestartButton");
+      const pauseMainMenuButton = document.getElementById("pauseMainMenuButton");
+
+      function showPauseMenu() {
+        gamePaused = true;
+        pauseMenu.classList.remove("hidden");
+      }
+
+      function hidePauseMenu() {
+        pauseMenu.classList.add("hidden");
+        gamePaused = false;
+      }
+
+      pauseResumeButton.addEventListener("click", hidePauseMenu);
+      pauseRestartButton.addEventListener("click", () => {
+        hidePauseMenu();
+        loadLevel(currentLevel);
+      });
+      pauseMainMenuButton.addEventListener("click", () => {
+        pauseMenu.classList.add("hidden");
+        mainMenu.classList.remove("hidden");
+        gamePaused = true;
+      });
 
 
 
