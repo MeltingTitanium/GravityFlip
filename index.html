@@ -2486,26 +2486,6 @@
         }
 
         // -------------------------------
-        // ADDED: Toggle full screen with 'F'
-        // -------------------------------
-        if (e.key === "f" || e.key === "F") {
-          if (!document.fullscreenElement) {
-            if (canvas.requestFullscreen) {
-              canvas.requestFullscreen();
-            } else if (canvas.webkitRequestFullscreen) {
-              canvas.webkitRequestFullscreen();
-            }
-          } else {
-            if (document.exitFullscreen) {
-              document.exitFullscreen();
-            } else if (document.webkitExitFullscreen) {
-              document.webkitExitFullscreen();
-            }
-          }
-          return;
-        }
-
-        // -------------------------------
         // ADDED: If 'R' is pressed, kill the player (restart current level)
         // -------------------------------
         if (e.key === "r" || e.key === "R") {
@@ -4182,14 +4162,6 @@
           } else {
             ctx.fillText("Level: " + (currentLevel + 1), 10, 40);
           }
-        }
-        if (currentLevel === 0) {
-          ctx.textAlign = "center";
-          ctx.fillText("Click F for full screen", canvas.width / 2, 80);
-        }
-        if (currentLevel === 1) {
-          ctx.textAlign = "center";
-          ctx.fillText("Click R to retry", canvas.width / 2, 80);
         }
         if (currentLevel === 10) {
           ctx.textAlign = "center";
