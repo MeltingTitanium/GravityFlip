@@ -613,16 +613,6 @@
       let stage3Level11NextColor = "cyan";
       let stage3Level11LineSpeed = baseStage3Level4LineSpeed;
       let stage3Level11SpawnInterval = baseStage3Level4SpawnInterval;
-
-      // Variables for Stage 3 Level 12 (moving target teleports across corners)
-      const stage3Level12Positions = [
-        { x: 0.95, y: 0.05 }, // start top-right
-        { x: 0.05, y: 0.05 }, // top-left
-        { x: 0.05, y: 0.95 }, // bottom-left
-        { x: 0.95, y: 0.95 }, // bottom-right
-        { x: 0.5, y: 0.5 }    // center
-      ];
-      let stage3Level12Index = 0;
       // =====================================================================
 
       // -------------------------------------------------
@@ -1846,22 +1836,6 @@
             { x: 0.4, y: 0.6, w: 0.1, h: 0.1 },
             { x: 0.7, y: 0.3, w: 0.1, h: 0.1 }
           ]
-        },
-        {
-          // -------------------------------------------------
-          // NEW LEVEL: Stage 3 - Level 12 (index 42)
-          // Rotating + obstacle with a teleporting target
-          // -------------------------------------------------
-          spawn: { x: 0.05, y: 0.95 },
-          target: { x: 0.95, y: 0.05 },
-          colorLevel: true,
-          stage: 3,
-          stage3Level5: true,
-          halfSpinSpeed: true,
-          doubleSpinLine: true,
-          stage3Level12: true,
-          platforms: [],
-          hazards: []
         }
       ];
 
@@ -2087,13 +2061,6 @@
           target = {
             x: lvl.target.x * canvas.width,
             y: lvl.target.y * canvas.height,
-            size: cube.size
-          };
-        } else if (lvl.stage3Level12) {
-          stage3Level12Index = 0;
-          target = {
-            x: stage3Level12Positions[0].x * canvas.width,
-            y: stage3Level12Positions[0].y * canvas.height,
             size: cube.size
           };
         } else if (lvl.fallingBrownLevel) {
@@ -3550,32 +3517,6 @@
               if (stage3Level4Index < stage3Level4TargetPositions.length - 1) {
                 target.x = stage3Level4TargetPositions[stage3Level4Index].x * canvas.width;
                 target.y = stage3Level4TargetPositions[stage3Level4Index].y * canvas.height;
-                return;
-              } else {
-                if (currentMode === "hard") {
-                  let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
-                  if (!hardModeStars.includes(currentLevel)) {
-                    hardModeStars.push(currentLevel);
-                  }
-                  localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
-                  updateStarProgress();
-                }
-                winSound.currentTime = 0;
-                winSound.play();
-                currentLevel++;
-                if (currentLevel < levels.length) {
-                  loadLevel(currentLevel);
-                } else {
-                  showWinScreen();
-                  return;
-                }
-                return;
-              }
-            } else if (levels[currentLevel].stage3Level12 && rectIntersect(cubeRect, targetRect)) {
-              stage3Level12Index++;
-              if (stage3Level12Index < stage3Level12Positions.length) {
-                target.x = stage3Level12Positions[stage3Level12Index].x * canvas.width;
-                target.y = stage3Level12Positions[stage3Level12Index].y * canvas.height;
                 return;
               } else {
                 if (currentMode === "hard") {
