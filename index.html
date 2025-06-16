@@ -191,6 +191,10 @@
         z-index: 50;
         pointer-events: none;
       }
+
+      #starProgress.gold {
+        color: gold;
+      }
     </style>
   </head>
   <body>
@@ -203,7 +207,8 @@
          Main Menu Overlay: Displays the game title and options.
          ====================================================== -->
     <div id="mainMenu" class="overlay">
-      <h1 style="font-size:64px; margin-bottom:40px;">Gravity Flipper</h1>
+      <h1 style="font-size:64px; margin-bottom:20px;">Gravity Flipper</h1>
+      <div id="starProgress" class="hidden" style="font-size:32px; margin-bottom:20px;">0/0 ★</div>
       <!-- Button to start the game -->
       <div id="playButton" class="bigButton">Play</div>
       <!-- Button to open the level selector overlay -->
@@ -2645,6 +2650,7 @@
                     hardModeStars.push(currentLevel);
                   }
                   localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
+                  updateStarProgress();
                 }
                 currentLevel++;
                 if (currentLevel < levels.length) {
@@ -3399,6 +3405,7 @@
                   hardModeStars.push(currentLevel);
                 }
                 localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
+                updateStarProgress();
               }
               winSound.currentTime = 0;
               winSound.play();
@@ -3441,6 +3448,7 @@
                     hardModeStars.push(currentLevel);
                   }
                   localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
+                  updateStarProgress();
                 }
                 winSound.currentTime = 0;
                 winSound.play();
@@ -3471,7 +3479,8 @@
                     hardModeStars.push(currentLevel);
                   }
                   localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
-                }
+                  updateStarProgress();
+              }
                 winSound.currentTime = 0;
                 winSound.play();
                 currentLevel++;
@@ -3491,6 +3500,7 @@
                   hardModeStars.push(currentLevel);
                 }
                 localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
+                updateStarProgress();
               }
               winSound.currentTime = 0;
               winSound.play();
@@ -3668,6 +3678,7 @@
                   hardModeStars.push(currentLevel);
                 }
                 localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
+                updateStarProgress();
               }
               winSound.currentTime = 0;
               winSound.play();
@@ -3939,6 +3950,7 @@
                   hardModeStars.push(currentLevel);
                 }
                 localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
+                updateStarProgress();
               }
               winSound.currentTime = 0;
               winSound.play();
@@ -4397,6 +4409,7 @@
       function backToMainMenu() {
         hideLevelSelector();
         mainMenu.classList.remove("hidden");
+        updateStarProgress();
         gamePaused = true;
       }
 
@@ -4462,6 +4475,7 @@
       const mainMenu = document.getElementById("mainMenu");
       const playButton = document.getElementById("playButton");
       const menuLevelSelectorButton = document.getElementById("menuLevelSelectorButton");
+      const starProgress = document.getElementById("starProgress");
       const clearStoragePrompt = document.getElementById("clearStoragePrompt");
       const clearYes = document.getElementById("clearYes");
       const clearNo = document.getElementById("clearNo");
@@ -4507,6 +4521,7 @@
       settingsBackButton.addEventListener("click", () => {
         settingsMenu.classList.add("hidden");
         mainMenu.classList.remove("hidden");
+        updateStarProgress();
         gamePaused = true;
       });
 
@@ -4545,6 +4560,7 @@
       clearYes.addEventListener("click", () => {
         localStorage.clear();
         maxUnlockedLevel = 0;
+        updateStarProgress();
         hideClearStoragePrompt();
       });
 
@@ -4569,6 +4585,23 @@
           normalModeButton.classList.add("selected");
         } else if (currentMode === "hard") {
           hardModeButton.classList.add("selected");
+        }
+      }
+
+      function updateStarProgress() {
+        const hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
+        const totalStars = levels.length;
+        const count = hardModeStars.length;
+        if (count > 0) {
+          starProgress.classList.remove('hidden');
+          starProgress.textContent = `${count}/${totalStars} \u2605`;
+          if (count === totalStars) {
+            starProgress.classList.add('gold');
+          } else {
+            starProgress.classList.remove('gold');
+          }
+        } else {
+          starProgress.classList.add('hidden');
         }
       }
 
@@ -4632,6 +4665,7 @@
       toggleSoundEffects.checked = settings.soundEffects;
       toggleMusic.checked = settings.music;
       toggleLightMode.checked = settings.lightMode;
+      updateStarProgress();
 
       // Also, if music is off, pause both BG tracks immediately
       if (!settings.music) {
