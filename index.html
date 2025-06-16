@@ -613,6 +613,15 @@
       let stage3Level11NextColor = "cyan";
       let stage3Level11LineSpeed = baseStage3Level4LineSpeed;
       let stage3Level11SpawnInterval = baseStage3Level4SpawnInterval;
+      // Variables for Stage 3 Level 12 (teleporting target)
+      const stage3Level12TargetPositions = [
+        { x: 0.95, y: 0.05 },
+        { x: 0.05, y: 0.05 },
+        { x: 0.05, y: 0.95 },
+        { x: 0.95, y: 0.95 },
+        { x: 0.5,  y: 0.5 }
+      ];
+      let stage3Level12Index = 0;
       // =====================================================================
 
       // -------------------------------------------------
@@ -1836,6 +1845,23 @@
             { x: 0.4, y: 0.6, w: 0.1, h: 0.1 },
             { x: 0.7, y: 0.3, w: 0.1, h: 0.1 }
           ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 12 (index 42)
+          // Rotating cyan/yellow cross with a teleporting target
+          // -------------------------------------------------
+          spawn: { x: 0.05, y: 0.95 },
+          target: { x: 0.95, y: 0.05 },
+          colorLevel: true,
+          stage: 3,
+          stage3Level5: true,
+          halfSpinSpeed: true,
+          doubleSpinLine: true,
+          stage3Level12: true,
+          targetOnTop: true,
+          platforms: [],
+          hazards: []
         }
       ];
 
@@ -2061,6 +2087,14 @@
           target = {
             x: lvl.target.x * canvas.width,
             y: lvl.target.y * canvas.height,
+            size: cube.size
+          };
+        } else if (lvl.stage3Level12) {
+          stage3Level12Index = 0;
+          stage3Level10Teleported = false;
+          target = {
+            x: stage3Level12TargetPositions[0].x * canvas.width,
+            y: stage3Level12TargetPositions[0].y * canvas.height,
             size: cube.size
           };
         } else if (lvl.fallingBrownLevel) {
@@ -3535,6 +3569,16 @@
                 } else {
                   showWinScreen();
                   return;
+                }
+                return;
+              }
+            } else if (levels[currentLevel].stage3Level12 && rectIntersect(cubeRect, targetRect)) {
+              if (stage3Level12Index < stage3Level12TargetPositions.length - 1) {
+                stage3Level12Index++;
+                target.x = stage3Level12TargetPositions[stage3Level12Index].x * canvas.width;
+                target.y = stage3Level12TargetPositions[stage3Level12Index].y * canvas.height;
+                if (stage3Level12Index === stage3Level12TargetPositions.length - 1) {
+                  stage3Level10Teleported = true;
                 }
                 return;
               }
