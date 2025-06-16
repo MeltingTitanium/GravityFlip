@@ -1948,7 +1948,7 @@
           // Stage 1 Level 2 layout with delayed color line spam
           // -------------------------------------------------
           spawn: { x: 0.1, y: 0.9 },
-          target: { x: 0.1, y: 0.1 },
+          target: { x: 0.9, y: 0.1 },
           colorLevel: true,
           stage: 3,
           stage3Level11: true,
@@ -2221,7 +2221,7 @@
             baseStage3Level4LineSpeed *
             (currentMode === "easy" ? 0.3 : currentMode === "hard" ? 0.5 : 0.4);
           stage3Level4SpawnInterval =
-            baseStage3Level4SpawnInterval + (currentMode === "easy" ? 500 : 0);
+            (baseStage3Level4SpawnInterval + (currentMode === "easy" ? 500 : 0)) * 2;
           stage3Level4LastSpawn =
             Date.now() - stage3Level4SpawnInterval + 1500;
 
@@ -2231,7 +2231,7 @@
             baseStage3Level4LineSpeed *
             (currentMode === "easy" ? 0.3 : currentMode === "hard" ? 0.5 : 0.4);
           stage3Level11SpawnInterval =
-            baseStage3Level4SpawnInterval + (currentMode === "easy" ? 500 : 0);
+            (baseStage3Level4SpawnInterval + (currentMode === "easy" ? 500 : 0)) * 2;
           stage3Level11LastSpawn =
             Date.now() - stage3Level11SpawnInterval + 200;
           target = {
