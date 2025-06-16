@@ -748,6 +748,15 @@
         ctx.fillText(text, 10, yPos);
       }
 
+      function drawChargeProgress() {
+        if (levels[currentLevel].lightGreenLevel) {
+          ctx.fillStyle = "#fff";
+          ctx.font = "20px sans-serif";
+          ctx.textAlign = "left";
+          ctx.fillText(lightGreenPercent + "%", 10, 70);
+        }
+      }
+
       // -------------------------------------------------
       // 6. Particles for Broken Brown Obstacles
       // -------------------------------------------------
@@ -1865,6 +1874,20 @@
           platforms: [],
           hazards: []
         }
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 13 (index 43)
+          // Light green charge block introduction
+          // -------------------------------------------------
+          spawn: { x: 0.1, y: 0.9 },
+          lightGreenLevel: true,
+          stage: 3,
+          lightGreens: [
+            { x: 0.45, y: 0.45, w: 0.1, h: 0.1, time: 3000 }
+          ],
+          platforms: [],
+          hazards: []
+        },
       ];
 
       // -------------------------------------------------
@@ -1892,6 +1915,11 @@
 
       // NEW: blue blocks that only affect teleporting
       let blues = [];
+
+      // Light green blocks that require charging
+      const baseLightGreenCharge = 3000; // milliseconds to fully charge
+      let lightGreens = [];
+      let lightGreenPercent = 0;
 
       // Grey lifts used in Stage 2 Level 5
       let lifts = [];
@@ -1982,6 +2010,8 @@
         blues = [];
         cyans = [];
         yellows = [];
+        lightGreens = [];
+        lightGreenPercent = 0;
 
         // Special handling for challenge levels or levels with unique behavior
         if (lvl.challengeDashingLevel) {
@@ -2100,6 +2130,10 @@
             y: lvl.target.y * canvas.height,
             size: cube.size
           };
+        } else if (lvl.lightGreenLevel) {
+          lightGreenPercent = 0;
+          lightGreens = [];
+          target = null;
         } else if (lvl.fallingBrownLevel) {
           fallingBrownBlocks = [];
           fallingBrownTextStart = Date.now();
@@ -2250,6 +2284,16 @@
           vy: l.dy || 0,
           minY: (l.minY || 0) * canvas.height,
           maxY: (l.maxY || 1) * canvas.height
+        }));
+
+        // Map light green blocks
+        lightGreens = (lvl.lightGreens || []).map(g => ({
+          x: g.x * canvas.width,
+          y: g.y * canvas.height,
+          width: g.w * canvas.width,
+          height: g.h * canvas.height,
+          required: g.time || baseLightGreenCharge,
+          progress: 0
         }));
 
         // For specific levels (2 through 6), set up horizontal movement for hazards
@@ -2855,7 +2899,7 @@
       function update() {
         if (gamePaused) return;
         const now = Date.now();
-        let obstacles = [...platforms, ...browns, ...lifts];
+        let obstacles = [...platforms, ...browns, ...lifts, ...lightGreens];
         if (levels[currentLevel].fallingBrownLevel) {
           obstacles = obstacles.concat(fallingBrownBlocks);
         }
@@ -3318,6 +3362,35 @@
 
         if (autoColorEnabled && levels[currentLevel].colorLevel) {
           outlineColor = closestColor();
+        }
+
+        if (levels[currentLevel].lightGreenLevel) {
+          for (let lg of lightGreens) {
+            const lgRect = { x: lg.x, y: lg.y, width: lg.width, height: lg.height };
+            if (rectIntersect({ x: cube.x - cube.size / 2, y: cube.y - cube.size / 2, width: cube.size, height: cube.size }, lgRect)) {
+              lg.progress += step;
+              if (lg.progress >= lg.required) {
+                if (currentMode === "hard") {
+                  let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
+                  if (!hardModeStars.includes(currentLevel)) {
+                    hardModeStars.push(currentLevel);
+                  }
+                  localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
+                  updateStarProgress();
+                }
+                winSound.currentTime = 0;
+                winSound.play();
+                currentLevel++;
+                if (currentLevel < levels.length) {
+                  loadLevel(currentLevel);
+                } else {
+                  showWinScreen();
+                }
+                return;
+              }
+            }
+            lightGreenPercent = Math.floor(Math.min(100, (lg.progress / lg.required) * 100));
+          }
         }
 
         // Check collisions with hazards
@@ -4165,6 +4238,15 @@
         }
       }
 
+      function drawLightGreens() {
+        for (let g of lightGreens) {
+          const ratio = Math.min(1, g.progress / g.required);
+          const val = Math.round(204 * (1 - ratio));
+          ctx.fillStyle = `rgb(${val},255,${val})`;
+          ctx.fillRect(g.x, g.y, g.width, g.height);
+        }
+      }
+
       function drawCyans() {
         ctx.fillStyle = "cyan";
         for (let c of cyans) {
@@ -4354,6 +4436,10 @@
           ctx.textAlign = "center";
           ctx.fillText("One of these brown blocks hides a green block", canvas.width / 2, 80);
         }
+        if (currentLevel === 43) {
+          ctx.textAlign = "center";
+          ctx.fillText("Charge up light green blocks to progress", canvas.width / 2, 80);
+        }
         if (currentLevel === 27) {
           ctx.textAlign = "center";
           ctx.fillText("You can't teleport through blue blocks", canvas.width / 2, 80);
@@ -4468,6 +4554,7 @@
       drawStage3Level4Lines();
       drawStage3Level11Lines();
       drawStage3Level5Line();
+      drawLightGreens();
       drawBlues();
       drawBrowns();
         drawLifts();
@@ -4480,6 +4567,7 @@
         drawBrownParticles();
         drawGreyParticles();
         drawLevelText();
+        drawChargeProgress();
       drawCooldown();
       if (levels[currentLevel].targetOnTop && stage3Level10Teleported) {
         drawTarget();
