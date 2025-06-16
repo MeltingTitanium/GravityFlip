@@ -614,10 +614,12 @@
       let stage3Level11LineSpeed = baseStage3Level4LineSpeed;
       let stage3Level11SpawnInterval = baseStage3Level4SpawnInterval;
       const stage3Level12TargetPositions = [
-        { x: 0.95, y: 0.05 },
-        { x: 0.05, y: 0.05 },
-        { x: 0.05, y: 0.95 },
-        { x: 0.95, y: 0.95 },
+        // Start farther from the player in the top-right corner
+        { x: 0.97, y: 0.03 },
+        // Move counterclockwise around the screen
+        { x: 0.03, y: 0.03 },
+        { x: 0.03, y: 0.97 },
+        { x: 0.97, y: 0.97 },
         { x: 0.5, y: 0.5 }
       ];
       let stage3Level12Index = 0;
@@ -2052,7 +2054,8 @@
             size: cube.size
           };
         } else if (lvl.stage3Level5) {
-          stage3Level5Angle = 0;
+          // Start rotated away from the player for Stage 3 Level 12
+          stage3Level5Angle = lvl.stage3Level12 ? -Math.PI / 2 : 0;
           stage3Level5Segments = [];
           stage3DoubleLine = !!lvl.doubleSpinLine;
           const count = stage3Level5SegmentColors.length;
