@@ -607,6 +607,12 @@
       let stage3DoubleLine = false;
       // Flag for Stage 3 Level 10 teleport mechanic
       let stage3Level10Teleported = false;
+      // Variables for Stage 3 Level 11 (horizontal color lines)
+      let stage3Level11Lines = [];
+      let stage3Level11LastSpawn = 0;
+      let stage3Level11NextColor = "cyan";
+      let stage3Level11LineSpeed = baseStage3Level4LineSpeed;
+      let stage3Level11SpawnInterval = baseStage3Level4SpawnInterval;
       // =====================================================================
 
       // -------------------------------------------------
@@ -1808,8 +1814,27 @@
             { x: 0.25, y: 0.45, w: 0.05, h: 0.05 },
             { x: 0.65, y: 0.55, w: 0.05, h: 0.05 },
             { x: 0.40, y: 0.20, w: 0.05, h: 0.05 },
-            { x: 0.70, y: 0.75, w: 0.05, h: 0.05 },
-            { x: 0.15, y: 0.70, w: 0.05, h: 0.05 }
+        { x: 0.70, y: 0.75, w: 0.05, h: 0.05 },
+        { x: 0.15, y: 0.70, w: 0.05, h: 0.05 }
+      ]
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 11 (index 41)
+          // Stage 1 Level 3 layout with horizontal color lines
+          // -------------------------------------------------
+          spawn: { x: 0.1, y: 0.95 },
+          target: { x: 0.9, y: 0.05 },
+          colorLevel: true,
+          stage: 3,
+          stage3Level11: true,
+          platforms: [
+            { x: 0.2, y: 0.7, w: 0.25, h: 0.03 },
+            { x: 0.55, y: 0.4, w: 0.3, h: 0.03 }
+          ],
+          hazards: [
+            { x: 0.4, y: 0.6, w: 0.1, h: 0.1 },
+            { x: 0.7, y: 0.3, w: 0.1, h: 0.1 }
           ]
         }
       ];
@@ -2025,6 +2050,19 @@
             y: lvl.target.y * canvas.height,
             size: cube.size
           };
+        } else if (lvl.stage3Level11) {
+          stage3Level11Lines = [];
+          stage3Level11LastSpawn = Date.now();
+          stage3Level11NextColor = "cyan";
+          stage3Level11LineSpeed =
+            baseStage3Level4LineSpeed * (currentMode === "easy" ? 0.6 : currentMode === "hard" ? 1.2 : 1);
+          stage3Level11SpawnInterval =
+            baseStage3Level4SpawnInterval + (currentMode === "easy" ? 500 : 0);
+          target = {
+            x: lvl.target.x * canvas.width,
+            y: lvl.target.y * canvas.height,
+            size: cube.size
+          };
         } else if (lvl.fallingBrownLevel) {
           fallingBrownBlocks = [];
           fallingBrownTextStart = Date.now();
@@ -2178,7 +2216,7 @@
         }));
 
         // For specific levels (2 through 6), set up horizontal movement for hazards
-        if ([2, 3, 4, 5, 6, 21, 40].includes(index)) {
+        if ([2, 3, 4, 5, 6, 21, 40, 41].includes(index)) {
           hazards.forEach(h => {
             h.vx = currentHazardSpeed; // already scaled by difficulty
             h.minX = 0;
@@ -2369,7 +2407,7 @@
           height: b.h * canvas.height
         }));
 
-        if ([2, 3, 4, 5, 6, 21, 40].includes(currentLevel)) {
+        if ([2, 3, 4, 5, 6, 21, 40, 41].includes(currentLevel)) {
           hazards.forEach(h => {
             h.vx = currentHazardSpeed;
             h.minX = 0;
@@ -2742,6 +2780,15 @@
           });
         }
 
+        if (levels[currentLevel].stage3Level11) {
+          stage3Level11Lines.forEach(l => {
+            const rect = { x: l.x, y: l.y, width: l.width, height: l.height };
+            const d = rectDistance(cube.x, cube.y, rect);
+            if (l.color === "cyan") minCyan = Math.min(minCyan, d);
+            else minYellow = Math.min(minYellow, d);
+          });
+        }
+
         if (levels[currentLevel].stage3Level5) {
           const pivotX = canvas.width / 2;
           const pivotY = canvas.height / 2;
@@ -2921,7 +2968,7 @@
         }
 
         // Update hazards (levels 2-6 plus some later levels have horizontally moving hazards)
-        if ([2, 3, 4, 5, 6, 21, 40].includes(currentLevel)) {
+        if ([2, 3, 4, 5, 6, 21, 40, 41].includes(currentLevel)) {
           hazards.forEach(h => {
             h.x += h.vx;
             if (h.x < h.minX || h.x > h.maxX) {
@@ -3199,6 +3246,22 @@
           }
         }
 
+        if (levels[currentLevel].stage3Level11) {
+          if (now - stage3Level11LastSpawn >= stage3Level11SpawnInterval) {
+            const w = 0.02 * canvas.width;
+            stage3Level11Lines.push({ x: canvas.width, y: 0, width: w, height: canvas.height, dx: -stage3Level11LineSpeed, color: stage3Level11NextColor });
+            stage3Level11LastSpawn = now;
+            stage3Level11NextColor = stage3Level11NextColor === "cyan" ? "yellow" : "cyan";
+          }
+          for (let i = stage3Level11Lines.length - 1; i >= 0; i--) {
+            let line = stage3Level11Lines[i];
+            line.x += line.dx;
+            if (line.x + line.width < 0) {
+              stage3Level11Lines.splice(i, 1);
+            }
+          }
+        }
+
         if (levels[currentLevel].stage3Level5) {
           stage3Level5Angle -= stage3Level5AngularSpeed;
         }
@@ -3289,6 +3352,20 @@
 
         if (levels[currentLevel].stage3Level4) {
           for (let line of stage3Level4Lines) {
+            const lRect = { x: line.x, y: line.y, width: line.width, height: line.height };
+            if (rectIntersect(cubeRect, lRect)) {
+              if (outlineColor !== line.color) {
+                deathSound.currentTime = 0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
+            }
+          }
+        }
+
+        if (levels[currentLevel].stage3Level11) {
+          for (let line of stage3Level11Lines) {
             const lRect = { x: line.x, y: line.y, width: line.width, height: line.height };
             if (rectIntersect(cubeRect, lRect)) {
               if (outlineColor !== line.color) {
@@ -4045,6 +4122,15 @@
         }
       }
 
+      function drawStage3Level11Lines() {
+        if (levels[currentLevel].stage3Level11) {
+          for (let line of stage3Level11Lines) {
+            ctx.fillStyle = line.color;
+            ctx.fillRect(line.x, line.y, line.width, line.height);
+          }
+        }
+      }
+
       function drawStage3Level5Line() {
         if (levels[currentLevel].stage3Level5) {
           const pivotX = canvas.width / 2;
@@ -4314,6 +4400,7 @@
       drawCyans();
       drawYellows();
       drawStage3Level4Lines();
+      drawStage3Level11Lines();
       drawStage3Level5Line();
       drawBlues();
       drawBrowns();
