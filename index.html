@@ -192,6 +192,19 @@
         pointer-events: none;
       }
 
+      #extraColorMessage {
+        position: absolute;
+        top: 10px;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        font-size: 48px;
+        font-family: "Press Start 2P", monospace;
+        color: red;
+        z-index: 50;
+        pointer-events: none;
+      }
+
       #starProgress.gold {
         color: gold;
       }
@@ -326,6 +339,7 @@
     </div>
     <div id="checkpointPopup" class="overlay hidden">Checkpoint Reached</div>
     <div id="autoColorMessage" class="hidden">automatic color switching unlocked</div>
+    <div id="extraColorMessage" class="hidden">New Color Unlocked</div>
 
     <!-- ======================================================
          JavaScript Section: Contains all game logic and functionality.
@@ -1960,6 +1974,22 @@
             { x: 0.1, y: 0.35, w: 0.7, h: 0.03 },
             { x: 0.5, y: 0.35, w: 0.03, h: 0.4 }
           ],
+        hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 17 (index 47)
+          // Introduces red color block
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.1 },
+          colorLevel: true,
+          extracolor: true,
+          stage: 3,
+          reds: [
+            { x: 0, y: 0.5, w: 1, h: 0.02 }
+          ],
+          platforms: [],
           hazards: []
         }
       ];
@@ -1986,6 +2016,7 @@
       // Blocks for color change gimmick
       let cyans = [];
       let yellows = [];
+      let reds = [];
 
       // NEW: blue blocks that only affect teleporting
       let blues = [];
@@ -2013,6 +2044,8 @@
       let hasShownTeleportPopup = false;
       // Track if color-change popup has been shown
       let hasShownColorPopup = false;
+      // Track if extra color popup has been shown
+      let hasShownExtraColorMessage = false;
 
       function loadLevel(index) {
         const prevLevel = currentLevel;
@@ -2079,6 +2112,7 @@
         blues = [];
         cyans = [];
         yellows = [];
+        reds = [];
         chargeProgress = 0;
         chargeDuration = lvl.chargeTime || 3000;
 
@@ -2357,6 +2391,13 @@
           height: y.h * canvas.height
         }));
 
+        reds = (lvl.reds || []).map(r => ({
+          x: r.x * canvas.width,
+          y: r.y * canvas.height,
+          width: r.w * canvas.width,
+          height: r.h * canvas.height
+        }));
+
         // Map blue block definitions (can optionally move like oranges/purples)
         blues = (lvl.blues || []).map(b => ({
           x: b.x * canvas.width,
@@ -2466,6 +2507,11 @@
           hasShownColorPopup = true;
           gamePaused = true;
           document.getElementById("colorPopup").style.display = "block";
+        } else if (lvl.extracolor && !hasShownExtraColorMessage) {
+          hasShownExtraColorMessage = true;
+          const msg = document.getElementById("extraColorMessage");
+          msg.classList.remove("hidden");
+          setTimeout(() => msg.classList.add("hidden"), 1500);
         } else if (index === 7) {
           showGimmickPopup = true;
           gamePaused = true;
@@ -2735,7 +2781,13 @@
           attemptTeleport();
         }
         else if (levels[currentLevel].colorLevel && e.key === " ") {
-          outlineColor = outlineColor === "cyan" ? "yellow" : "cyan";
+          if (levels[currentLevel].extracolor) {
+            if (outlineColor === "cyan") outlineColor = "yellow";
+            else if (outlineColor === "yellow") outlineColor = "red";
+            else outlineColor = "cyan";
+          } else {
+            outlineColor = outlineColor === "cyan" ? "yellow" : "cyan";
+          }
         }
         else if (currentLevel >= 7 && e.key === " " && !isDashing) {
           attemptDash();
@@ -2943,12 +2995,17 @@
       function closestColor() {
         let minCyan = Infinity;
         let minYellow = Infinity;
+        let minRed = Infinity;
 
         cyans.forEach(c => {
           minCyan = Math.min(minCyan, rectDistance(cube.x, cube.y, c));
         });
         yellows.forEach(y => {
           minYellow = Math.min(minYellow, rectDistance(cube.x, cube.y, y));
+        });
+
+        reds.forEach(r => {
+          minRed = Math.min(minRed, rectDistance(cube.x, cube.y, r));
         });
 
         if (levels[currentLevel].stage3Level4) {
@@ -2998,7 +3055,11 @@
           });
         }
 
-        return minCyan <= minYellow ? "cyan" : "yellow";
+        let color = minCyan <= minYellow ? "cyan" : "yellow";
+        if (levels[currentLevel].extracolor && minRed < Math.min(minCyan, minYellow)) {
+          color = "red";
+        }
+        return color;
       }
 
       // -------------------------------------------------
@@ -3547,6 +3608,19 @@
           const yRect = { x: y.x, y: y.y, width: y.width, height: y.height };
           if (rectIntersect(cubeRect, yRect)) {
             if (outlineColor !== "yellow") {
+              deathSound.currentTime = 0;
+              deathSound.play();
+              loadLevel(currentLevel);
+              return;
+            }
+          }
+        }
+
+        // Check collisions with red blocks
+        for (let r of reds) {
+          const rRect = { x: r.x, y: r.y, width: r.width, height: r.height };
+          if (rectIntersect(cubeRect, rRect)) {
+            if (outlineColor !== "red") {
               deathSound.currentTime = 0;
               deathSound.play();
               loadLevel(currentLevel);
@@ -4389,6 +4463,13 @@
         }
       }
 
+      function drawReds() {
+        ctx.fillStyle = "red";
+        for (let r of reds) {
+          ctx.fillRect(r.x, r.y, r.width, r.height);
+        }
+      }
+
       function drawStage3Level4Lines() {
         if (levels[currentLevel].stage3Level4) {
           for (let line of stage3Level4Lines) {
@@ -4688,6 +4769,7 @@
       drawPurples();
       drawCyans();
       drawYellows();
+      drawReds();
       drawStage3Level4Lines();
       drawStage3Level11Lines();
       drawStage3Level15Lines();
