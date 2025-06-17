@@ -552,53 +552,60 @@
         }, interval);
       }
 
-      function playBackgroundMusicForStage(stage) {
-        if (!settings.music) return;
+      const stageMusic = {
+        1: { normal: bgEasyNormalMusic, hard: bgHardMusic },
+        2: { normal: bgEasyNormalMusic, hard: bgHardMusic },
+        3: { normal: stage3EasyMusic, hard: stage3HardMusic }
+      };
+
+      const levelMusic = {}; // For any level specific tracks
+
+      let currentMusic = null;
+
+      function stopAllMusic(immediate = false) {
         [bgEasyNormalMusic, bgHardMusic, stage3EasyMusic, stage3HardMusic].forEach(a => {
-          a.pause();
-          a.currentTime = 0;
+          if (immediate) {
+            a.pause();
+            a.currentTime = 0;
+            a.volume = a.initialVolume;
+          } else {
+            fadeOut(a, 500);
+          }
         });
-        if (currentMode === "hard") {
-          if (stage === 3) {
-            stage3HardMusic.volume = stage3HardMusic.initialVolume;
-            stage3HardMusic.play();
-          } else {
-            bgHardMusic.volume = bgHardMusic.initialVolume;
-            bgHardMusic.play();
-          }
-        } else {
-          if (stage === 3) {
-            stage3EasyMusic.volume = stage3EasyMusic.initialVolume;
-            stage3EasyMusic.play();
-          } else {
-            bgEasyNormalMusic.volume = bgEasyNormalMusic.initialVolume;
-            bgEasyNormalMusic.play();
-          }
-        }
+        currentMusic = null;
       }
 
-      function handleStageMusicTransition(prevStage, newStage) {
-        if (!settings.music || prevStage === newStage) return;
-        const fadeDuration = 1000;
-        if (newStage === 3) {
-          fadeOut(bgEasyNormalMusic, fadeDuration);
-          fadeOut(bgHardMusic, fadeDuration, () => {
-            if (currentMode === "hard") {
-              fadeIn(stage3HardMusic, fadeDuration);
-            } else {
-              fadeIn(stage3EasyMusic, fadeDuration);
-            }
-          });
-        } else if (prevStage === 3 && newStage !== 3) {
-          fadeOut(stage3EasyMusic, fadeDuration);
-          fadeOut(stage3HardMusic, fadeDuration, () => {
-            if (currentMode === "hard") {
-              fadeIn(bgHardMusic, fadeDuration);
-            } else {
-              fadeIn(bgEasyNormalMusic, fadeDuration);
-            }
-          });
+      function playTrack(audio) {
+        if (!settings.music) return;
+        if (currentMusic === audio) {
+          if (audio && audio.paused) fadeIn(audio, 500);
+          return;
         }
+        const previous = currentMusic;
+        currentMusic = audio;
+        if (previous) fadeOut(previous, 500);
+        if (audio) fadeIn(audio, 500);
+      }
+
+      function getMusicForLevel(index) {
+        const lvl = levels[index];
+        if (!lvl) return null;
+        if (levelMusic[index]) {
+          const entry = levelMusic[index];
+          if (typeof entry === "object") {
+            if (currentMode === "hard" && entry.hard) return entry.hard;
+            return entry.normal || entry;
+          }
+          return entry;
+        }
+        const stage = lvl.stage || 1;
+        const tracks = stageMusic[stage] || stageMusic[1];
+        return currentMode === "hard" ? (tracks.hard || tracks.normal) : tracks.normal;
+      }
+
+      function updateMusicForLevel(index) {
+        const track = getMusicForLevel(index);
+        playTrack(track);
       }
 
       // -------------------------------------------------
@@ -2147,7 +2154,11 @@
           const lvl = levels[index];
           const prevStage = levels[prevLevel] ? (levels[prevLevel].stage || 1) : 1;
           const newStage = lvl.stage || 1;
-          handleStageMusicTransition(prevStage, newStage);
+          if (prevStage !== newStage || currentMusic === null) {
+            updateMusicForLevel(index);
+          } else if (currentMusic && currentMusic.paused) {
+            updateMusicForLevel(index);
+          }
 
         // Clear any pending checkpoint auto-kill
         if (checkpointKillTimeout) {
@@ -4945,7 +4956,7 @@
                   hideLevelSelector();
                   loadLevel(index);
                   gamePaused = false;
-                  playBackgroundMusicForStage(levels[index].stage || 1);
+                  updateMusicForLevel(index);
                 });
             }
             levelSelectorContainer.appendChild(btn);
@@ -4959,6 +4970,7 @@
         mainMenu.classList.remove("hidden");
         updateStarProgress();
         gamePaused = true;
+        stopAllMusic(true);
       }
 
       function showLevelSelector(unlockAll = false, fromMainMenu = false) {
@@ -4966,6 +4978,7 @@
         levelSelectorFromMainMenu = fromMainMenu;
         levelSelectorActive = true;
         gamePaused = true;
+        stopAllMusic(true);
         if (levelSelectorFromMainMenu) {
           const highestUnlockedIndex = Math.min(maxUnlockedLevel, levels.length - 1);
           currentStage = levels[highestUnlockedIndex].stage || 1;
@@ -4986,6 +4999,10 @@
         levelSelectorActive = false;
         gamePaused = false;
         levelSelectorOverlay.classList.add("hidden");
+        if (!levelSelectorFromMainMenu && settings.music) {
+          updateMusicForLevel(currentLevel);
+        }
+        levelSelectorFromMainMenu = false;
       }
 
       document.getElementById("stageLeft").addEventListener("click", () => {
@@ -5033,7 +5050,7 @@
           gamePaused = false;
           currentLevel = 0;
           loadLevel(currentLevel);
-          playBackgroundMusicForStage(levels[currentLevel].stage || 1);
+          updateMusicForLevel(currentLevel);
         });
 
       menuLevelSelectorButton.addEventListener("click", () => {
@@ -5076,12 +5093,9 @@
         // Save to localStorage whenever changed
         localStorage.setItem('gravityFlipperSettings', JSON.stringify(settings));
         if (!settings.music) {
-          bgEasyNormalMusic.pause();
-          bgHardMusic.pause();
-          stage3EasyMusic.pause();
-          stage3HardMusic.pause();
-        } else {
-          playBackgroundMusicForStage(levels[currentLevel]?.stage || 1);
+          stopAllMusic(true);
+        } else if (!gamePaused && !levelSelectorActive && mainMenu.classList.contains("hidden")) {
+          updateMusicForLevel(currentLevel);
         }
       });
 
@@ -5154,7 +5168,7 @@
           updateModeParameters();
           updateModeButtons();
           localStorage.setItem('gravityFlipperMode', currentMode);
-          if (settings.music) playBackgroundMusicForStage(levels[currentLevel]?.stage || 1);
+          if (settings.music && !gamePaused && !levelSelectorActive && mainMenu.classList.contains("hidden")) updateMusicForLevel(currentLevel);
           console.log("Easy mode activated!");
         });
         normalModeButton.addEventListener("click", () => {
@@ -5162,7 +5176,7 @@
           updateModeParameters();
           updateModeButtons();
           localStorage.setItem('gravityFlipperMode', currentMode);
-          if (settings.music) playBackgroundMusicForStage(levels[currentLevel]?.stage || 1);
+          if (settings.music && !gamePaused && !levelSelectorActive && mainMenu.classList.contains("hidden")) updateMusicForLevel(currentLevel);
           console.log("Normal mode activated!");
         });
         hardModeButton.addEventListener("click", () => {
@@ -5170,7 +5184,7 @@
           updateModeParameters();
           updateModeButtons();
           localStorage.setItem('gravityFlipperMode', currentMode);
-          if (settings.music) playBackgroundMusicForStage(levels[currentLevel]?.stage || 1);
+          if (settings.music && !gamePaused && !levelSelectorActive && mainMenu.classList.contains("hidden")) updateMusicForLevel(currentLevel);
           console.log("Hard mode activated!");
         });
 
@@ -5196,9 +5210,6 @@
           currentMode = savedMode;
           updateModeParameters();
           updateModeButtons();
-          if (settings.music) {
-            playBackgroundMusicForStage(levels[currentLevel].stage || 1);
-          }
         }
       // Immediately reflect them on the checkboxes
       toggleSoundEffects.checked = settings.soundEffects;
@@ -5208,10 +5219,7 @@
 
         // Also, if music is off, pause all BG tracks immediately
         if (!settings.music) {
-          bgEasyNormalMusic.pause();
-          bgHardMusic.pause();
-          stage3EasyMusic.pause();
-          stage3HardMusic.pause();
+          stopAllMusic(true);
         }
 
       // -------------------------------------------------
@@ -5223,26 +5231,17 @@
 
       document.addEventListener("visibilitychange", function() {
         if (document.hidden) {
-          // Save current settings so we can restore them later
           wasMusicOnBefore = settings.music;
           wereSoundsOnBefore = settings.soundEffects;
-
-          // Turn them off
           settings.soundEffects = false;
           settings.music = false;
-
-          // Pause music if user switches away
-          bgEasyNormalMusic.pause();
-          bgHardMusic.pause();
-          stage3EasyMusic.pause();
-          stage3HardMusic.pause();
+          stopAllMusic(true);
         } else {
-          // Restore them
           settings.music = wasMusicOnBefore;
           settings.soundEffects = wereSoundsOnBefore;
-            if (settings.music) {
-              playBackgroundMusicForStage(levels[currentLevel]?.stage || 1);
-            }
+          if (settings.music && !gamePaused && !levelSelectorActive && mainMenu.classList.contains("hidden")) {
+            updateMusicForLevel(currentLevel);
+          }
         }
       });
 
