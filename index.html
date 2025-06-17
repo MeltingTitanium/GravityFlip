@@ -530,7 +530,9 @@
             if (audio.fadeInterval) clearInterval(audio.fadeInterval);
             audio.pause();
             audio.currentTime = 0;
-            this.current = null;
+            if (this.current === audio) {
+              this.current = null;
+            }
           };
           if (!fade) {
             end();
@@ -540,7 +542,9 @@
         },
         play(newAudio) {
           if (this.current === newAudio) {
-            if (newAudio.paused) this._fadeIn(newAudio, newAudio.baseVolume);
+            if (newAudio.fadeInterval) clearInterval(newAudio.fadeInterval);
+            if (newAudio.paused) newAudio.play();
+            newAudio.volume = newAudio.baseVolume;
             return;
           }
           const old = this.current;
@@ -5214,12 +5218,14 @@
       // -------------------------------------------------
       let wasMusicOnBefore = settings.music;
       let wereSoundsOnBefore = settings.soundEffects;
+      let previousMusic = null;
       
       document.addEventListener("visibilitychange", function() {
         if (document.hidden) {
-          // Save current settings so we can restore them later
-          wasMusicOnBefore = settings.music && musicManager.current;
+          // Save current music and sound effect preferences
+          wasMusicOnBefore = settings.music;
           wereSoundsOnBefore = settings.soundEffects;
+          previousMusic = musicManager.current;
 
           // Turn them off
           settings.soundEffects = false;
@@ -5231,10 +5237,11 @@
           // Restore them
           settings.music = wasMusicOnBefore;
           settings.soundEffects = wereSoundsOnBefore;
-          if (settings.music && wasMusicOnBefore) {
+          if (settings.music && previousMusic) {
             const stage = levels[currentLevel].stage || 1;
             playMusicForStage(stage);
           }
+          previousMusic = null;
         }
       });
 
