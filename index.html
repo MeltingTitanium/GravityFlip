@@ -523,11 +523,11 @@
       const musicManager = {
         current: null,
         fadeDuration: 500,
-        fadeInterval: null,
         stop(fade = false) {
           if (!this.current) return;
           const audio = this.current;
           const end = () => {
+            if (audio.fadeInterval) clearInterval(audio.fadeInterval);
             audio.pause();
             audio.currentTime = 0;
             this.current = null;
@@ -549,28 +549,28 @@
           this._fadeIn(newAudio, newAudio.baseVolume);
         },
         _fadeOut(audio, onDone) {
-          clearInterval(this.fadeInterval);
+          if (audio.fadeInterval) clearInterval(audio.fadeInterval);
           const step = 50;
           const start = audio.volume;
           const delta = start / (this.fadeDuration / step);
-          this.fadeInterval = setInterval(() => {
+          audio.fadeInterval = setInterval(() => {
             audio.volume = Math.max(0, audio.volume - delta);
             if (audio.volume <= 0.01) {
-              clearInterval(this.fadeInterval);
+              clearInterval(audio.fadeInterval);
               onDone();
             }
           }, step);
         },
         _fadeIn(audio, target) {
-          clearInterval(this.fadeInterval);
+          if (audio.fadeInterval) clearInterval(audio.fadeInterval);
           const step = 50;
           const delta = target / (this.fadeDuration / step);
           audio.volume = 0;
           audio.play();
-          this.fadeInterval = setInterval(() => {
+          audio.fadeInterval = setInterval(() => {
             audio.volume = Math.min(target, audio.volume + delta);
             if (audio.volume >= target - 0.01) {
-              clearInterval(this.fadeInterval);
+              clearInterval(audio.fadeInterval);
               audio.volume = target;
             }
           }, step);
