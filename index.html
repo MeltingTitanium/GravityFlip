@@ -1982,7 +1982,7 @@
           // Introduces red color block
           // -------------------------------------------------
           spawn: { x: 0.5, y: 0.95 },
-          target: { x: 0.5, y: 0.1 },
+          target: { x: 0.5, y: 0.15 },
           colorLevel: true,
           extracolor: true,
           stage: 3,
@@ -2044,8 +2044,6 @@
       let hasShownTeleportPopup = false;
       // Track if color-change popup has been shown
       let hasShownColorPopup = false;
-      // Track if extra color popup has been shown
-      let hasShownExtraColorMessage = false;
 
       function loadLevel(index) {
         const prevLevel = currentLevel;
@@ -2082,6 +2080,11 @@
         document.getElementById("checkpointPopup").classList.add("hidden");
         cube.x = lvl.spawn.x * canvas.width;
         cube.y = lvl.spawn.y * canvas.height;
+
+        const extraMsg = document.getElementById("extraColorMessage");
+        if (lvl.extracolor) extraMsg.classList.remove("hidden");
+        else extraMsg.classList.add("hidden");
+
         cube.vx = 0;
         cube.vy = 0;
 
@@ -2507,11 +2510,6 @@
           hasShownColorPopup = true;
           gamePaused = true;
           document.getElementById("colorPopup").style.display = "block";
-        } else if (lvl.extracolor && !hasShownExtraColorMessage) {
-          hasShownExtraColorMessage = true;
-          const msg = document.getElementById("extraColorMessage");
-          msg.classList.remove("hidden");
-          setTimeout(() => msg.classList.add("hidden"), 1500);
         } else if (index === 7) {
           showGimmickPopup = true;
           gamePaused = true;
