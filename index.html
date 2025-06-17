@@ -568,27 +568,30 @@
 
       function playBackgroundMusicForStage(stage) {
         if (!settings.music) return;
-        [bgEasyNormalMusic, bgHardMusic, stage3EasyMusic, stage3HardMusic].forEach(a => {
-          a.pause();
-          a.currentTime = 0;
-        });
-        if (currentMode === "hard") {
-          if (stage === 3) {
-            stage3HardMusic.volume = stage3HardMusic.initialVolume;
-            stage3HardMusic.play();
-          } else {
-            bgHardMusic.volume = bgHardMusic.initialVolume;
-            bgHardMusic.play();
-          }
-        } else {
-          if (stage === 3) {
-            stage3EasyMusic.volume = stage3EasyMusic.initialVolume;
-            stage3EasyMusic.play();
-          } else {
-            bgEasyNormalMusic.volume = bgEasyNormalMusic.initialVolume;
-            bgEasyNormalMusic.play();
-          }
+
+        const target = (currentMode === "hard")
+          ? (stage === 3 ? stage3HardMusic : bgHardMusic)
+          : (stage === 3 ? stage3EasyMusic : bgEasyNormalMusic);
+
+        if (!target.paused) {
+          // Ensure only the correct track keeps playing
+          [bgEasyNormalMusic, bgHardMusic, stage3EasyMusic, stage3HardMusic].forEach(a => {
+            if (a !== target) {
+              a.pause();
+              a.currentTime = 0;
+            }
+          });
+          return;
         }
+
+        [bgEasyNormalMusic, bgHardMusic, stage3EasyMusic, stage3HardMusic].forEach(a => {
+          if (a !== target) {
+            a.pause();
+            a.currentTime = 0;
+          }
+        });
+        target.volume = target.initialVolume;
+        target.play();
       }
 
       function handleStageMusicTransition(prevStage, newStage) {
@@ -2163,7 +2166,12 @@
           const lvl = levels[index];
           const prevStage = levels[prevLevel] ? (levels[prevLevel].stage || 1) : 1;
           const newStage = lvl.stage || 1;
-          handleStageMusicTransition(prevStage, newStage);
+          if (prevStage !== newStage) {
+            handleStageMusicTransition(prevStage, newStage);
+          } else if (settings.music) {
+            // Ensure music for this stage is playing if it was previously faded out
+            playBackgroundMusicForStage(newStage);
+          }
 
         // Clear any pending checkpoint auto-kill
         if (checkpointKillTimeout) {
