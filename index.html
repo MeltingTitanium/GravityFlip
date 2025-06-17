@@ -2163,12 +2163,10 @@
           const lvl = levels[index];
           const prevStage = levels[prevLevel] ? (levels[prevLevel].stage || 1) : 1;
           const newStage = lvl.stage || 1;
-          if (prevStage !== newStage) {
-            handleStageMusicTransition(prevStage, newStage);
-          } else if (settings.music) {
-            // Ensure music for this stage is playing if it was previously faded out
-            playBackgroundMusicForStage(newStage);
-          }
+          // Ensure the correct stage music is playing. The transition
+          // function itself ignores calls when the stage hasn't changed so
+          // music won't restart every level.
+          handleStageMusicTransition(prevStage, newStage);
 
         // Clear any pending checkpoint auto-kill
         if (checkpointKillTimeout) {
