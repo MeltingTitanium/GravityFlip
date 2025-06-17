@@ -520,6 +520,18 @@
       stage3HardMusic.isMusic = true;
       stage3HardMusic.baseVolume = 0.38;
 
+      const stage2EasyMusic = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/Stage%203%20Music/singularity_calm%20by%20vitalezz%20on%20opengameart.org.mp3");
+      stage2EasyMusic.volume = 0.30;
+      stage2EasyMusic.loop = true;
+      stage2EasyMusic.isMusic = true;
+      stage2EasyMusic.baseVolume = 0.30;
+
+      const stage2HardMusic = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/Stage%203%20Music/singularity_action%20by%20vitalezz%20on%20opengameart.org.mp3");
+      stage2HardMusic.volume = 0.38;
+      stage2HardMusic.loop = true;
+      stage2HardMusic.isMusic = true;
+      stage2HardMusic.baseVolume = 0.38;
+
       const musicManager = {
         current: null,
         fadeDuration: 500,
@@ -588,6 +600,12 @@
             musicManager.play(stage3HardMusic);
           } else {
             musicManager.play(stage3EasyMusic);
+          }
+        } else if (stage === 2) {
+          if (currentMode === "hard") {
+            musicManager.play(stage2HardMusic);
+          } else {
+            musicManager.play(stage2EasyMusic);
           }
         } else {
           if (currentMode === "hard") {
