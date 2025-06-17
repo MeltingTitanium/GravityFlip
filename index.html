@@ -2240,13 +2240,15 @@
               whiteBlockTouched = true;
               challengePhase = teleportCheckpoint2 ? 3 : 2;
               challengeLineSpeed = initialChallengeLineSpeed * 1.5;
-              challengeGreyBlockSpeed = 2;
+              // Purple blocks fall slower on easy mode
+              challengeGreyBlockSpeed = currentMode === "easy" ? 1 : 2;
             } else {
               whiteBlockTouched = false;
               challengePhase = 1;
               teleportCheckpoint2 = false;
               challengeLineSpeed = initialChallengeLineSpeed;
-              challengeGreyBlockSpeed = 1;
+              // Purple blocks fall slower on easy mode
+              challengeGreyBlockSpeed = currentMode === "easy" ? 0.5 : 1;
             }
             lastComboSpawn = Date.now();
           activeBlueSides.top = activeBlueSides.bottom = activeBlueSides.left = activeBlueSides.right = false;
@@ -4289,6 +4291,7 @@
               }
 
             let greySpawnInterval = challengePhase === 1 ? 3000 : (challengePhase === 2 ? 1500 : 1000);
+            if (currentMode === "easy") greySpawnInterval *= 2; // slower spawn rate on easy
             if (now - lastGreyBlockSpawn >= greySpawnInterval) {
               challengeGreyBlocks.push({
                 x: Math.random() * (canvas.width - cube.size),
@@ -4358,6 +4361,7 @@
             for (let i = 0; i < count; i++) {
               // Randomly choose a side: 0=top,1=bottom,2=left,3=right
               let side = Math.floor(Math.random() * 4);
+              const blockSpeed = currentMode === "easy" ? 1 : 2;
               let block = {
                 width: cube.size,
                 height: cube.size,
@@ -4369,19 +4373,19 @@
               if (side === 0) { // from top
                 block.x = Math.random() * (canvas.width - cube.size);
                 block.y = -cube.size;
-                block.vy = 2;
+                block.vy = blockSpeed;
               } else if (side === 1) { // from bottom
                 block.x = Math.random() * (canvas.width - cube.size);
                 block.y = canvas.height;
-                block.vy = -2;
+                block.vy = -blockSpeed;
               } else if (side === 2) { // from left
                 block.x = -cube.size;
                 block.y = Math.random() * (canvas.height - cube.size);
-                block.vx = 2;
+                block.vx = blockSpeed;
               } else { // from right
                 block.x = canvas.width;
                 block.y = Math.random() * (canvas.height - cube.size);
-                block.vx = -2;
+                block.vx = -blockSpeed;
               }
               block.spawnTime = now;
               fallingRedBlocks.push(block);
@@ -4429,7 +4433,8 @@
                   teleportCheckpoint2 = true;
                 }
                 challengeLineSpeed = initialChallengeLineSpeed * 1.5;
-                challengeGreyBlockSpeed = 2;
+                // Purple blocks fall slower on easy mode
+                challengeGreyBlockSpeed = currentMode === "easy" ? 1 : 2;
                 challengeWhiteBlock = null;
                 checkpointPopupTime = Date.now();
                 document.getElementById("checkpointPopup").classList.remove("hidden");
