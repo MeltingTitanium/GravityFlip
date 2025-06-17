@@ -552,6 +552,12 @@
         }, interval);
       }
 
+      function fadeOutAllMusic(duration = 1000) {
+        [bgEasyNormalMusic, bgHardMusic, stage3EasyMusic, stage3HardMusic].forEach(
+          a => fadeOut(a, duration)
+        );
+      }
+
       function playBackgroundMusicForStage(stage) {
         if (!settings.music) return;
         [bgEasyNormalMusic, bgHardMusic, stage3EasyMusic, stage3HardMusic].forEach(a => {
@@ -2139,6 +2145,8 @@
       let hasShownTeleportPopup = false;
       // Track if color-change popup has been shown
       let hasShownColorPopup = false;
+      // Track if extra color message has been shown
+      let hasShownExtraColorMessage = false;
 
         function loadLevel(index) {
           const prevLevel = currentLevel;
@@ -2180,8 +2188,12 @@
         cube.y = lvl.spawn.y * canvas.height;
 
         const extraMsg = document.getElementById("extraColorMessage");
-        if (lvl.extracolor) extraMsg.classList.remove("hidden");
-        else extraMsg.classList.add("hidden");
+        if (lvl.extracolor && !hasShownExtraColorMessage) {
+          extraMsg.classList.remove("hidden");
+          hasShownExtraColorMessage = true;
+        } else {
+          extraMsg.classList.add("hidden");
+        }
 
         cube.vx = 0;
         cube.vy = 0;
@@ -4149,10 +4161,12 @@
             }
             let blockRect = { x: block.x, y: block.y, width: block.width, height: block.height };
             if (rectIntersect(cubeRect, blockRect)) {
-              deathSound.currentTime = 0;
-              deathSound.play();
-              loadLevel(currentLevel);
-              return;
+              if (!(levels[currentLevel].extracolor && outlineColor === "red")) {
+                deathSound.currentTime = 0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
             }
           }
 
@@ -4408,7 +4422,8 @@
             }
             let blockRect = { x: block.x, y: block.y, width: block.width, height: block.height };
             if (now - block.spawnTime >= 250 && rectIntersect(cubeRect, blockRect)) {
-              if (!(isDashing || now < dashGraceUntil)) {
+              if (!(levels[currentLevel].extracolor && outlineColor === "red") &&
+                  !(isDashing || now < dashGraceUntil)) {
                 deathSound.currentTime = 0;
                 deathSound.play();
                 loadLevel(currentLevel);
@@ -4959,6 +4974,7 @@
         mainMenu.classList.remove("hidden");
         updateStarProgress();
         gamePaused = true;
+        fadeOutAllMusic(3000);
       }
 
       function showLevelSelector(unlockAll = false, fromMainMenu = false) {
@@ -4966,6 +4982,7 @@
         levelSelectorFromMainMenu = fromMainMenu;
         levelSelectorActive = true;
         gamePaused = true;
+        fadeOutAllMusic(3000);
         if (levelSelectorFromMainMenu) {
           const highestUnlockedIndex = Math.min(maxUnlockedLevel, levels.length - 1);
           currentStage = levels[highestUnlockedIndex].stage || 1;
@@ -4986,6 +5003,9 @@
         levelSelectorActive = false;
         gamePaused = false;
         levelSelectorOverlay.classList.add("hidden");
+        if (!levelSelectorFromMainMenu && settings.music) {
+          playBackgroundMusicForStage(levels[currentLevel]?.stage || 1);
+        }
       }
 
       document.getElementById("stageLeft").addEventListener("click", () => {
