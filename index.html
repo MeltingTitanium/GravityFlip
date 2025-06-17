@@ -530,7 +530,9 @@
             if (audio.fadeInterval) clearInterval(audio.fadeInterval);
             audio.pause();
             audio.currentTime = 0;
-            this.current = null;
+            if (this.current === audio) {
+              this.current = null;
+            }
           };
           if (!fade) {
             end();
@@ -540,7 +542,9 @@
         },
         play(newAudio) {
           if (this.current === newAudio) {
-            if (newAudio.paused) this._fadeIn(newAudio, newAudio.baseVolume);
+            if (newAudio.fadeInterval) clearInterval(newAudio.fadeInterval);
+            if (newAudio.paused) newAudio.play();
+            newAudio.volume = newAudio.baseVolume;
             return;
           }
           const old = this.current;
