@@ -4291,6 +4291,7 @@
               }
 
             let greySpawnInterval = challengePhase === 1 ? 3000 : (challengePhase === 2 ? 1500 : 1000);
+            if (currentMode === "easy") greySpawnInterval *= 2; // slower spawn rate on easy
             if (now - lastGreyBlockSpawn >= greySpawnInterval) {
               challengeGreyBlocks.push({
                 x: Math.random() * (canvas.width - cube.size),
