@@ -500,21 +500,25 @@
       bgEasyNormalMusic.volume = 0.5;
       bgEasyNormalMusic.loop = true;
       bgEasyNormalMusic.isMusic = true;
+      bgEasyNormalMusic.fadeInterval = null;
 
       const bgHardMusic = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/sounds/hard%20mode%20theme.mp3");
       bgHardMusic.volume = 0.38;
       bgHardMusic.loop = true;
       bgHardMusic.isMusic = true;
+      bgHardMusic.fadeInterval = null;
 
       const stage3EasyMusic = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/Stage%203%20Music/cave_june_2%20made%20by%20Alex%20McCulloch.mp3");
       stage3EasyMusic.volume = 0.5;
       stage3EasyMusic.loop = true;
       stage3EasyMusic.isMusic = true;
+      stage3EasyMusic.fadeInterval = null;
 
       const stage3HardMusic = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/Stage%203%20Music/dark_horse_2%20by%20Centurion_of_war%20on%20OpenGameArt.org.ogg");
       stage3HardMusic.volume = 0.5;
       stage3HardMusic.loop = true;
       stage3HardMusic.isMusic = true;
+      stage3HardMusic.fadeInterval = null;
 
       [bgEasyNormalMusic, bgHardMusic, stage3EasyMusic, stage3HardMusic].forEach(
         a => (a.initialVolume = a.volume)
@@ -522,13 +526,15 @@
 
       function fadeOut(audio, duration = 1000, callback) {
         if (!audio) return callback && callback();
+        if (audio.fadeInterval) clearInterval(audio.fadeInterval);
         const steps = 20;
         const step = (audio.volume || audio.initialVolume) / steps;
         const interval = duration / steps;
-        const fade = setInterval(() => {
+        audio.fadeInterval = setInterval(() => {
           audio.volume = Math.max(0, audio.volume - step);
           if (audio.volume <= 0) {
-            clearInterval(fade);
+            clearInterval(audio.fadeInterval);
+            audio.fadeInterval = null;
             audio.pause();
             audio.currentTime = 0;
             audio.volume = audio.initialVolume;
@@ -539,17 +545,25 @@
 
       function fadeIn(audio, duration = 1000) {
         if (!audio) return;
+        if (audio.fadeInterval) clearInterval(audio.fadeInterval);
         audio.volume = 0;
         audio.play();
         const steps = 20;
         const step = (audio.initialVolume || 0.5) / steps;
         const interval = duration / steps;
-        const fade = setInterval(() => {
+        audio.fadeInterval = setInterval(() => {
           audio.volume = Math.min(audio.initialVolume, audio.volume + step);
           if (audio.volume >= audio.initialVolume) {
-            clearInterval(fade);
+            clearInterval(audio.fadeInterval);
+            audio.fadeInterval = null;
           }
         }, interval);
+      }
+
+      function fadeOutAllMusic(duration = 1000) {
+        [bgEasyNormalMusic, bgHardMusic, stage3EasyMusic, stage3HardMusic].forEach(
+          a => fadeOut(a, duration)
+        );
       }
 
       function playBackgroundMusicForStage(stage) {
@@ -579,7 +593,7 @@
 
       function handleStageMusicTransition(prevStage, newStage) {
         if (!settings.music || prevStage === newStage) return;
-        const fadeDuration = 1000;
+        const fadeDuration = 300;
         if (newStage === 3) {
           fadeOut(bgEasyNormalMusic, fadeDuration);
           fadeOut(bgHardMusic, fadeDuration, () => {
@@ -2139,6 +2153,8 @@
       let hasShownTeleportPopup = false;
       // Track if color-change popup has been shown
       let hasShownColorPopup = false;
+      // Track if extra color message has been shown
+      let hasShownExtraColorMessage = false;
 
         function loadLevel(index) {
           const prevLevel = currentLevel;
@@ -2180,8 +2196,12 @@
         cube.y = lvl.spawn.y * canvas.height;
 
         const extraMsg = document.getElementById("extraColorMessage");
-        if (lvl.extracolor) extraMsg.classList.remove("hidden");
-        else extraMsg.classList.add("hidden");
+        if (lvl.extracolor && !hasShownExtraColorMessage) {
+          extraMsg.classList.remove("hidden");
+          hasShownExtraColorMessage = true;
+        } else {
+          extraMsg.classList.add("hidden");
+        }
 
         cube.vx = 0;
         cube.vy = 0;
@@ -3713,17 +3733,17 @@
         }
 
         // Check collisions with red blocks
-        for (let r of reds) {
-          const rRect = { x: r.x, y: r.y, width: r.width, height: r.height };
-          if (rectIntersect(cubeRect, rRect)) {
-            if (outlineColor !== "red") {
-              deathSound.currentTime = 0;
-              deathSound.play();
-              loadLevel(currentLevel);
-              return;
+          for (let r of reds) {
+            const rRect = { x: r.x, y: r.y, width: r.width, height: r.height };
+            if (rectIntersect(cubeRect, rRect)) {
+              if (!(levels[currentLevel].extracolor && outlineColor === "red")) {
+                deathSound.currentTime = 0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
             }
           }
-        }
 
         if (levels[currentLevel].stage3Level4) {
           for (let line of stage3Level4Lines) {
@@ -4149,10 +4169,12 @@
             }
             let blockRect = { x: block.x, y: block.y, width: block.width, height: block.height };
             if (rectIntersect(cubeRect, blockRect)) {
-              deathSound.currentTime = 0;
-              deathSound.play();
-              loadLevel(currentLevel);
-              return;
+              if (!(levels[currentLevel].extracolor && outlineColor === "red")) {
+                deathSound.currentTime = 0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
             }
           }
 
@@ -4408,7 +4430,8 @@
             }
             let blockRect = { x: block.x, y: block.y, width: block.width, height: block.height };
             if (now - block.spawnTime >= 250 && rectIntersect(cubeRect, blockRect)) {
-              if (!(isDashing || now < dashGraceUntil)) {
+              if (!(levels[currentLevel].extracolor && outlineColor === "red") &&
+                  !(isDashing || now < dashGraceUntil)) {
                 deathSound.currentTime = 0;
                 deathSound.play();
                 loadLevel(currentLevel);
@@ -4959,6 +4982,7 @@
         mainMenu.classList.remove("hidden");
         updateStarProgress();
         gamePaused = true;
+        fadeOutAllMusic(3000);
       }
 
       function showLevelSelector(unlockAll = false, fromMainMenu = false) {
@@ -4966,6 +4990,7 @@
         levelSelectorFromMainMenu = fromMainMenu;
         levelSelectorActive = true;
         gamePaused = true;
+        fadeOutAllMusic(3000);
         if (levelSelectorFromMainMenu) {
           const highestUnlockedIndex = Math.min(maxUnlockedLevel, levels.length - 1);
           currentStage = levels[highestUnlockedIndex].stage || 1;
@@ -4986,6 +5011,9 @@
         levelSelectorActive = false;
         gamePaused = false;
         levelSelectorOverlay.classList.add("hidden");
+        if (!levelSelectorFromMainMenu && settings.music) {
+          playBackgroundMusicForStage(levels[currentLevel]?.stage || 1);
+        }
       }
 
       document.getElementById("stageLeft").addEventListener("click", () => {
@@ -5080,7 +5108,7 @@
           bgHardMusic.pause();
           stage3EasyMusic.pause();
           stage3HardMusic.pause();
-        } else {
+        } else if (!gamePaused && !levelSelectorActive) {
           playBackgroundMusicForStage(levels[currentLevel]?.stage || 1);
         }
       });
@@ -5154,7 +5182,7 @@
           updateModeParameters();
           updateModeButtons();
           localStorage.setItem('gravityFlipperMode', currentMode);
-          if (settings.music) playBackgroundMusicForStage(levels[currentLevel]?.stage || 1);
+          if (!gamePaused && settings.music) playBackgroundMusicForStage(levels[currentLevel]?.stage || 1);
           console.log("Easy mode activated!");
         });
         normalModeButton.addEventListener("click", () => {
@@ -5162,7 +5190,7 @@
           updateModeParameters();
           updateModeButtons();
           localStorage.setItem('gravityFlipperMode', currentMode);
-          if (settings.music) playBackgroundMusicForStage(levels[currentLevel]?.stage || 1);
+          if (!gamePaused && settings.music) playBackgroundMusicForStage(levels[currentLevel]?.stage || 1);
           console.log("Normal mode activated!");
         });
         hardModeButton.addEventListener("click", () => {
@@ -5170,7 +5198,7 @@
           updateModeParameters();
           updateModeButtons();
           localStorage.setItem('gravityFlipperMode', currentMode);
-          if (settings.music) playBackgroundMusicForStage(levels[currentLevel]?.stage || 1);
+          if (!gamePaused && settings.music) playBackgroundMusicForStage(levels[currentLevel]?.stage || 1);
           console.log("Hard mode activated!");
         });
 
@@ -5196,9 +5224,6 @@
           currentMode = savedMode;
           updateModeParameters();
           updateModeButtons();
-          if (settings.music) {
-            playBackgroundMusicForStage(levels[currentLevel].stage || 1);
-          }
         }
       // Immediately reflect them on the checkboxes
       toggleSoundEffects.checked = settings.soundEffects;
@@ -5240,7 +5265,7 @@
           // Restore them
           settings.music = wasMusicOnBefore;
           settings.soundEffects = wereSoundsOnBefore;
-            if (settings.music) {
+            if (settings.music && !gamePaused && !levelSelectorActive) {
               playBackgroundMusicForStage(levels[currentLevel]?.stage || 1);
             }
         }
