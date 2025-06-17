@@ -619,6 +619,7 @@
       // 0.1 Global Variables for Level Unlocking and Cheat Flag
       // -------------------------------------------------
       let currentLevel = 0; // Index of the current level (starting from 0)
+      let lastLevelIndex = 0; // Keep track of previously loaded level
       // Retrieve maximum unlocked level from localStorage, or default to 0
       let maxUnlockedLevel = parseInt(localStorage.getItem('maxUnlockedLevel')) || 0;
       // Flag that indicates whether all levels are unlocked (for cheat mode)
@@ -2157,13 +2158,14 @@
       let hasShownExtraColorMessage = false;
 
         function loadLevel(index) {
-          const prevLevel = currentLevel;
-          currentLevel = index;
-          updateUnlockedProgress();
+          const prevLevel = lastLevelIndex;
           const lvl = levels[index];
           const prevStage = levels[prevLevel] ? (levels[prevLevel].stage || 1) : 1;
           const newStage = lvl.stage || 1;
           handleStageMusicTransition(prevStage, newStage);
+          lastLevelIndex = index;
+          currentLevel = index;
+          updateUnlockedProgress();
 
         // Clear any pending checkpoint auto-kill
         if (checkpointKillTimeout) {
