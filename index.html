@@ -500,11 +500,99 @@
       bgEasyNormalMusic.volume = 0.5;
       bgEasyNormalMusic.loop = true;
       bgEasyNormalMusic.isMusic = true;
+      bgEasyNormalMusic.baseVolume = 0.5;
 
       const bgHardMusic = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/sounds/hard%20mode%20theme.mp3");
       bgHardMusic.volume = 0.38;
       bgHardMusic.loop = true;
       bgHardMusic.isMusic = true;
+      bgHardMusic.baseVolume = 0.38;
+
+      const stage3EasyMusic = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/Stage%203%20Music/cave_june_2%20made%20by%20Alex%20McCulloch.mp3");
+      stage3EasyMusic.volume = 0.5;
+      stage3EasyMusic.loop = true;
+      stage3EasyMusic.isMusic = true;
+      stage3EasyMusic.baseVolume = 0.5;
+
+      const stage3HardMusic = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/Stage%203%20Music/dark_horse_2%20by%20Centurion_of_war%20on%20OpenGameArt.org.ogg");
+      stage3HardMusic.volume = 0.5;
+      stage3HardMusic.loop = true;
+      stage3HardMusic.isMusic = true;
+      stage3HardMusic.baseVolume = 0.5;
+
+      const musicManager = {
+        current: null,
+        fadeDuration: 500,
+        stop(fade = false) {
+          if (!this.current) return;
+          const audio = this.current;
+          const end = () => {
+            if (audio.fadeInterval) clearInterval(audio.fadeInterval);
+            audio.pause();
+            audio.currentTime = 0;
+            this.current = null;
+          };
+          if (!fade) {
+            end();
+            return;
+          }
+          this._fadeOut(audio, end);
+        },
+        play(newAudio) {
+          if (this.current === newAudio) {
+            if (newAudio.paused) this._fadeIn(newAudio, newAudio.baseVolume);
+            return;
+          }
+          const old = this.current;
+          this.current = newAudio;
+          if (old) this._fadeOut(old, () => { old.pause(); old.currentTime = 0; });
+          this._fadeIn(newAudio, newAudio.baseVolume);
+        },
+        _fadeOut(audio, onDone) {
+          if (audio.fadeInterval) clearInterval(audio.fadeInterval);
+          const step = 50;
+          const start = audio.volume;
+          const delta = start / (this.fadeDuration / step);
+          audio.fadeInterval = setInterval(() => {
+            audio.volume = Math.max(0, audio.volume - delta);
+            if (audio.volume <= 0.01) {
+              clearInterval(audio.fadeInterval);
+              onDone();
+            }
+          }, step);
+        },
+        _fadeIn(audio, target) {
+          if (audio.fadeInterval) clearInterval(audio.fadeInterval);
+          const step = 50;
+          const delta = target / (this.fadeDuration / step);
+          audio.volume = 0;
+          audio.play();
+          audio.fadeInterval = setInterval(() => {
+            audio.volume = Math.min(target, audio.volume + delta);
+            if (audio.volume >= target - 0.01) {
+              clearInterval(audio.fadeInterval);
+              audio.volume = target;
+            }
+          }, step);
+        }
+      };
+
+      function playMusicForStage(stage) {
+        if (!settings.music) return;
+        if (stage === 3) {
+          if (currentMode === "hard") {
+            musicManager.play(stage3HardMusic);
+          } else {
+            musicManager.play(stage3EasyMusic);
+          }
+        } else {
+          if (currentMode === "hard") {
+            musicManager.play(bgHardMusic);
+          } else {
+            musicManager.play(bgEasyNormalMusic);
+          }
+        }
+      }
 
       // -------------------------------------------------
       // 0.1 Global Variables for Level Unlocking and Cheat Flag
@@ -2050,6 +2138,7 @@
         currentLevel = index;
         updateUnlockedProgress();
         const lvl = levels[index];
+        playMusicForStage(lvl.stage || 1);
 
         // Clear any pending checkpoint auto-kill
         if (checkpointKillTimeout) {
@@ -4847,15 +4936,7 @@
                 hideLevelSelector();
                 loadLevel(index);
                 gamePaused = false;
-                if (currentMode === "hard") {
-                  bgHardMusic.play();
-                  bgEasyNormalMusic.pause();
-                  bgEasyNormalMusic.currentTime = 0;
-                } else {
-                  bgEasyNormalMusic.play();
-                  bgHardMusic.pause();
-                  bgHardMusic.currentTime = 0;
-                }
+                playMusicForStage(levels[index].stage || 1);
               });
             }
             levelSelectorContainer.appendChild(btn);
@@ -4869,6 +4950,7 @@
         mainMenu.classList.remove("hidden");
         updateStarProgress();
         gamePaused = true;
+        musicManager.stop(true);
       }
 
       function showLevelSelector(unlockAll = false, fromMainMenu = false) {
@@ -4876,6 +4958,7 @@
         levelSelectorFromMainMenu = fromMainMenu;
         levelSelectorActive = true;
         gamePaused = true;
+        musicManager.stop(true);
         if (levelSelectorFromMainMenu) {
           const highestUnlockedIndex = Math.min(maxUnlockedLevel, levels.length - 1);
           currentStage = levels[highestUnlockedIndex].stage || 1;
@@ -4896,6 +4979,11 @@
         levelSelectorActive = false;
         gamePaused = false;
         levelSelectorOverlay.classList.add("hidden");
+        if (!levelSelectorFromMainMenu && settings.music) {
+          const stage = levels[currentLevel].stage || 1;
+          playMusicForStage(stage);
+        }
+        levelSelectorFromMainMenu = false;
       }
 
       document.getElementById("stageLeft").addEventListener("click", () => {
@@ -4941,17 +5029,9 @@
       playButton.addEventListener("click", () => {
         mainMenu.classList.add("hidden");
         gamePaused = false;
-        currentLevel = 0; 
+        currentLevel = 0;
         loadLevel(currentLevel);
-        if (currentMode === "hard") {
-          bgHardMusic.play();
-          bgEasyNormalMusic.pause();
-          bgEasyNormalMusic.currentTime = 0;
-        } else {
-          bgEasyNormalMusic.play();
-          bgHardMusic.pause();
-          bgHardMusic.currentTime = 0;
-        }
+        playMusicForStage(levels[currentLevel].stage || 1);
       });
 
       menuLevelSelectorButton.addEventListener("click", () => {
@@ -4994,8 +5074,12 @@
         // Save to localStorage whenever changed
         localStorage.setItem('gravityFlipperSettings', JSON.stringify(settings));
         if (!settings.music) {
-          bgEasyNormalMusic.pause();
-          bgHardMusic.pause();
+          musicManager.stop(true);
+        } else if (!mainMenu.classList.contains("hidden") || levelSelectorActive) {
+          // do nothing if in menus
+        } else {
+          const stage = levels[currentLevel].stage || 1;
+          playMusicForStage(stage);
         }
       });
 
@@ -5107,17 +5191,6 @@
         currentMode = savedMode;
         updateModeParameters();
         updateModeButtons();
-        if (settings.music) {
-          if (currentMode === "hard") {
-            bgHardMusic.play();
-            bgEasyNormalMusic.pause();
-            bgEasyNormalMusic.currentTime = 0;
-          } else {
-            bgEasyNormalMusic.play();
-            bgHardMusic.pause();
-            bgHardMusic.currentTime = 0;
-          }
-        }
       }
       // Immediately reflect them on the checkboxes
       toggleSoundEffects.checked = settings.soundEffects;
@@ -5127,8 +5200,7 @@
 
       // Also, if music is off, pause both BG tracks immediately
       if (!settings.music) {
-        bgEasyNormalMusic.pause();
-        bgHardMusic.pause();
+        musicManager.stop(false);
       }
 
       // -------------------------------------------------
@@ -5137,11 +5209,11 @@
       // -------------------------------------------------
       let wasMusicOnBefore = settings.music;
       let wereSoundsOnBefore = settings.soundEffects;
-
+      
       document.addEventListener("visibilitychange", function() {
         if (document.hidden) {
           // Save current settings so we can restore them later
-          wasMusicOnBefore = settings.music;
+          wasMusicOnBefore = settings.music && musicManager.current;
           wereSoundsOnBefore = settings.soundEffects;
 
           // Turn them off
@@ -5149,18 +5221,14 @@
           settings.music = false;
 
           // Pause music if user switches away
-          bgEasyNormalMusic.pause();
-          bgHardMusic.pause();
+          musicManager.stop(false);
         } else {
           // Restore them
           settings.music = wasMusicOnBefore;
           settings.soundEffects = wereSoundsOnBefore;
-          if (settings.music) {
-            if (currentMode === "hard") {
-              bgHardMusic.play();
-            } else {
-              bgEasyNormalMusic.play();
-            }
+          if (settings.music && wasMusicOnBefore) {
+            const stage = levels[currentLevel].stage || 1;
+            playMusicForStage(stage);
           }
         }
       });
