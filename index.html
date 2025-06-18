@@ -532,6 +532,18 @@
       stage2HardMusic.isMusic = true;
       stage2HardMusic.baseVolume = 0.38;
 
+      const stage3ColorEasyMusic = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/Stage%203%20Music/battle%20-%20black%20mist%20by%20BobJT%20on%20opengameart.org.mp3");
+      stage3ColorEasyMusic.volume = 0.30;
+      stage3ColorEasyMusic.loop = true;
+      stage3ColorEasyMusic.isMusic = true;
+      stage3ColorEasyMusic.baseVolume = 0.30;
+
+      const stage3ColorHardMusic = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/Stage%203%20Music/battle%20-%20black%20mist%20(alternate)%20by%20BobJT%20on%20opengameart.org.mp3");
+      stage3ColorHardMusic.volume = 0.38;
+      stage3ColorHardMusic.loop = true;
+      stage3ColorHardMusic.isMusic = true;
+      stage3ColorHardMusic.baseVolume = 0.38;
+
       const musicManager = {
         current: null,
         fadeDuration: 500,
@@ -691,6 +703,13 @@
       let lastRedSpawnTime = 0;
       // When the challenge timer finishes, a giant green block appears to complete the level
       let challengeGreenBlock = null;
+
+      // Variables for the Stage 3 color challenge
+      let challengeColorLines = [];
+      let lastColorLineSpawn = 0;
+      let colorChallengeTargetVisible = false;
+      let colorChallengeBreakStart = 0;
+      let colorChallengeNextColor = "cyan";
 
       let teleportCheckpoint = false;      // true once white block touched
       let checkpointPopupTime = 0;         // timestamp when popup shown
@@ -2089,16 +2108,26 @@
         {
           // -------------------------------------------------
           // NEW LEVEL: Stage 3 - Level 17 (index 47)
-          // Introduces red color block
+          // Simplified color level before the final challenge
           // -------------------------------------------------
           spawn: { x: 0.5, y: 0.95 },
           target: { x: 0.5, y: 0.15 },
           colorLevel: true,
-          extracolor: true,
           stage: 3,
-          reds: [
-            { x: 0, y: 0.5, w: 1, h: 0.02 }
-          ],
+          platforms: [],
+          hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 18 (index 48)
+          // Challenge Of Colors
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: -100, y: -100 },
+          colorLevel: true,
+          stage: 3,
+          challengeColorLevel: true,
+          chargeTime: 15000,
           platforms: [],
           hazards: []
         }
@@ -2279,6 +2308,25 @@
           challengePausedTime = 0;
           isChallengePaused = false;
           lastChallengePauseStart = 0;
+        } else if (lvl.challengeColorLevel) {
+          target = null;
+          challengeStartTime = Date.now();
+          challengePhase = 1;
+          challengeColorLines = [];
+          lastColorLineSpawn = Date.now();
+          colorChallengeNextColor = "cyan";
+          fallingRedBlocks = [];
+          lastRedSpawnTime = Date.now();
+          colorChallengeTargetVisible = false;
+          challengePausedTime = 0;
+          isChallengePaused = false;
+          lastChallengePauseStart = 0;
+          chargeDuration = lvl.chargeTime || 15000;
+          if (currentMode === "hard") {
+            musicManager.play(stage3ColorHardMusic);
+          } else {
+            musicManager.play(stage3ColorEasyMusic);
+          }
         } else if (lvl.level13) {
           level13Stage = 0;
           level13PillarsSpawned = false;
@@ -4501,6 +4549,149 @@
         }
       }
 
+        // Handle the Stage 3 color challenge logic
+        if (levels[currentLevel].challengeColorLevel) {
+          if (!document.hidden && !gamePaused) {
+            if (isChallengePaused) {
+              challengePausedTime += (now - lastChallengePauseStart);
+              isChallengePaused = false;
+            }
+          } else {
+            if (!isChallengePaused) {
+              isChallengePaused = true;
+              lastChallengePauseStart = now;
+            }
+          }
+
+          const phaseElapsed = (now - challengeStartTime) - challengePausedTime;
+
+          const lineIntervals = [
+            { easy: 5000, normal: 4000, hard: 3000 },
+            { easy: 4500, normal: 3500, hard: 2500 },
+            { easy: 3500, normal: 2500, hard: 1500 }
+          ];
+          const redIntervals = [
+            { easy: 1000, normal: 2000, hard: 3000 },
+            { easy: 3000, normal: 2000, hard: 1000 },
+            { easy: 2000, normal: 1000, hard: 1000 }
+          ];
+
+          function getInterval(arr) {
+            const phaseIndex = Math.min(2, challengePhase - 1);
+            const vals = arr[phaseIndex];
+            return currentMode === "easy" ? vals.easy : currentMode === "hard" ? vals.hard : vals.normal;
+          }
+
+          const lineInterval = getInterval(lineIntervals);
+          if (phaseElapsed >= 0 && now - lastColorLineSpawn >= lineInterval) {
+            let thickness = 20;
+            if (challengePhase === 1) {
+              challengeColorLines.push({ x: 0, y: -thickness, width: canvas.width, height: thickness, vx: 0, vy: 2, color: colorChallengeNextColor });
+            } else {
+              let sides = ["top","bottom","left","right"];
+              let side = sides[Math.floor(Math.random()*4)];
+              let line = { x:0,y:0,width:0,height:0,vx:0,vy:0,color: colorChallengeNextColor };
+              if (side === "top") { line.x=0; line.y=-thickness; line.width=canvas.width; line.height=thickness; line.vy=2; }
+              else if (side === "bottom") { line.x=0; line.y=canvas.height; line.width=canvas.width; line.height=thickness; line.vy=-2; }
+              else if (side === "left") { line.x=-thickness; line.y=0; line.width=thickness; line.height=canvas.height; line.vx=2; }
+              else { line.x=canvas.width; line.y=0; line.width=thickness; line.height=canvas.height; line.vx=-2; }
+              challengeColorLines.push(line);
+            }
+            colorChallengeNextColor = colorChallengeNextColor === "cyan" ? "yellow" : "cyan";
+            lastColorLineSpawn = now;
+          }
+
+          for (let i = challengeColorLines.length - 1; i >= 0; i--) {
+            let l = challengeColorLines[i];
+            l.x += l.vx;
+            l.y += l.vy;
+            if (l.x > canvas.width || l.x + l.width < 0 || l.y > canvas.height || l.y + l.height < 0) {
+              challengeColorLines.splice(i,1);
+            } else {
+              let r = {x:l.x,y:l.y,width:l.width,height:l.height};
+              if (rectIntersect(cubeRect,r)) {
+                if (!(isDashing || now < dashGraceUntil)) {
+                  deathSound.currentTime=0;
+                  deathSound.play();
+                  loadLevel(currentLevel);
+                  return;
+                }
+              }
+            }
+          }
+
+          const redInterval = getInterval(redIntervals);
+          if (now - lastRedSpawnTime >= redInterval) {
+            let block = { width:cube.size, height:cube.size, vx:0, vy:0, x:0, y:0 };
+            if (challengePhase === 1) {
+              block.x = Math.random() * (canvas.width - cube.size);
+              block.y = -cube.size;
+              block.vy = 2;
+            } else {
+              let side = Math.floor(Math.random()*4);
+              if (side === 0) { block.x=Math.random()*(canvas.width-cube.size); block.y=-cube.size; block.vy=2; }
+              else if (side===1){ block.x=Math.random()*(canvas.width-cube.size); block.y=canvas.height; block.vy=-2; }
+              else if (side===2){ block.x=-cube.size; block.y=Math.random()*(canvas.height-cube.size); block.vx=2; }
+              else { block.x=canvas.width; block.y=Math.random()*(canvas.height-cube.size); block.vx=-2; }
+            }
+            block.spawnTime = now;
+            fallingRedBlocks.push(block);
+            lastRedSpawnTime = now;
+          }
+
+          for (let i = fallingRedBlocks.length-1; i>=0; i--) {
+            let b = fallingRedBlocks[i];
+            b.x += b.vx; b.y += b.vy;
+            if (b.x > canvas.width || b.x + b.width < 0 || b.y > canvas.height || b.y + b.height < 0) {
+              fallingRedBlocks.splice(i,1);
+              continue;
+            }
+            let br = {x:b.x,y:b.y,width:b.width,height:b.height};
+            if (now - b.spawnTime >= 250 && rectIntersect(cubeRect, br)) {
+              if (!(isDashing || now < dashGraceUntil)) {
+                deathSound.currentTime=0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
+            }
+          }
+
+          if (!colorChallengeTargetVisible && challengePhase === 1 && phaseElapsed >= 15000) {
+            target = { x: canvas.width/2, y: canvas.height/2, size: cube.size*2 };
+            chargeProgress = 0;
+            chargeDuration = 15000;
+            levels[currentLevel].chargingTarget = true;
+            colorChallengeTargetVisible = true;
+          } else if (!colorChallengeTargetVisible && challengePhase === 2 && phaseElapsed >= 15000) {
+            target = { x: canvas.width/2, y: canvas.height/2, size: cube.size*2 };
+            chargeProgress = chargeDuration * 0.33;
+            chargeDuration = 15000;
+            levels[currentLevel].chargingTarget = true;
+            colorChallengeTargetVisible = true;
+          } else if (!colorChallengeTargetVisible && challengePhase === 3 && phaseElapsed >= 15000) {
+            target = { x: canvas.width/2, y: canvas.height/2, size: cube.size*2 };
+            chargeProgress = chargeDuration * 0.66;
+            chargeDuration = 15000;
+            levels[currentLevel].chargingTarget = true;
+            colorChallengeTargetVisible = true;
+          }
+
+          if (colorChallengeTargetVisible && chargeProgress >= chargeDuration * (challengePhase === 1 ? 0.33 : challengePhase === 2 ? 0.66 : 1)) {
+            if (challengePhase < 3) {
+              colorChallengeTargetVisible = false;
+              levels[currentLevel].chargingTarget = false;
+              target = null;
+              challengeColorLines = [];
+              fallingRedBlocks = [];
+              challengePhase += 1;
+              challengeStartTime = now + 3000;
+            } else if (chargeProgress >= chargeDuration) {
+              // completion handled by chargingTarget logic above
+            }
+          }
+        }
+
       // -------------------------------------------------
       // 15. Drawing Functions
       // -------------------------------------------------
@@ -4652,6 +4843,7 @@
       }
       function drawFallingRedBlocks() {
         if (levels[currentLevel].challengeDashingLevel ||
+            levels[currentLevel].challengeColorLevel ||
             (levels[currentLevel].challengeTeleportLevel && challengePhase >= 2)) {
           ctx.fillStyle = levels[currentLevel].challengeTeleportLevel ? "purple" : "red";
           for (let block of fallingRedBlocks) {
@@ -4663,6 +4855,14 @@
         if (levels[currentLevel].challengeDashingLevel) {
           ctx.fillStyle = "orange";
           for (let line of challengeLines) {
+            ctx.fillRect(line.x, line.y, line.width, line.height);
+          }
+        }
+      }
+      function drawChallengeColorLines() {
+        if (levels[currentLevel].challengeColorLevel) {
+          for (let line of challengeColorLines) {
+            ctx.fillStyle = line.color;
             ctx.fillRect(line.x, line.y, line.width, line.height);
           }
         }
@@ -4736,6 +4936,14 @@
           ctx.textAlign = "center";
           ctx.fillText(remainingSec + "s", canvas.width / 2, 40);
           ctx.textAlign = "left";
+        } else if (levels[currentLevel].challengeColorLevel) {
+          if (challengePhase >= 3) {
+            ctx.fillText("Challenge of Colors 3/3", 10, 40);
+          } else if (challengePhase >= 2) {
+            ctx.fillText("Challenge of Colors 2/3", 10, 40);
+          } else {
+            ctx.fillText("Challenge of Colors 1/3", 10, 40);
+          }
         } else {
           let stage = levels[currentLevel].stage || 1;
           let levelNumInStage = 1;
@@ -4775,6 +4983,10 @@
         if (currentLevel === 27) {
           ctx.textAlign = "center";
           ctx.fillText("You can't teleport through blue blocks", canvas.width / 2, 80);
+        }
+        if (currentLevel === 47) {
+          ctx.textAlign = "center";
+          ctx.fillText("The next level is the last level", canvas.width / 2, 80);
         }
       }
       function drawCube() {
@@ -4917,6 +5129,8 @@
           if (challengePhase === 3) {
             drawChallengeGreenBlock();
           }
+        } else if (levels[currentLevel].challengeColorLevel) {
+          drawChallengeColorLines();
         }
 
         requestAnimationFrame(gameLoop);
