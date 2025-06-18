@@ -916,7 +916,7 @@
         ctx.textAlign = "left";
         let percent;
         if (levels[currentLevel].challengeColorLevel) {
-          percent = Math.floor(((colorChallengePhase - 1 + (chargeProgress / chargeDuration)) / 3) * 100);
+          percent = Math.floor(((colorChallengePhase - 1 + (chargeProgress / (chargeDuration / 3))) / 3) * 100);
         } else {
           percent = Math.floor((chargeProgress / chargeDuration) * 100);
         }
@@ -2138,10 +2138,10 @@
           // Challenge of Colors
           // -------------------------------------------------
           spawn: { x: 0.5, y: 0.95 },
-          target: { x: 0.5, y: 0.05 },
           challengeColorLevel: true,
           colorLevel: true,
           stage: 3,
+          chargingTarget: true,
           platforms: [],
           hazards: []
         }
@@ -2332,7 +2332,7 @@
           lastColorLineSpawn = Date.now();
           lastColorRedSpawn = Date.now();
           chargeProgress = 0;
-          chargeDuration = 5000;
+          chargeDuration = 15000;
         } else if (lvl.level13) {
           level13Stage = 0;
           level13PillarsSpawned = false;
@@ -4645,9 +4645,10 @@
             target = { x: canvas.width/2, y: canvas.height/2, size: cube.size };
           }
 
-          if (target && chargeProgress >= chargeDuration) {
+          const nextThreshold = colorChallengePhase * chargeDuration / 3;
+          if (target && chargeProgress >= nextThreshold) {
+            chargeProgress = nextThreshold;
             target = null;
-            chargeProgress = 0;
             if (colorChallengePhase < 3) {
               colorChallengePhase++;
               colorLines = [];
