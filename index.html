@@ -520,6 +520,19 @@
       stage3HardMusic.isMusic = true;
       stage3HardMusic.baseVolume = 0.38;
 
+      // Exclusive music for Stage 3 Level 18 - Challenge of Colors
+      const stage3ColorMusic = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/Stage%203%20Music/battle%20-%20black%20mist%20by%20BobJT%20on%20opengameart.org.mp3");
+      stage3ColorMusic.volume = 0.30;
+      stage3ColorMusic.loop = true;
+      stage3ColorMusic.isMusic = true;
+      stage3ColorMusic.baseVolume = 0.30;
+
+      const stage3ColorHardMusic = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/Stage%203%20Music/battle%20-%20black%20mist%20(alternate)%20by%20BobJT%20on%20opengameart.org.mp3");
+      stage3ColorHardMusic.volume = 0.38;
+      stage3ColorHardMusic.loop = true;
+      stage3ColorHardMusic.isMusic = true;
+      stage3ColorHardMusic.baseVolume = 0.38;
+
       const stage2EasyMusic = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/Stage%203%20Music/singularity_calm%20by%20vitalezz%20on%20opengameart.org.mp3");
       stage2EasyMusic.volume = 0.30;
       stage2EasyMusic.loop = true;
@@ -699,6 +712,18 @@
       let challengePausedTime = 0;
       let isChallengePaused = false;
       let lastChallengePauseStart = 0;
+
+      // Globals for Stage 3 Level 18 - Challenge of Colors
+      let colorChallengePhase = 1;
+      let colorChallengeStartTime = 0;
+      let colorChallengePausedTime = 0;
+      let lastColorLineSpawn = 0;
+      let lastColorRedSpawn = 0;
+      let colorChallengeLines = [];
+      let colorChallengeReds = [];
+      let colorChallengeInBreak = false;
+      let colorChallengeBreakStart = 0;
+      let colorTargetShown = false;
       // Timeout handle for the delayed hazard in Stage 3 Level 3
       let stage3Level3HazardTimeout = null;
       // Timeout handle for the delayed hazard in Stage 3 Level 9
@@ -2100,6 +2125,22 @@
             { x: 0, y: 0.5, w: 1, h: 0.02 }
           ],
           platforms: [],
+        hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 18 (index 48)
+          // Challenge of Colors
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.5 },
+          colorLevel: true,
+          extracolor: true,
+          stage: 3,
+          challengeColorLevel: true,
+          chargingTarget: true,
+          chargeTime: 45000,
+          platforms: [],
           hazards: []
         }
       ];
@@ -2160,7 +2201,12 @@
         currentLevel = index;
         updateUnlockedProgress();
         const lvl = levels[index];
-        playMusicForStage(lvl.stage || 1);
+        if (lvl.challengeColorLevel) {
+          if (currentMode === "hard") musicManager.play(stage3ColorHardMusic);
+          else musicManager.play(stage3ColorMusic);
+        } else {
+          playMusicForStage(lvl.stage || 1);
+        }
 
         // Clear any pending checkpoint auto-kill
         if (checkpointKillTimeout) {
@@ -2277,6 +2323,22 @@
           activePurpleAxes.vertical = false;
           activePurpleAxes.horizontal = false;
           challengePausedTime = 0;
+          isChallengePaused = false;
+            lastChallengePauseStart = 0;
+        } else if (lvl.challengeColorLevel) {
+          target = null;
+          colorChallengePhase = 1;
+          colorChallengeStartTime = Date.now();
+          colorChallengePausedTime = 0;
+          lastColorLineSpawn = Date.now();
+          lastColorRedSpawn = Date.now();
+          colorChallengeLines = [];
+          colorChallengeReds = [];
+          colorChallengeInBreak = false;
+          colorTargetShown = false;
+          colorChallengeBreakStart = 0;
+          chargeProgress = 0;
+          chargeDuration = lvl.chargeTime || 45000;
           isChallengePaused = false;
           lastChallengePauseStart = 0;
         } else if (lvl.level13) {
@@ -4688,6 +4750,151 @@
             ctx.fillRect(b.x, b.y, b.width, b.height);
           }
         }
+        if (levels[currentLevel].challengeColorLevel) {
+          if (!document.hidden && !gamePaused) {
+            if (isChallengePaused) {
+              colorChallengePausedTime += (now - lastChallengePauseStart);
+              isChallengePaused = false;
+            }
+          } else {
+            if (!isChallengePaused) {
+              isChallengePaused = true;
+              lastChallengePauseStart = now;
+            }
+          }
+
+          let elapsed = (now - colorChallengeStartTime) - colorChallengePausedTime;
+
+          if (!colorChallengeInBreak) {
+            let lineInterval, redInterval;
+            if (colorChallengePhase === 1) {
+              lineInterval = currentMode === "hard" ? 3000 : currentMode === "easy" ? 5000 : 4000;
+              redInterval = currentMode === "hard" ? 3000 : currentMode === "easy" ? 1000 : 2000;
+            } else if (colorChallengePhase === 2) {
+              lineInterval = currentMode === "hard" ? 2500 : currentMode === "easy" ? 4500 : 3500;
+              redInterval = currentMode === "hard" ? 1000 : currentMode === "easy" ? 3000 : 2000;
+            } else {
+              lineInterval = currentMode === "hard" ? 1500 : currentMode === "easy" ? 3500 : 2500;
+              redInterval = currentMode === "easy" ? 2000 : 1000;
+            }
+
+            if (now - lastColorLineSpawn >= lineInterval) {
+              const thickness = 0.02 * (colorChallengePhase === 1 ? canvas.height : canvas.width);
+              const color = Math.random() < 0.5 ? "cyan" : "yellow";
+              if (colorChallengePhase === 1) {
+                colorChallengeLines.push({ x: 0, y: -thickness, width: canvas.width, height: thickness, dy: 2, color });
+              } else {
+                const side = ["top","bottom","left","right"][Math.floor(Math.random()*4)];
+                if (side === "top") colorChallengeLines.push({x:0,y:-thickness,width:canvas.width,height:thickness,dy:2,color});
+                else if (side === "bottom") colorChallengeLines.push({x:0,y:canvas.height,width:canvas.width,height:thickness,dy:-2,color});
+                else if (side === "left") colorChallengeLines.push({x:-thickness,y:0,width:thickness,height:canvas.height,dx:2,color});
+                else colorChallengeLines.push({x:canvas.width,y:0,width:thickness,height:canvas.height,dx:-2,color});
+              }
+              lastColorLineSpawn = now;
+            }
+
+            if (now - lastColorRedSpawn >= redInterval) {
+              if (colorChallengePhase === 1) {
+                colorChallengeReds.push({x: Math.random()*(canvas.width-cube.size), y:-cube.size, width:cube.size, height:cube.size, vy:2});
+              } else {
+                let side = Math.floor(Math.random()*4);
+                let block = {width:cube.size,height:cube.size,vx:0,vy:0};
+                if (side===0){block.x=Math.random()*(canvas.width-cube.size);block.y=-cube.size;block.vy=2;}
+                else if (side===1){block.x=Math.random()*(canvas.width-cube.size);block.y=canvas.height;block.vy=-2;}
+                else if (side===2){block.x=-cube.size;block.y=Math.random()*(canvas.height-cube.size);block.vx=2;}
+                else{block.x=canvas.width;block.y=Math.random()*(canvas.height-cube.size);block.vx=-2;}
+                colorChallengeReds.push(block);
+              }
+              lastColorRedSpawn = now;
+            }
+          }
+
+          // update positions
+          for (let i=colorChallengeLines.length-1;i>=0;i--){
+            let l=colorChallengeLines[i];
+            l.x += l.dx||0; l.y += l.dy||0;
+            if (l.x>canvas.width||l.x+l.width<0||l.y>canvas.height||l.y+l.height<0) colorChallengeLines.splice(i,1);
+          }
+          for (let i=colorChallengeReds.length-1;i>=0;i--){
+            let r=colorChallengeReds[i];
+            r.x += r.vx||0; r.y += r.vy||0;
+            if (r.x>canvas.width||r.x+r.width<0||r.y>canvas.height||r.y+r.height<0) {colorChallengeReds.splice(i,1); continue;}
+          }
+
+          if (!colorTargetShown && elapsed >= 15000) {
+            target = { x: canvas.width/2, y: canvas.height/2, size: cube.size*2 };
+            colorTargetShown = true;
+          }
+
+          const thresholds = [0.33,0.66,1];
+          if (colorTargetShown && target) {
+            let targetRect = {x:target.x-target.size/2,y:target.y-target.size/2,width:target.size,height:target.size};
+            if (rectIntersect(cubeRect,targetRect)) {
+              chargeProgress += step;
+            }
+            if (chargeProgress/chargeDuration >= thresholds[colorChallengePhase-1]) {
+              if (colorChallengePhase < 3) {
+                target = null;
+                colorTargetShown = false;
+                colorChallengeInBreak = true;
+                colorChallengeBreakStart = now;
+                colorChallengeLines = [];
+                colorChallengeReds = [];
+              }
+              if (colorChallengePhase === 3 && chargeProgress >= chargeDuration) {
+                if (currentMode === "hard") {
+                  let stars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
+                  if (!stars.includes(currentLevel)) { stars.push(currentLevel); }
+                  localStorage.setItem('hardModeStars', JSON.stringify(stars));
+                  updateStarProgress();
+                }
+                winSound.currentTime = 0;
+                winSound.play();
+                currentLevel++;
+                if (currentLevel < levels.length) loadLevel(currentLevel); else showWinScreen();
+                return;
+              }
+            }
+          }
+
+          if (colorChallengeInBreak && now - colorChallengeBreakStart >= 7000) {
+            colorChallengeInBreak = false;
+            colorChallengePhase++;
+            colorChallengeStartTime = now;
+            lastColorLineSpawn = now;
+            lastColorRedSpawn = now;
+          }
+
+          // collisions
+          for(let line of colorChallengeLines){
+            let rect={x:line.x,y:line.y,width:line.width,height:line.height};
+            if(rectIntersect(cubeRect,rect)&&outlineColor!==line.color){
+              deathSound.currentTime=0;deathSound.play();loadLevel(currentLevel);return;
+            }
+          }
+          for(let r of colorChallengeReds){
+            let rect={x:r.x,y:r.y,width:r.width,height:r.height};
+            if(rectIntersect(cubeRect,rect)&&outlineColor!=="red"){deathSound.currentTime=0;deathSound.play();loadLevel(currentLevel);return;}
+          }
+        }
+      }
+
+      function drawColorChallengeLines() {
+        if (levels[currentLevel].challengeColorLevel) {
+          for (let line of colorChallengeLines) {
+            ctx.fillStyle = line.color;
+            ctx.fillRect(line.x, line.y, line.width, line.height);
+          }
+        }
+      }
+
+      function drawColorChallengeReds() {
+        if (levels[currentLevel].challengeColorLevel) {
+          ctx.fillStyle = "red";
+          for (let r of colorChallengeReds) {
+            ctx.fillRect(r.x, r.y, r.width, r.height);
+          }
+        }
       }
       function drawChallengeGreenBlock() {
         if ((levels[currentLevel].challengeDashingLevel ||
@@ -4884,6 +5091,8 @@
       drawCyans();
       drawYellows();
       drawReds();
+      drawColorChallengeLines();
+      drawColorChallengeReds();
       drawStage3Level4Lines();
       drawStage3Level11Lines();
       drawStage3Level15Lines();
