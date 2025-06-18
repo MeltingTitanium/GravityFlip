@@ -520,6 +520,19 @@
       stage3HardMusic.isMusic = true;
       stage3HardMusic.baseVolume = 0.38;
 
+      // Exclusive music for Stage 3 Level 18 - Challenge of Colors
+      const colorChallengeEasyMusic = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/Stage%203%20Music/battle%20-%20black%20mist%20by%20BobJT%20on%20opengameart.org.mp3");
+      colorChallengeEasyMusic.volume = 0.30;
+      colorChallengeEasyMusic.loop = true;
+      colorChallengeEasyMusic.isMusic = true;
+      colorChallengeEasyMusic.baseVolume = 0.30;
+
+      const colorChallengeHardMusic = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/Stage%203%20Music/battle%20-%20black%20mist%20(alternate)%20by%20BobJT%20on%20opengameart.org.mp3");
+      colorChallengeHardMusic.volume = 0.38;
+      colorChallengeHardMusic.loop = true;
+      colorChallengeHardMusic.isMusic = true;
+      colorChallengeHardMusic.baseVolume = 0.38;
+
       const stage2EasyMusic = new Audio("https://github.com/MeltingTitanium/GravityFlip/raw/refs/heads/main/Stage%203%20Music/singularity_calm%20by%20vitalezz%20on%20opengameart.org.mp3");
       stage2EasyMusic.volume = 0.30;
       stage2EasyMusic.loop = true;
@@ -595,7 +608,13 @@
 
       function playMusicForStage(stage) {
         if (!settings.music) return;
-        if (stage === 3) {
+        if (levels[currentLevel].challengeColorLevel) {
+          if (currentMode === "hard") {
+            musicManager.play(colorChallengeHardMusic);
+          } else {
+            musicManager.play(colorChallengeEasyMusic);
+          }
+        } else if (stage === 3) {
           if (currentMode === "hard") {
             musicManager.play(stage3HardMusic);
           } else {
@@ -699,6 +718,18 @@
       let challengePausedTime = 0;
       let isChallengePaused = false;
       let lastChallengePauseStart = 0;
+
+      // Globals for Stage 3 Level 18 - Challenge of Colors
+      let colorChallengePhase = 1;
+      let colorChallengePhaseStart = 0;
+      let colorChallengeLines = [];
+      let colorChallengeRedBlocks = [];
+      let lastColorLineSpawn = 0;
+      let lastColorRedSpawn = 0;
+      let colorChallengeGreenBlock = null;
+      let colorChallengeProgress = 0;
+      const colorChallengeDuration = 15000; // time to fully charge
+      let colorChallengePauseUntil = 0;
       // Timeout handle for the delayed hazard in Stage 3 Level 3
       let stage3Level3HazardTimeout = null;
       // Timeout handle for the delayed hazard in Stage 3 Level 9
@@ -884,11 +915,17 @@
 
       function drawChargeProgress() {
         if (levels[currentLevel].chargingTarget) {
-        ctx.fillStyle = "#fff";
-        ctx.font = "28px sans-serif";
-        ctx.textAlign = "left";
-        const percent = Math.floor((chargeProgress / chargeDuration) * 100);
-        ctx.fillText(percent + "%", 10, 80);
+          ctx.fillStyle = "#fff";
+          ctx.font = "28px sans-serif";
+          ctx.textAlign = "left";
+          const percent = Math.floor((chargeProgress / chargeDuration) * 100);
+          ctx.fillText(percent + "%", 10, 80);
+        } else if (levels[currentLevel].challengeColorLevel && colorChallengeGreenBlock) {
+          ctx.fillStyle = "#fff";
+          ctx.font = "28px sans-serif";
+          ctx.textAlign = "left";
+          const percent = Math.floor((colorChallengeProgress / colorChallengeDuration) * 100);
+          ctx.fillText(percent + "%", 10, 80);
         }
       }
 
@@ -2089,16 +2126,27 @@
         {
           // -------------------------------------------------
           // NEW LEVEL: Stage 3 - Level 17 (index 47)
-          // Introduces red color block
+          // Simple color stage before the finale
           // -------------------------------------------------
           spawn: { x: 0.5, y: 0.95 },
           target: { x: 0.5, y: 0.15 },
           colorLevel: true,
-          extracolor: true,
           stage: 3,
-          reds: [
-            { x: 0, y: 0.5, w: 1, h: 0.02 }
-          ],
+          platforms: [],
+          hazards: [],
+          cyans: [],
+          yellows: []
+        },
+        {
+          // -------------------------------------------------
+          // NEW LEVEL: Stage 3 - Level 18 (index 48)
+          // Challenge Of Colors
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: -100, y: -100 },
+          stage: 3,
+          colorLevel: true,
+          challengeColorLevel: true,
           platforms: [],
           hazards: []
         }
@@ -2279,6 +2327,17 @@
           challengePausedTime = 0;
           isChallengePaused = false;
           lastChallengePauseStart = 0;
+        } else if (lvl.challengeColorLevel) {
+          target = null;
+          colorChallengePhase = 1;
+          colorChallengePhaseStart = Date.now();
+          colorChallengeLines = [];
+          colorChallengeRedBlocks = [];
+          colorChallengeGreenBlock = null;
+          colorChallengeProgress = 0;
+          lastColorLineSpawn = Date.now();
+          lastColorRedSpawn = Date.now();
+          colorChallengePauseUntil = 0;
         } else if (lvl.level13) {
           level13Stage = 0;
           level13PillarsSpawned = false;
@@ -4499,6 +4558,116 @@
             }
           }
         }
+
+        // Handle Stage 3 Level 18 - Challenge of Colors
+        if (levels[currentLevel].challengeColorLevel) {
+          if (now < colorChallengePauseUntil) {
+            // During pause between phases, do nothing
+          } else {
+            // Spawn lines based on current phase
+            let lineInterval, redInterval;
+            if (colorChallengePhase === 1) {
+              lineInterval = currentMode === "easy" ? 5000 : currentMode === "hard" ? 3000 : 4000;
+              redInterval = currentMode === "easy" ? 1000 : currentMode === "hard" ? 3000 : 2000;
+            } else if (colorChallengePhase === 2) {
+              lineInterval = currentMode === "easy" ? 4500 : currentMode === "hard" ? 2500 : 3500;
+              redInterval = currentMode === "easy" ? 3000 : currentMode === "hard" ? 1000 : 2000;
+            } else {
+              lineInterval = currentMode === "easy" ? 3500 : currentMode === "hard" ? 1500 : 2500;
+              redInterval = currentMode === "easy" ? 2000 : 1000;
+            }
+
+            if (now - lastColorLineSpawn >= lineInterval) {
+              const thickness = 20;
+              const color = Math.random() < 0.5 ? "cyan" : "yellow";
+              if (colorChallengePhase === 1) {
+                colorChallengeLines.push({ x: 0, y: -thickness, width: canvas.width, height: thickness, vx:0, vy: 2, color });
+              } else {
+                const sides = ["top","bottom","left","right"];
+                const side = sides[Math.floor(Math.random()*4)];
+                if (side === "top") {
+                  colorChallengeLines.push({ x: 0, y: -thickness, width: canvas.width, height: thickness, vx:0, vy:2, color });
+                } else if (side === "bottom") {
+                  colorChallengeLines.push({ x:0, y: canvas.height, width: canvas.width, height: thickness, vx:0, vy:-2, color });
+                } else if (side === "left") {
+                  colorChallengeLines.push({ x:-thickness, y:0, width: thickness, height: canvas.height, vx:2, vy:0, color });
+                } else {
+                  colorChallengeLines.push({ x:canvas.width, y:0, width: thickness, height: canvas.height, vx:-2, vy:0, color });
+                }
+              }
+              lastColorLineSpawn = now;
+            }
+
+            if (now - lastColorRedSpawn >= redInterval) {
+              const sides = ["top","bottom","left","right"];
+              const side = sides[Math.floor(Math.random()*4)];
+              const speed = 2;
+              let block = { width: cube.size, height: cube.size, x:0,y:0,vx:0,vy:0 };
+              if (side === "top") { block.x = Math.random()*(canvas.width-cube.size); block.y=-cube.size; block.vy=speed; }
+              else if (side === "bottom") { block.x=Math.random()*(canvas.width-cube.size); block.y=canvas.height; block.vy=-speed; }
+              else if (side === "left") { block.x=-cube.size; block.y=Math.random()*(canvas.height-cube.size); block.vx=speed; }
+              else { block.x=canvas.width; block.y=Math.random()*(canvas.height-cube.size); block.vx=-speed; }
+              colorChallengeRedBlocks.push(block);
+              lastColorRedSpawn = now;
+            }
+
+            // Move lines
+            for (let i=colorChallengeLines.length-1;i>=0;i--) {
+              let l=colorChallengeLines[i];
+              l.x += l.vx; l.y += l.vy;
+              if (l.x>canvas.width || l.x+l.width<0 || l.y>canvas.height || l.y+l.height<0) {
+                colorChallengeLines.splice(i,1);
+              }
+            }
+            // Move red blocks
+            for (let i=colorChallengeRedBlocks.length-1;i>=0;i--) {
+              let b=colorChallengeRedBlocks[i];
+              b.x+=b.vx; b.y+=b.vy;
+              if (b.x>canvas.width || b.x+b.width<0 || b.y>canvas.height || b.y+b.height<0) {
+                colorChallengeRedBlocks.splice(i,1);
+                continue;
+              }
+              let rect={x:b.x,y:b.y,width:b.width,height:b.height};
+              if (rectIntersect(cubeRect,rect)) {
+                if (!(isDashing || now<dashGraceUntil)) {
+                  deathSound.currentTime=0; deathSound.play();
+                  loadLevel(currentLevel); return;
+                }
+              }
+            }
+
+            // Phase timing and charge block appearance
+            if (!colorChallengeGreenBlock && now - colorChallengePhaseStart >= 15000) {
+              let startPct = colorChallengePhase===1?0: (colorChallengePhase===2?0.33:0.66);
+              colorChallengeProgress = colorChallengeDuration*startPct;
+              colorChallengeGreenBlock = { x: canvas.width/2, y: canvas.height/2, size:200 };
+            }
+            if (colorChallengeGreenBlock) {
+              let rect = { x: colorChallengeGreenBlock.x - colorChallengeGreenBlock.size/2,
+                           y: colorChallengeGreenBlock.y - colorChallengeGreenBlock.size/2,
+                           width: colorChallengeGreenBlock.size, height: colorChallengeGreenBlock.size };
+              if (rectIntersect(cubeRect, rect)) {
+                colorChallengeProgress += step;
+                if (colorChallengeProgress >= colorChallengeDuration) {
+                  colorChallengeProgress = colorChallengeDuration;
+                  if (currentMode === "hard") {
+                    let stars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
+                    if (!stars.includes(currentLevel)) { stars.push(currentLevel); }
+                    localStorage.setItem('hardModeStars', JSON.stringify(stars));
+                    updateStarProgress();
+                  }
+                  winSound.currentTime=0; winSound.play();
+                  currentLevel++; if (currentLevel < levels.length) loadLevel(currentLevel); else showWinScreen();
+                  return;
+                } else if (colorChallengePhase===1 && colorChallengeProgress>=colorChallengeDuration*0.33) {
+                  colorChallengeGreenBlock=null; colorChallengePhase=2; colorChallengePauseUntil=now+3000; colorChallengePhaseStart=now+3000;
+                } else if (colorChallengePhase===2 && colorChallengeProgress>=colorChallengeDuration*0.66) {
+                  colorChallengeGreenBlock=null; colorChallengePhase=3; colorChallengePauseUntil=now+3000; colorChallengePhaseStart=now+3000;
+                }
+              }
+            }
+          }
+        }
       }
 
       // -------------------------------------------------
@@ -4712,6 +4881,36 @@
           );
         }
       }
+
+      function drawColorChallengeLines() {
+        if (levels[currentLevel].challengeColorLevel) {
+          for (let line of colorChallengeLines) {
+            ctx.fillStyle = line.color;
+            ctx.fillRect(line.x, line.y, line.width, line.height);
+          }
+        }
+      }
+
+      function drawColorChallengeRedBlocks() {
+        if (levels[currentLevel].challengeColorLevel) {
+          ctx.fillStyle = "red";
+          for (let b of colorChallengeRedBlocks) {
+            ctx.fillRect(b.x, b.y, b.width, b.height);
+          }
+        }
+      }
+
+      function drawColorChallengeGreenBlock() {
+        if (levels[currentLevel].challengeColorLevel && colorChallengeGreenBlock) {
+          ctx.fillStyle = "green";
+          ctx.fillRect(
+            colorChallengeGreenBlock.x - colorChallengeGreenBlock.size / 2,
+            colorChallengeGreenBlock.y - colorChallengeGreenBlock.size / 2,
+            colorChallengeGreenBlock.size,
+            colorChallengeGreenBlock.size
+          );
+        }
+      }
       function drawLevelText() {
         ctx.fillStyle = "#fff";
         ctx.font = "30px sans-serif";
@@ -4736,6 +4935,14 @@
           ctx.textAlign = "center";
           ctx.fillText(remainingSec + "s", canvas.width / 2, 40);
           ctx.textAlign = "left";
+        } else if (levels[currentLevel].challengeColorLevel) {
+          if (colorChallengePhase === 3) {
+            ctx.fillText("Challenge of Colors 3/3", 10, 40);
+          } else if (colorChallengePhase === 2) {
+            ctx.fillText("Challenge of Colors 2/3", 10, 40);
+          } else {
+            ctx.fillText("Challenge of Colors 1/3", 10, 40);
+          }
         } else {
           let stage = levels[currentLevel].stage || 1;
           let levelNumInStage = 1;
@@ -4771,6 +4978,10 @@
         if (currentLevel === 43) {
           ctx.textAlign = "center";
           ctx.fillText("Charge up light green blocks to progress", canvas.width / 2, 80);
+        }
+        if (currentLevel === 47) {
+          ctx.textAlign = "center";
+          ctx.fillText("The next level is the last level", canvas.width / 2, 80);
         }
         if (currentLevel === 27) {
           ctx.textAlign = "center";
@@ -4896,6 +5107,10 @@
           drawChallengeGreyBlocks();
           drawChallengeTeleportLines();
         }
+        if (levels[currentLevel].challengeColorLevel) {
+          drawColorChallengeLines();
+          drawColorChallengeRedBlocks();
+        }
         drawCube();
         drawBrownParticles();
         drawGreyParticles();
@@ -4917,6 +5132,8 @@
           if (challengePhase === 3) {
             drawChallengeGreenBlock();
           }
+        } else if (levels[currentLevel].challengeColorLevel) {
+          drawColorChallengeGreenBlock();
         }
 
         requestAnimationFrame(gameLoop);
