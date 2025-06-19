@@ -249,7 +249,7 @@
          ====================================================== -->
     <div id="finalStarOverlay" class="overlay hidden" style="background: rgba(0,0,0,0.7); pointer-events:none;">
       <div id="finalStarMessage" style="font-size:32px; margin-bottom:20px;">You have beaten ALL levels in hard mode. Please take this free star.</div>
-      <div id="finalStar" style="position: fixed; left:-80px; font-size:64px; color:gold;">★</div>
+      <div id="finalStar" style="position: fixed; left:-80px; font-size:64px; color:gold; display:none;">★</div>
     </div>
 
     <!-- ======================================================
@@ -5404,15 +5404,20 @@
 
       function awardFinalStar() {
         finalStarOverlay.classList.remove('hidden');
+        finalStar.style.display = 'none';
         const rect = starProgress.getBoundingClientRect();
         finalStar.style.top = rect.top + 'px';
         finalStar.style.left = '-80px';
-        requestAnimationFrame(() => {
-          finalStar.style.left = rect.left + 'px';
-        });
+        setTimeout(() => {
+          finalStar.style.display = 'block';
+          requestAnimationFrame(() => {
+            finalStar.style.left = rect.left + 'px';
+          });
+        }, 3000);
         finalStar.addEventListener('transitionend', () => {
           localStorage.setItem('finalStarAwarded', 'true');
           finalStar.style.left = '-80px';
+          finalStar.style.display = 'none';
           updateStarProgress();
           setTimeout(() => {
             finalStarOverlay.classList.add('hidden');
