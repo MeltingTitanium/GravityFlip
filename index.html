@@ -5411,10 +5411,12 @@
           finalStar.style.left = rect.left + 'px';
         });
         finalStar.addEventListener('transitionend', () => {
-          finalStarOverlay.classList.add('hidden');
           localStorage.setItem('finalStarAwarded', 'true');
           finalStar.style.left = '-80px';
           updateStarProgress();
+          setTimeout(() => {
+            finalStarOverlay.classList.add('hidden');
+          }, 1500);
         }, { once: true });
       }
 
