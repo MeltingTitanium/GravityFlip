@@ -249,7 +249,7 @@
          ====================================================== -->
     <div id="finalStarOverlay" class="overlay hidden" style="background: rgba(0,0,0,0.7); pointer-events:none;">
       <div id="finalStarMessage" style="font-size:32px; margin-bottom:20px;">You have beaten ALL levels in hard mode. Please take this free star.</div>
-      <div id="finalStar" style="position: fixed; left:-80px; font-size:64px; color:gold; display:none;">★</div>
+      <div id="finalStar" style="position: fixed; left:-80px; font-size:40px; color:gold; display:none;">★</div>
     </div>
 
     <!-- ======================================================
@@ -5406,7 +5406,7 @@
         finalStarOverlay.classList.remove('hidden');
         finalStar.style.display = 'none';
         const rect = starProgress.getBoundingClientRect();
-        finalStar.style.top = rect.top + 'px';
+        finalStar.style.top = (rect.top - 75) + 'px';  // move 75px upward
         finalStar.style.left = '-80px';
         setTimeout(() => {
           finalStar.style.display = 'block';
