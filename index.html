@@ -214,7 +214,7 @@
       }
 
       #finalStar {
-        transition: left 1s linear;
+        transition: left 1s linear, top 1s linear;
       }
     </style>
   </head>
@@ -5405,13 +5405,18 @@
       function awardFinalStar() {
         finalStarOverlay.classList.remove('hidden');
         finalStar.style.display = 'none';
-        const rect = starProgress.getBoundingClientRect();
-        finalStar.style.top = (rect.top - 75) + 'px';  // move 75px upward
+        const startRect = starProgress.getBoundingClientRect();
+        const starSize = parseFloat(getComputedStyle(finalStar).fontSize) || 40;
         finalStar.style.left = '-80px';
+        finalStar.style.top = (startRect.top - starSize * 2) + 'px';
         setTimeout(() => {
           finalStar.style.display = 'block';
           requestAnimationFrame(() => {
-            finalStar.style.left = rect.left + 'px';
+            const rect = starProgress.getBoundingClientRect();
+            const targetLeft = rect.left + rect.width - finalStar.offsetWidth / 2;
+            const targetTop = rect.top + rect.height / 2 - finalStar.offsetHeight / 2;
+            finalStar.style.left = `${targetLeft}px`;
+            finalStar.style.top = `${targetTop}px`;
           });
         }, 3000);
         finalStar.addEventListener('transitionend', () => {
