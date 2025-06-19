@@ -5409,15 +5409,18 @@
 
       function awardFinalStar() {
         finalStarOverlay.classList.remove('hidden');
-        finalStar.style.display = 'none';
+        finalStar.style.visibility = 'hidden';
+        finalStar.style.display = 'block';
         const iconRect = starProgressIcon.getBoundingClientRect();
-        finalStar.style.top = (iconRect.top - 75) + 'px';  // move 75px upward
+        const starWidth = finalStar.offsetWidth;
+        const starHeight = finalStar.offsetHeight;
+        const targetTop = iconRect.top + iconRect.height / 2 - starHeight / 2;
+        const targetLeft = iconRect.left + iconRect.width / 2 - starWidth / 2;
+        finalStar.style.top = targetTop + 'px';
         finalStar.style.left = '-80px';
         setTimeout(() => {
-          finalStar.style.display = 'block';
+          finalStar.style.visibility = 'visible';
           requestAnimationFrame(() => {
-            const updatedRect = starProgressIcon.getBoundingClientRect();
-            const targetLeft = updatedRect.left + updatedRect.width / 2 - finalStar.offsetWidth / 2;
             finalStar.style.left = targetLeft + 'px';
           });
         }, 3000);
