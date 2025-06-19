@@ -2206,6 +2206,20 @@
       // 8. Stage Selector: Current Stage Variable (Default Stage 1)
       // -------------------------------------------------
       let currentStage = 1;
+      const MAX_STAGE = 4;
+      const stageNames = {
+        1: "Stage 1",
+        2: "Stage 2",
+        3: "Stage 3",
+        4: "Challenges"
+      };
+
+      function getStageForLevel(lvl) {
+        if (lvl.challengeDashingLevel || lvl.challengeTeleportLevel || lvl.challengeColorLevel) {
+          return 4;
+        }
+        return lvl.stage || 1;
+      }
 
       // -------------------------------------------------
       // 9. Load / Recalc Levels
@@ -5156,13 +5170,13 @@
         const hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
 
         levels.forEach((lvl, index) => {
-          let lvlStage = lvl.stage || 1;
+          let lvlStage = getStageForLevel(lvl);
           if (lvlStage === currentStage) {
             const btn = document.createElement("div");
             btn.className = "bigButton";
             let count = 0;
             for (let j = 0; j < index; j++) {
-              if ((levels[j].stage || 1) === lvlStage) {
+              if (getStageForLevel(levels[j]) === lvlStage) {
                 count++;
               }
             }
@@ -5190,7 +5204,8 @@
             levelSelectorContainer.appendChild(btn);
           }
         });
-        document.getElementById("stageHeader").textContent = "Stage " + currentStage + " - Select Level";
+        const stageLabel = stageNames[currentStage] || ("Stage " + currentStage);
+        document.getElementById("stageHeader").textContent = stageLabel + " - Select Level";
       }
 
       function backToMainMenu() {
@@ -5209,7 +5224,7 @@
         musicManager.stop(true);
         if (levelSelectorFromMainMenu) {
           const highestUnlockedIndex = Math.min(maxUnlockedLevel, levels.length - 1);
-          currentStage = levels[highestUnlockedIndex].stage || 1;
+          currentStage = getStageForLevel(levels[highestUnlockedIndex]);
         }
         populateLevelSelector();
         resumeButton.style.display = (currentLevel >= levels.length) ? "none" : "block";
@@ -5239,7 +5254,7 @@
         populateLevelSelector();
       });
       document.getElementById("stageRight").addEventListener("click", () => {
-        currentStage++;
+        currentStage = Math.min(MAX_STAGE, currentStage + 1);
         populateLevelSelector();
       });
 
