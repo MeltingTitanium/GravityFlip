@@ -229,7 +229,10 @@
          ====================================================== -->
     <div id="mainMenu" class="overlay">
       <h1 style="font-size:64px; margin-bottom:20px;">Gravity Flipper</h1>
-      <div id="starProgress" class="hidden" style="font-size:32px; margin-bottom:20px;">0/0 ★</div>
+      <div id="starProgress" class="hidden" style="font-size:32px; margin-bottom:20px;">
+        <span id="starCount">0/0</span>
+        <span id="starProgressIcon">★</span>
+      </div>
       <!-- Button to start the game -->
       <div id="playButton" class="bigButton">Play</div>
       <!-- Button to open the level selector overlay -->
@@ -5270,6 +5273,8 @@
       const playButton = document.getElementById("playButton");
       const menuLevelSelectorButton = document.getElementById("menuLevelSelectorButton");
       const starProgress = document.getElementById("starProgress");
+      const starCount = document.getElementById("starCount");
+      const starProgressIcon = document.getElementById("starProgressIcon");
       const finalStarOverlay = document.getElementById("finalStarOverlay");
       const finalStar = document.getElementById("finalStar");
       const clearStoragePrompt = document.getElementById("clearStoragePrompt");
@@ -5387,7 +5392,7 @@
         const count = hardModeStars.length + (finalAwarded ? 1 : 0);
         if (count > 0) {
           starProgress.classList.remove('hidden');
-          starProgress.textContent = `${count}/${totalStars} \u2605`;
+          starCount.textContent = `${count}/${totalStars}`;
           if (count === totalStars) {
             starProgress.classList.add('gold');
           } else {
@@ -5404,14 +5409,19 @@
 
       function awardFinalStar() {
         finalStarOverlay.classList.remove('hidden');
-        finalStar.style.display = 'none';
-        const rect = starProgress.getBoundingClientRect();
-        finalStar.style.top = (rect.top - 75) + 'px';  // move 75px upward
+        finalStar.style.visibility = 'hidden';
+        finalStar.style.display = 'block';
+        const iconRect = starProgressIcon.getBoundingClientRect();
+        const starWidth = finalStar.offsetWidth;
+        const starHeight = finalStar.offsetHeight;
+        const targetTop = iconRect.top + iconRect.height / 2 - starHeight / 2;
+        const targetLeft = iconRect.left + iconRect.width / 2 - starWidth / 2;
+        finalStar.style.top = targetTop + 'px';
         finalStar.style.left = '-80px';
         setTimeout(() => {
-          finalStar.style.display = 'block';
+          finalStar.style.visibility = 'visible';
           requestAnimationFrame(() => {
-            finalStar.style.left = rect.left + 'px';
+            finalStar.style.left = targetLeft + 'px';
           });
         }, 3000);
         finalStar.addEventListener('transitionend', () => {
