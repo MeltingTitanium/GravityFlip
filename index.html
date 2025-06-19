@@ -208,6 +208,14 @@
       #starProgress.gold {
         color: gold;
       }
+
+      #finalStarOverlay {
+        z-index: 20;
+      }
+
+      #finalStar {
+        transition: left 1s linear;
+      }
     </style>
   </head>
   <body>
@@ -234,6 +242,14 @@
         <div id="normalModeButton" class="modeButton">Normal Mode</div>
         <div id="hardModeButton" class="modeButton">Hard Mode</div>
       </div>
+    </div>
+
+    <!-- ======================================================
+         Final Star Overlay: Shown when awarding the last star
+         ====================================================== -->
+    <div id="finalStarOverlay" class="overlay hidden" style="background: rgba(0,0,0,0.7); pointer-events:none;">
+      <div id="finalStarMessage" style="font-size:32px; margin-bottom:20px;">You have beaten ALL levels in hard mode. Please take this free star.</div>
+      <div id="finalStar" style="position: fixed; left:-80px; font-size:64px; color:gold;">★</div>
     </div>
 
     <!-- ======================================================
@@ -5254,6 +5270,8 @@
       const playButton = document.getElementById("playButton");
       const menuLevelSelectorButton = document.getElementById("menuLevelSelectorButton");
       const starProgress = document.getElementById("starProgress");
+      const finalStarOverlay = document.getElementById("finalStarOverlay");
+      const finalStar = document.getElementById("finalStar");
       const clearStoragePrompt = document.getElementById("clearStoragePrompt");
       const clearYes = document.getElementById("clearYes");
       const clearNo = document.getElementById("clearNo");
@@ -5364,8 +5382,9 @@
 
       function updateStarProgress() {
         const hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
-        const totalStars = levels.length;
-        const count = hardModeStars.length;
+        const finalAwarded = localStorage.getItem('finalStarAwarded') === 'true';
+        const totalStars = levels.length + 1;
+        const count = hardModeStars.length + (finalAwarded ? 1 : 0);
         if (count > 0) {
           starProgress.classList.remove('hidden');
           starProgress.textContent = `${count}/${totalStars} \u2605`;
@@ -5377,6 +5396,26 @@
         } else {
           starProgress.classList.add('hidden');
         }
+
+        if (!finalAwarded && hardModeStars.length === levels.length) {
+          awardFinalStar();
+        }
+      }
+
+      function awardFinalStar() {
+        finalStarOverlay.classList.remove('hidden');
+        const rect = starProgress.getBoundingClientRect();
+        finalStar.style.top = rect.top + 'px';
+        finalStar.style.left = '-80px';
+        requestAnimationFrame(() => {
+          finalStar.style.left = rect.left + 'px';
+        });
+        finalStar.addEventListener('transitionend', () => {
+          finalStarOverlay.classList.add('hidden');
+          localStorage.setItem('finalStarAwarded', 'true');
+          finalStar.style.left = '-80px';
+          updateStarProgress();
+        }, { once: true });
       }
 
       easyModeButton.addEventListener("click", () => {
