@@ -329,6 +329,11 @@
       <div class="bigButton" id="replayButton">Replay?</div>
     </div>
 
+    <div id="challengeWin" class="overlay hidden">
+      <h1 id="challengeWinMessage" style="font-size:64px; margin-bottom:40px;"></h1>
+      <div class="bigButton" id="challengeBack">Go to challenges</div>
+    </div>
+
     <!-- ======================================================
          Settings Menu Overlay: Allows players to configure game settings.
          ====================================================== -->
@@ -681,7 +686,7 @@
       //  NEW GLOBALS FOR THE CHALLENGE LEVEL (after level 17)
       // -------------------------------------------------
       let challengeStartTime = 0; // When the challenge level starts
-      const challengeDuration = 30000; // Duration of the challenge in milliseconds (30 seconds)
+      let challengeDuration = 30000; // Duration of the challenge in milliseconds (30 seconds)
       let lastChallengeLineSpawn = 0; // Timestamp for last spawned challenge line
       let challengeLines = []; // Array to store moving challenge line objects
       // Challenge lines move at 40% of level 15’s orange block speed.
@@ -742,6 +747,11 @@
       let colorRedBlocks = [];
       let lastColorLineSpawn = 0;
       let lastColorRedSpawn = 0;
+
+      // Globals for Bullet hell challenge
+      let bulletHellBlocks = [];
+      let lastBulletSpawn = 0;
+      let savedMode = "normal";
       // Timeout handle for the delayed hazard in Stage 3 Level 3
       let stage3Level3HazardTimeout = null;
       // Timeout handle for the delayed hazard in Stage 3 Level 9
@@ -986,6 +996,76 @@
           p.alpha -= 0.02; // Gradually reduce opacity
           if (p.alpha <= 0) {
             brownParticles.splice(i, 1);
+          }
+        }
+
+        if (levels[currentLevel].bulletHellLevel) {
+          if (!document.hidden && !gamePaused) {
+            if (isChallengePaused) {
+              challengePausedTime += (now - lastChallengePauseStart);
+              isChallengePaused = false;
+            }
+          } else {
+            if (!isChallengePaused) {
+              isChallengePaused = true;
+              lastChallengePauseStart = now;
+            }
+          }
+
+          let elapsed = (now - challengeStartTime) - challengePausedTime;
+          let remaining = challengeDuration - elapsed;
+
+          let spawnInterval = 2000;
+          let spawnCount = 1;
+          if (remaining <= 30000 && remaining > 15000) {
+            spawnInterval = 1000;
+          } else if (remaining <= 15000 && remaining > 5000) {
+            spawnInterval = 1000;
+            spawnCount = 2;
+          } else if (remaining <= 5000) {
+            spawnInterval = 500;
+          }
+
+          if (now - lastBulletSpawn >= spawnInterval) {
+            for (let i = 0; i < spawnCount; i++) {
+              let side = Math.floor(Math.random() * 4);
+              let block = { x: 0, y: 0, width: cube.size, height: cube.size, vx: 0, vy: 0 };
+              const speed = 3;
+              if (side === 0) { block.x = -cube.size; block.y = Math.random()*(canvas.height-cube.size); block.vx = speed; }
+              else if (side === 1) { block.x = canvas.width; block.y = Math.random()*(canvas.height-cube.size); block.vx = -speed; }
+              else if (side === 2) { block.y = -cube.size; block.x = Math.random()*(canvas.width-cube.size); block.vy = speed; }
+              else { block.y = canvas.height; block.x = Math.random()*(canvas.width-cube.size); block.vy = -speed; }
+              bulletHellBlocks.push(block);
+            }
+            lastBulletSpawn = now;
+          }
+
+          for (let i = bulletHellBlocks.length - 1; i >= 0; i--) {
+            let b = bulletHellBlocks[i];
+            b.x += b.vx; b.y += b.vy;
+            if (b.x > canvas.width || b.x + b.width < 0 || b.y > canvas.height || b.y + b.height < 0) {
+              bulletHellBlocks.splice(i,1);
+              continue;
+            }
+            let rect = { x: b.x, y: b.y, width: b.width, height: b.height };
+            let cubeRect = { x: cube.x - cube.size/2, y: cube.y - cube.size/2, width: cube.size, height: cube.size };
+            if (rectIntersect(cubeRect, rect)) {
+              deathSound.currentTime=0; deathSound.play(); loadLevel(currentLevel); return;
+            }
+          }
+
+          if (remaining <= 0 && !challengeGreenBlock) {
+            challengeGreenBlock = { x: canvas.width/2, y: canvas.height/2, size: 200 };
+          }
+
+          if (challengeGreenBlock) {
+            let gRect = { x: challengeGreenBlock.x - challengeGreenBlock.size/2, y: challengeGreenBlock.y - challengeGreenBlock.size/2, width: challengeGreenBlock.size, height: challengeGreenBlock.size };
+            let cubeRect = { x: cube.x - cube.size/2, y: cube.y - cube.size/2, width: cube.size, height: cube.size };
+            if (rectIntersect(cubeRect, gRect)) {
+              winSound.currentTime=0; winSound.play();
+              showChallengeWin('Bullet hell');
+              return;
+            }
           }
         }
       }
@@ -2161,6 +2241,17 @@
           chargeTime: 15000,
           stage: 3,
           platforms: [],
+        hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // EXTRA CHALLENGE: Bullet hell (index 49)
+          // -------------------------------------------------
+          bulletHellLevel: true,
+          stage: 4,
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: -100, y: -100 },
+          platforms: [],
           hazards: []
         }
       ];
@@ -2351,6 +2442,20 @@
           lastColorRedSpawn = Date.now();
           chargeProgress = 0;
           chargeDuration = lvl.chargeTime || 5000;
+        } else if (lvl.bulletHellLevel) {
+          savedMode = currentMode;
+          currentMode = "normal";
+          updateModeParameters();
+          updateModeButtons();
+          target = null;
+          challengeDuration = 45000;
+          challengeStartTime = Date.now();
+          lastBulletSpawn = Date.now();
+          bulletHellBlocks = [];
+          challengeGreenBlock = null;
+          challengePausedTime = 0;
+          isChallengePaused = false;
+          lastChallengePauseStart = 0;
         } else if (lvl.level13) {
           level13Stage = 0;
           level13PillarsSpawned = false;
@@ -4682,7 +4787,11 @@
                   localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
                   updateStarProgress();
                 }
-                winSound.currentTime=0; winSound.play(); currentLevel++; if(currentLevel<levels.length){ loadLevel(currentLevel); } else { showWinScreen(); } return;
+                winSound.currentTime=0; winSound.play();
+                maxUnlockedLevel = Math.max(maxUnlockedLevel, currentLevel + 1);
+                localStorage.setItem('maxUnlockedLevel', maxUnlockedLevel);
+                showWinScreen();
+                return;
               }
             }
           }
@@ -4847,6 +4956,14 @@
           }
         }
       }
+      function drawBulletHellBlocks() {
+        if (levels[currentLevel].bulletHellLevel) {
+          ctx.fillStyle = "red";
+          for (let b of bulletHellBlocks) {
+            ctx.fillRect(b.x, b.y, b.width, b.height);
+          }
+        }
+      }
       function drawChallengeLines() {
         if (levels[currentLevel].challengeDashingLevel) {
           ctx.fillStyle = "orange";
@@ -4950,6 +5067,13 @@
           } else {
             ctx.fillText("Challenge Of Colors 1/3", 10, 40);
           }
+        } else if (levels[currentLevel].bulletHellLevel) {
+          ctx.fillText("Bullet hell", 10, 40);
+          let elapsed = Date.now() - challengeStartTime - challengePausedTime;
+          let remainingSec = Math.max(0, Math.ceil((challengeDuration - elapsed) / 1000));
+          ctx.textAlign = "center";
+          ctx.fillText(remainingSec + "s", canvas.width / 2, 40);
+          ctx.textAlign = "left";
         } else {
           let stage = levels[currentLevel].stage || 1;
           let levelNumInStage = 1;
@@ -5129,6 +5253,8 @@
           drawFallingRedBlocks();
         } else if (levels[currentLevel].challengeColorLevel) {
           drawColorChallengeRedBlocks();
+        } else if (levels[currentLevel].bulletHellLevel) {
+          drawBulletHellBlocks();
         }
         if (levels[currentLevel].challengeDashingLevel) {
           drawChallengeLines();
@@ -5138,6 +5264,8 @@
           if (challengePhase === 3) {
             drawChallengeGreenBlock();
           }
+        } else if (levels[currentLevel].bulletHellLevel) {
+          drawChallengeGreenBlock();
         }
 
         requestAnimationFrame(gameLoop);
@@ -5166,7 +5294,9 @@
                 count++;
               }
             }
-            if (index === 30) {
+            if (lvlStage === 4 && lvl.bulletHellLevel) {
+              btn.textContent = "Bullet hell";
+            } else if (index === 30) {
               btn.textContent = "Level 13";
             } else {
               btn.textContent = "Level " + (count + 1);
@@ -5177,7 +5307,7 @@
               btn.classList.add("locked");
             } else {
               // If it's unlocked, check if we have a hard-mode star for it
-              if (hardModeStars.includes(index)) {
+              if (hardModeStars.includes(index) && !lvl.bulletHellLevel) {
                 btn.textContent += " ★"; // star symbol to show hard-mode completion
               }
               btn.addEventListener("click", () => {
@@ -5190,7 +5320,11 @@
             levelSelectorContainer.appendChild(btn);
           }
         });
-        document.getElementById("stageHeader").textContent = "Stage " + currentStage + " - Select Level";
+        if (currentStage === 4) {
+          document.getElementById("stageHeader").textContent = "Extra Challenges - Select Challenge";
+        } else {
+          document.getElementById("stageHeader").textContent = "Stage " + currentStage + " - Select Level";
+        }
       }
 
       function backToMainMenu() {
@@ -5261,6 +5395,30 @@
 
       replayButton.addEventListener("click", () => {
         window.location.reload();
+      });
+
+      const challengeWin = document.getElementById("challengeWin");
+      const challengeWinMessage = document.getElementById("challengeWinMessage");
+      const challengeBack = document.getElementById("challengeBack");
+
+      function showChallengeWin(name) {
+        gamePaused = true;
+        challengeWinMessage.textContent = `You won ${name}`;
+        challengeWin.classList.remove("hidden");
+      }
+
+      function hideChallengeWin() {
+        challengeWin.classList.add("hidden");
+        gamePaused = false;
+      }
+
+      challengeBack.addEventListener("click", () => {
+        hideChallengeWin();
+        currentMode = savedMode;
+        updateModeParameters();
+        updateModeButtons();
+        currentStage = 4;
+        showLevelSelector(false, false);
       });
 
       // -------------------------------------------------
@@ -5383,7 +5541,7 @@
       function updateStarProgress() {
         const hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
         const finalAwarded = localStorage.getItem('finalStarAwarded') === 'true';
-        const totalStars = levels.length + 1;
+        const totalStars = levels.filter(l => !l.bulletHellLevel).length + 1;
         const count = hardModeStars.length + (finalAwarded ? 1 : 0);
         if (count > 0) {
           starProgress.classList.remove('hidden');
@@ -5397,7 +5555,7 @@
           starProgress.classList.add('hidden');
         }
 
-        if (!finalAwarded && hardModeStars.length === levels.length) {
+        if (!finalAwarded && hardModeStars.length === levels.filter(l => !l.bulletHellLevel).length) {
           awardFinalStar();
         }
       }
