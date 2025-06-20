@@ -325,7 +325,7 @@
          Contains a Replay button and link to challenges.
          ====================================================== -->
     <div id="winScreen" class="overlay hidden">
-      <h1 style="font-size:64px; margin-bottom:40px;">You Win!</h1>
+      <h1 id="winTitle" style="font-size:64px; margin-bottom:40px;">You Win!</h1>
       <div class="bigButton" id="replayButton">Replay</div>
       <div class="bigButton hidden" id="goChallengesButton" style="margin-top:20px;">Go to Challenges</div>
     </div>
@@ -662,6 +662,8 @@
 
       // Flag to indicate if the level selector was accessed from the main menu
       let levelSelectorFromMainMenu = false;
+
+      let modeBeforeChallenge = null;
 
       // Track if the extra challenges have been unlocked
       let extraChallengesUnlocked = localStorage.getItem('extraChallengesUnlocked') === 'true';
@@ -2226,6 +2228,21 @@
         currentLevel = index;
         updateUnlockedProgress();
         const lvl = levels[index];
+
+        if (lvl.stage === 4) {
+          if (currentMode !== "normal") {
+            modeBeforeChallenge = currentMode;
+            currentMode = "normal";
+            updateModeParameters();
+            updateModeButtons();
+          }
+        } else if (modeBeforeChallenge !== null) {
+          currentMode = modeBeforeChallenge;
+          modeBeforeChallenge = null;
+          updateModeParameters();
+          updateModeButtons();
+        }
+
         playMusicForStage(lvl.stage || 1);
 
         // Clear any pending checkpoint auto-kill
@@ -3099,23 +3116,7 @@
               if (levels[currentLevel].level13 && levels[currentLevel].teleportLevel && level13Stage < 5) {
                 // Ignore early targets on teleport levels modeled after Level 13
               } else {
-                winSound.currentTime = 0;
-                winSound.play();
-                // NEW CODE ADDED: if Hard Mode, record a star for the level
-                if (currentMode === "hard") {
-                  let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
-                  if (!hardModeStars.includes(currentLevel)) {
-                    hardModeStars.push(currentLevel);
-                  }
-                  localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
-                  updateStarProgress();
-                }
-                currentLevel++;
-                if (currentLevel < levels.length) {
-                  loadLevel(currentLevel);
-                } else {
-                  showWinScreen();
-                }
+                levelComplete();
                 // *** Not resetting teleport cooldown for the new level. ***
                 return;
               }
@@ -3974,15 +3975,7 @@
                 localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
                 updateStarProgress();
               }
-              winSound.currentTime = 0;
-              winSound.play();
-              currentLevel++;
-              if (currentLevel < levels.length) {
-                loadLevel(currentLevel);
-              } else {
-                showWinScreen();
-                return;
-              }
+              levelComplete();
               return;
             }
           }
@@ -4017,15 +4010,7 @@
                   localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
                   updateStarProgress();
                 }
-                winSound.currentTime = 0;
-                winSound.play();
-                currentLevel++;
-                if (currentLevel < levels.length) {
-                  loadLevel(currentLevel);
-                } else {
-                  showWinScreen();
-                  return;
-                }
+                levelComplete();
                 return;
               }
             } else if (levels[currentLevel].stage3Level12 && rectIntersect(cubeRect, targetRect)) {
@@ -4046,15 +4031,7 @@
                   localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
                   updateStarProgress();
                 }
-                winSound.currentTime = 0;
-                winSound.play();
-                currentLevel++;
-                if (currentLevel < levels.length) {
-                  loadLevel(currentLevel);
-                } else {
-                  showWinScreen();
-                  return;
-                }
+                levelComplete();
                 return;
               }
             } else if (levels[currentLevel].teleportToCenter && rectIntersect(cubeRect, targetRect) && !stage3Level10Teleported) {
@@ -4077,15 +4054,7 @@
                   localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
                   updateStarProgress();
               }
-                winSound.currentTime = 0;
-                winSound.play();
-                currentLevel++;
-                if (currentLevel < levels.length) {
-                  loadLevel(currentLevel);
-                } else {
-                  showWinScreen();
-                  return;
-                }
+                levelComplete();
                 return;
               }
             } else if (levels[currentLevel].chargingTarget && rectIntersect(cubeRect, targetRect)) {
@@ -4100,15 +4069,8 @@
                   localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
                   updateStarProgress();
                 }
-                winSound.currentTime = 0;
-                winSound.play();
-                currentLevel++;
-                if (currentLevel < levels.length) {
-                  loadLevel(currentLevel);
-                } else {
-                  showWinScreen();
-                  return;
-                }
+                levelComplete();
+                return;
               }
             } else if (rectIntersect(cubeRect, targetRect)) {
               // NEW CODE ADDED: star if Hard Mode
@@ -4120,15 +4082,8 @@
                 localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
                 updateStarProgress();
               }
-              winSound.currentTime = 0;
-              winSound.play();
-              currentLevel++;
-              if (currentLevel < levels.length) {
-                loadLevel(currentLevel);
-              } else {
-                showWinScreen();
-                return;
-              }
+              levelComplete();
+              return;
             }
           }
         }
@@ -4298,14 +4253,7 @@
                 localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
                 updateStarProgress();
               }
-              winSound.currentTime = 0;
-              winSound.play();
-              currentLevel++;
-              if (currentLevel < levels.length) {
-                loadLevel(currentLevel);
-              } else {
-                showWinScreen();
-              }
+              levelComplete();
               return;
             }
           }
@@ -4573,14 +4521,7 @@
                 localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
                 updateStarProgress();
               }
-              winSound.currentTime = 0;
-              winSound.play();
-              currentLevel++;
-              if (currentLevel < levels.length) {
-                loadLevel(currentLevel);
-              } else {
-                showWinScreen();
-              }
+              levelComplete();
               return;
             }
           }
@@ -4687,7 +4628,8 @@
                   localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
                   updateStarProgress();
                 }
-                winSound.currentTime=0; winSound.play(); currentLevel++; if(currentLevel<levels.length){ loadLevel(currentLevel); } else { showWinScreen(); } return;
+                levelComplete();
+                return;
               }
             }
           }
@@ -5257,15 +5199,29 @@
       const replayButton = document.getElementById("replayButton");
       const goChallengesButton = document.getElementById("goChallengesButton");
 
-      function showWinScreen() {
+      const winTitle = document.getElementById("winTitle");
+
+      function showWinScreen(challengeName = null) {
         gamePaused = true;
         musicManager.stop(true);
-        if (currentLevel >= levels.length) {
-          extraChallengesUnlocked = true;
-          localStorage.setItem('extraChallengesUnlocked', 'true');
-          maxStageUnlocked = 4;
+
+        if (challengeName) {
+          winTitle.textContent = `You Win ${challengeName}!`;
+          replayButton.classList.add('hidden');
           goChallengesButton.classList.remove('hidden');
+        } else {
+          winTitle.textContent = "You Win!";
+          replayButton.classList.remove('hidden');
+          if (currentLevel >= levels.length) {
+            extraChallengesUnlocked = true;
+            localStorage.setItem('extraChallengesUnlocked', 'true');
+            maxStageUnlocked = 4;
+            goChallengesButton.classList.remove('hidden');
+          } else {
+            goChallengesButton.classList.add('hidden');
+          }
         }
+
         winScreen.classList.remove("hidden");
       }
 
@@ -5286,6 +5242,33 @@
       }
 
       goChallengesButton.addEventListener("click", showChallenges);
+
+      function levelComplete() {
+        if (levels[currentLevel].stage === 4) {
+          winSound.currentTime = 0;
+          winSound.play();
+          showWinScreen(levels[currentLevel].challengeName || "");
+          return;
+        }
+
+        if (currentMode === "hard") {
+          let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
+          if (!hardModeStars.includes(currentLevel)) {
+            hardModeStars.push(currentLevel);
+          }
+          localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
+          updateStarProgress();
+        }
+
+        winSound.currentTime = 0;
+        winSound.play();
+        currentLevel++;
+        if (currentLevel < levels.length) {
+          loadLevel(currentLevel);
+        } else {
+          showWinScreen();
+        }
+      }
 
       // -------------------------------------------------
       // 19. Main Menu and Clear Storage Prompt Functions
