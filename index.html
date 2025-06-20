@@ -327,6 +327,7 @@
     <div id="winScreen" class="overlay hidden">
       <h1 style="font-size:64px; margin-bottom:40px;">You Win!</h1>
       <div class="bigButton" id="replayButton">Replay?</div>
+      <div class="bigButton" id="goChallengesButton">Go to challenges</div>
     </div>
 
     <!-- ======================================================
@@ -658,6 +659,9 @@
       let maxUnlockedLevel = parseInt(localStorage.getItem('maxUnlockedLevel')) || 0;
       // Flag that indicates whether all levels are unlocked (for cheat mode)
       let allLevelsUnlocked = false;
+
+      // Indicates if the Extra Challenges stage has been unlocked
+      let extraChallengesUnlocked = localStorage.getItem('extraChallengesUnlocked') === 'true';
 
       // Flag to indicate if the level selector was accessed from the main menu
       let levelSelectorFromMainMenu = false;
@@ -4682,7 +4686,16 @@
                   localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
                   updateStarProgress();
                 }
-                winSound.currentTime=0; winSound.play(); currentLevel++; if(currentLevel<levels.length){ loadLevel(currentLevel); } else { showWinScreen(); } return;
+                winSound.currentTime=0; winSound.play();
+                currentLevel++;
+                if (currentLevel < levels.length) {
+                  loadLevel(currentLevel);
+                } else {
+                  extraChallengesUnlocked = true;
+                  localStorage.setItem('extraChallengesUnlocked', 'true');
+                  showWinScreen();
+                }
+                return;
               }
             }
           }
@@ -5190,7 +5203,8 @@
             levelSelectorContainer.appendChild(btn);
           }
         });
-        document.getElementById("stageHeader").textContent = "Stage " + currentStage + " - Select Level";
+        const header = currentStage === 4 ? "Extra Challenges" : "Stage " + currentStage;
+        document.getElementById("stageHeader").textContent = header + " - Select Level";
       }
 
       function backToMainMenu() {
@@ -5201,7 +5215,7 @@
         musicManager.stop(true);
       }
 
-      function showLevelSelector(unlockAll = false, fromMainMenu = false) {
+      function showLevelSelector(unlockAll = false, fromMainMenu = false, stageOverride = null) {
         allLevelsUnlocked = unlockAll;
         levelSelectorFromMainMenu = fromMainMenu;
         levelSelectorActive = true;
@@ -5211,6 +5225,11 @@
           const highestUnlockedIndex = Math.min(maxUnlockedLevel, levels.length - 1);
           currentStage = levels[highestUnlockedIndex].stage || 1;
         }
+        if (stageOverride !== null) {
+          currentStage = stageOverride;
+        }
+        const maxStage = extraChallengesUnlocked ? 4 : 3;
+        if (currentStage > maxStage) currentStage = maxStage;
         populateLevelSelector();
         resumeButton.style.display = (currentLevel >= levels.length) ? "none" : "block";
         if (levelSelectorFromMainMenu) {
@@ -5227,6 +5246,8 @@
         levelSelectorActive = false;
         gamePaused = false;
         levelSelectorOverlay.classList.add("hidden");
+        stageLeftBtn.style.display = "block";
+        stageRightBtn.style.display = "block";
         if (!levelSelectorFromMainMenu && settings.music) {
           const stage = levels[currentLevel].stage || 1;
           playMusicForStage(stage);
@@ -5234,12 +5255,16 @@
         levelSelectorFromMainMenu = false;
       }
 
-      document.getElementById("stageLeft").addEventListener("click", () => {
+      const stageLeftBtn = document.getElementById("stageLeft");
+      const stageRightBtn = document.getElementById("stageRight");
+      stageLeftBtn.addEventListener("click", () => {
         currentStage = Math.max(1, currentStage - 1);
+        if (currentStage === 4 && !extraChallengesUnlocked) currentStage = 3;
         populateLevelSelector();
       });
-      document.getElementById("stageRight").addEventListener("click", () => {
-        currentStage++;
+      stageRightBtn.addEventListener("click", () => {
+        const maxStage = extraChallengesUnlocked ? 4 : 3;
+        currentStage = Math.min(maxStage, currentStage + 1);
         populateLevelSelector();
       });
 
@@ -5248,8 +5273,10 @@
       // -------------------------------------------------
       const winScreen = document.getElementById("winScreen");
       const replayButton = document.getElementById("replayButton");
+      const goChallengesButton = document.getElementById("goChallengesButton");
 
       function showWinScreen() {
+        musicManager.stop(true);
         gamePaused = true;
         winScreen.classList.remove("hidden");
       }
@@ -5261,6 +5288,13 @@
 
       replayButton.addEventListener("click", () => {
         window.location.reload();
+      });
+
+      goChallengesButton.addEventListener("click", () => {
+        hideWinScreen();
+        showLevelSelector(false, true, 4);
+        stageLeftBtn.style.display = "none";
+        stageRightBtn.style.display = "none";
       });
 
       // -------------------------------------------------
