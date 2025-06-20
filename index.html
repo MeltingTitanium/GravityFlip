@@ -5219,7 +5219,7 @@
           currentStage = levels[highestUnlockedIndex].stage || 1;
         }
         populateLevelSelector();
-        resumeButton.style.display = (currentLevel >= levels.length) ? "none" : "block";
+        resumeButton.style.display = (!levelSelectorFromMainMenu && currentLevel >= levels.length) ? "none" : "block";
         if (levelSelectorFromMainMenu) {
           resumeButton.textContent = "Back";
           resumeButton.onclick = backToMainMenu;
@@ -5283,8 +5283,6 @@
         showLevelSelector(false, true);
         currentStage = 4;
         populateLevelSelector();
-        resumeButton.textContent = "Back";
-        resumeButton.onclick = () => { hideLevelSelector(); showWinScreen(); };
       }
 
       goChallengesButton.addEventListener("click", showChallenges);
