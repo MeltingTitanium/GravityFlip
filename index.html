@@ -749,7 +749,7 @@
       let colorRedBlocks = [];
       let lastColorLineSpawn = 0;
       let lastColorRedSpawn = 0;
-      // Globals for Bullet hell challenge
+      // Globals for Bullet Hell challenge
       const bulletHellDuration = 45000; // 45 seconds
       let bulletHellStartTime = 0;
       let bulletHellLastSpawn = 0;
@@ -925,7 +925,7 @@
         if (levels[currentLevel].teleportLevel) {
           const remaining = teleportReadyTime - now;
           text = remaining > 0 ? "Teleport (" + (remaining / 1000).toFixed(1) + "s)" : "Teleport Ready";
-        } else if (currentLevel >= 7 && !levels[currentLevel].colorLevel) {
+        } else if (currentLevel >= 7 && !levels[currentLevel].colorLevel && !levels[currentLevel].noDash) {
           const remaining = dashReadyTime - now;
           text = remaining > 0 ? "Dash (" + (remaining / 1000).toFixed(1) + "s)" : "Dash Ready";
         }
@@ -2177,12 +2177,12 @@
         },
         {
           // -------------------------------------------------
-          // EXTRA CHALLENGE: Bullet hell
+          // EXTRA CHALLENGE: Bullet Hell
           // -------------------------------------------------
           spawn: { x: 0.5, y: 0.95 },
           challengeBulletHell: true,
           stage: 4,
-          challengeName: "Bullet hell",
+          challengeName: "Bullet Hell",
           noDash: true,
           platforms: [],
           hazards: []
@@ -4661,7 +4661,7 @@
           }
         }
 
-        // Handle Bullet hell challenge logic
+        // Handle Bullet Hell challenge logic
         if (levels[currentLevel].challengeBulletHell) {
           if (!document.hidden && !gamePaused) {
             if (isChallengePaused) {
@@ -4677,20 +4677,16 @@
 
           let elapsed = (now - bulletHellStartTime) - challengePausedTime;
           let remaining = bulletHellDuration - elapsed;
-          let spawnInterval = 2000;
+          let spawnInterval = 1000;
           let spawnCount = 1;
           if (remaining > 30000) {
-            spawnInterval = 2000;
-            spawnCount = 1;
+            spawnCount = 1; // 45s-31s
           } else if (remaining > 15000) {
-            spawnInterval = 1000;
-            spawnCount = 1;
+            spawnCount = 2; // 30s-16s
           } else if (remaining > 5000) {
-            spawnInterval = 1000;
-            spawnCount = 2;
+            spawnCount = 3; // 15s-6s
           } else {
-            spawnInterval = 500;
-            spawnCount = 1;
+            spawnCount = 4; // last 5s
           }
           if (now - bulletHellLastSpawn >= spawnInterval) {
             for (let i = 0; i < spawnCount; i++) {
@@ -5010,7 +5006,7 @@
             ctx.fillText("Challenge Of Colors 1/3", 10, 40);
           }
         } else if (levels[currentLevel].challengeBulletHell) {
-          ctx.fillText("Bullet hell", 10, 40);
+          ctx.fillText("Bullet Hell", 10, 40);
           let elapsed = Date.now() - bulletHellStartTime - challengePausedTime;
           let remainingSec = Math.max(0, Math.ceil((bulletHellDuration - elapsed) / 1000));
           ctx.textAlign = "center";
@@ -5387,6 +5383,13 @@
 
         winSound.currentTime = 0;
         winSound.play();
+
+        if (currentLevel + 1 < levels.length && levels[currentLevel + 1].stage === 4) {
+          currentLevel = levels.length;
+          showWinScreen();
+          return;
+        }
+
         currentLevel++;
         if (currentLevel < levels.length) {
           loadLevel(currentLevel);
