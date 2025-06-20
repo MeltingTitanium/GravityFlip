@@ -12,7 +12,8 @@ Play it here: <https://meltingtitanium.github.io/GravityFlip/>
 
 ## Features
 
-- Over thirty levels across two stages
+- Over thirty levels across three stages
+- Unlock an "Extra Challenges" stage after beating Stage 3 level 18
 - Abilities such as dashing and teleportation
 - Moving hazards, falling blocks and other obstacles
 - Easy, Normal and Hard difficulty modes
