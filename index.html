@@ -325,7 +325,7 @@
          Contains a Replay button and link to challenges.
          ====================================================== -->
     <div id="winScreen" class="overlay hidden">
-      <h1 style="font-size:64px; margin-bottom:40px;">You Win!</h1>
+      <h1 id="winHeader" style="font-size:64px; margin-bottom:40px;">You Win!</h1>
       <div class="bigButton" id="replayButton">Replay</div>
       <div class="bigButton hidden" id="goChallengesButton" style="margin-top:20px;">Go to Challenges</div>
     </div>
@@ -438,8 +438,8 @@
       }
 
       // Function to update the current game parameters based on the selected mode
-      function updateModeParameters() {
-        if (currentMode === "easy") {
+      function updateModeParameters(mode = currentMode) {
+        if (mode === "easy") {
           currentAcceleration      = easyParams.acceleration;
           currentDashDistance      = easyParams.dashDistance;
           currentDashDuration      = easyParams.dashDuration;
@@ -451,7 +451,7 @@
           currentPillarDy          = easyParams.pillarDy;
           currentDashCooldown      = easyParams.dashCooldown;
           currentTeleportCooldown  = 2000; // Teleport cooldown is 2 seconds in easy mode
-        } else if (currentMode === "hard") {
+        } else if (mode === "hard") {
           currentAcceleration      = hardParams.acceleration;
           currentDashDistance      = hardParams.dashDistance;
           currentDashDuration      = hardParams.dashDuration;
@@ -666,6 +666,7 @@
       // Track if the extra challenges have been unlocked
       let extraChallengesUnlocked = localStorage.getItem('extraChallengesUnlocked') === 'true';
       let maxStageUnlocked = extraChallengesUnlocked ? 4 : 3;
+      let savedChallengeMode = null;
 
       // -------------------------------------------------
       // 0.5 Teleport Parameters (for Stage 2 Level 1 and beyond)
@@ -2226,6 +2227,19 @@
         currentLevel = index;
         updateUnlockedProgress();
         const lvl = levels[index];
+        if (lvl.stage === 4) {
+          if (savedChallengeMode === null) savedChallengeMode = currentMode;
+          if (currentMode !== 'normal') {
+            currentMode = 'normal';
+            updateModeParameters();
+            updateModeButtons();
+          }
+        } else if (savedChallengeMode !== null) {
+          currentMode = savedChallengeMode;
+          savedChallengeMode = null;
+          updateModeParameters();
+          updateModeButtons();
+        }
         playMusicForStage(lvl.stage || 1);
 
         // Clear any pending checkpoint auto-kill
@@ -3101,20 +3115,16 @@
               } else {
                 winSound.currentTime = 0;
                 winSound.play();
-                // NEW CODE ADDED: if Hard Mode, record a star for the level
-                if (currentMode === "hard") {
-                  let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
-                  if (!hardModeStars.includes(currentLevel)) {
-                    hardModeStars.push(currentLevel);
-                  }
-                  localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
-                  updateStarProgress();
-                }
-                currentLevel++;
-                if (currentLevel < levels.length) {
-                  loadLevel(currentLevel);
+                recordHardModeStar();
+                if (levels[currentLevel].stage === 4) {
+                  showChallengeWin(levels[currentLevel].name || 'Challenge');
                 } else {
-                  showWinScreen();
+                  currentLevel++;
+                  if (currentLevel < levels.length) {
+                    loadLevel(currentLevel);
+                  } else {
+                    showWinScreen();
+                  }
                 }
                 // *** Not resetting teleport cooldown for the new level. ***
                 return;
@@ -3965,17 +3975,13 @@
               target.y = level13TargetPositions[level13Stage].y * canvas.height;
               return;
             } else {
-              // NEW CODE ADDED: star if Hard Mode
-              if (currentMode === "hard") {
-                let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
-                if (!hardModeStars.includes(currentLevel)) {
-                  hardModeStars.push(currentLevel);
-                }
-                localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
-                updateStarProgress();
-              }
+              recordHardModeStar();
               winSound.currentTime = 0;
               winSound.play();
+              if (levels[currentLevel].stage === 4) {
+                showChallengeWin(levels[currentLevel].name || 'Challenge');
+                return;
+              }
               currentLevel++;
               if (currentLevel < levels.length) {
                 loadLevel(currentLevel);
@@ -4009,16 +4015,13 @@
                 target.y = stage3Level4TargetPositions[stage3Level4Index].y * canvas.height;
                 return;
               } else {
-                if (currentMode === "hard") {
-                  let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
-                  if (!hardModeStars.includes(currentLevel)) {
-                    hardModeStars.push(currentLevel);
-                  }
-                  localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
-                  updateStarProgress();
-                }
+                recordHardModeStar();
                 winSound.currentTime = 0;
                 winSound.play();
+                if (levels[currentLevel].stage === 4) {
+                  showChallengeWin(levels[currentLevel].name || 'Challenge');
+                  return;
+                }
                 currentLevel++;
                 if (currentLevel < levels.length) {
                   loadLevel(currentLevel);
@@ -4038,16 +4041,13 @@
                 }
                 return;
               } else {
-                if (currentMode === "hard") {
-                  let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
-                  if (!hardModeStars.includes(currentLevel)) {
-                    hardModeStars.push(currentLevel);
-                  }
-                  localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
-                  updateStarProgress();
-                }
+                recordHardModeStar();
                 winSound.currentTime = 0;
                 winSound.play();
+                if (levels[currentLevel].stage === 4) {
+                  showChallengeWin(levels[currentLevel].name || 'Challenge');
+                  return;
+                }
                 currentLevel++;
                 if (currentLevel < levels.length) {
                   loadLevel(currentLevel);
@@ -4069,16 +4069,13 @@
                 return;
               } else {
                 // NEW CODE ADDED: star if Hard Mode
-                if (currentMode === "hard") {
-                  let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
-                  if (!hardModeStars.includes(currentLevel)) {
-                    hardModeStars.push(currentLevel);
-                  }
-                  localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
-                  updateStarProgress();
-              }
+                recordHardModeStar();
                 winSound.currentTime = 0;
                 winSound.play();
+                if (levels[currentLevel].stage === 4) {
+                  showChallengeWin(levels[currentLevel].name || 'Challenge');
+                  return;
+                }
                 currentLevel++;
                 if (currentLevel < levels.length) {
                   loadLevel(currentLevel);
@@ -4092,16 +4089,13 @@
               chargeProgress += step;
               if (chargeProgress >= chargeDuration) {
                 chargeProgress = chargeDuration;
-                if (currentMode === "hard") {
-                  let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
-                  if (!hardModeStars.includes(currentLevel)) {
-                    hardModeStars.push(currentLevel);
-                  }
-                  localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
-                  updateStarProgress();
-                }
+                recordHardModeStar();
                 winSound.currentTime = 0;
                 winSound.play();
+                if (levels[currentLevel].stage === 4) {
+                  showChallengeWin(levels[currentLevel].name || 'Challenge');
+                  return;
+                }
                 currentLevel++;
                 if (currentLevel < levels.length) {
                   loadLevel(currentLevel);
@@ -4111,17 +4105,13 @@
                 }
               }
             } else if (rectIntersect(cubeRect, targetRect)) {
-              // NEW CODE ADDED: star if Hard Mode
-              if (currentMode === "hard") {
-                let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
-                if (!hardModeStars.includes(currentLevel)) {
-                  hardModeStars.push(currentLevel);
-                }
-                localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
-                updateStarProgress();
-              }
+              recordHardModeStar();
               winSound.currentTime = 0;
               winSound.play();
+              if (levels[currentLevel].stage === 4) {
+                showChallengeWin(levels[currentLevel].name || 'Challenge');
+                return;
+              }
               currentLevel++;
               if (currentLevel < levels.length) {
                 loadLevel(currentLevel);
@@ -4289,17 +4279,13 @@
               height: challengeGreenBlock.size 
             };
             if (rectIntersect(cubeRect, greenRect)) {
-              // NEW CODE ADDED: star if Hard Mode
-              if (currentMode === "hard") {
-                let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
-                if (!hardModeStars.includes(currentLevel)) {
-                  hardModeStars.push(currentLevel);
-                }
-                localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
-                updateStarProgress();
-              }
+              recordHardModeStar();
               winSound.currentTime = 0;
               winSound.play();
+              if (levels[currentLevel].stage === 4) {
+                showChallengeWin(levels[currentLevel].name || 'Challenge');
+                return;
+              }
               currentLevel++;
               if (currentLevel < levels.length) {
                 loadLevel(currentLevel);
@@ -4565,16 +4551,13 @@
               height: challengeGreenBlock.size
             };
             if (rectIntersect(cubeRect, greenRect)) {
-              if (currentMode === "hard") {
-                let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
-                if (!hardModeStars.includes(currentLevel)) {
-                  hardModeStars.push(currentLevel);
-                }
-                localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
-                updateStarProgress();
-              }
+              recordHardModeStar();
               winSound.currentTime = 0;
               winSound.play();
+              if (levels[currentLevel].stage === 4) {
+                showChallengeWin(levels[currentLevel].name || 'Challenge');
+                return;
+              }
               currentLevel++;
               if (currentLevel < levels.length) {
                 loadLevel(currentLevel);
@@ -4681,13 +4664,10 @@
                 colorPhaseStart = Date.now();
               } else {
                 chargeProgress = chargeDuration;
-                if (currentMode === "hard") {
-                  let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
-                  if (!hardModeStars.includes(currentLevel)) hardModeStars.push(currentLevel);
-                  localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
-                  updateStarProgress();
-                }
-                winSound.currentTime=0; winSound.play(); currentLevel++; if(currentLevel<levels.length){ loadLevel(currentLevel); } else { showWinScreen(); } return;
+                recordHardModeStar();
+                winSound.currentTime=0; winSound.play();
+                if (levels[currentLevel].stage === 4) { showChallengeWin(levels[currentLevel].name || 'Challenge'); return; }
+                currentLevel++; if(currentLevel<levels.length){ loadLevel(currentLevel); } else { showWinScreen(); } return;
               }
             }
           }
@@ -5171,13 +5151,16 @@
                 count++;
               }
             }
-            if (index === 30) {
+            if (lvlStage === 4 && lvl.name) {
+              btn.textContent = lvl.name;
+            } else if (index === 30) {
               btn.textContent = "Level 13";
             } else {
               btn.textContent = "Level " + (count + 1);
             }
             
-            if (!allLevelsUnlocked && index > maxUnlockedLevel) {
+            const challengeUnlocked = lvlStage === 4 && extraChallengesUnlocked;
+            if (!allLevelsUnlocked && index > maxUnlockedLevel && !challengeUnlocked) {
               btn.textContent += " 🔒";
               btn.classList.add("locked");
             } else {
@@ -5254,8 +5237,10 @@
       // 18. Win Screen Functions (Modified: Only Replay Button)
       // -------------------------------------------------
       const winScreen = document.getElementById("winScreen");
+      const winHeader = document.getElementById("winHeader");
       const replayButton = document.getElementById("replayButton");
       const goChallengesButton = document.getElementById("goChallengesButton");
+      const defaultWinText = winHeader.textContent;
 
       function showWinScreen() {
         gamePaused = true;
@@ -5266,12 +5251,27 @@
           maxStageUnlocked = 4;
           goChallengesButton.classList.remove('hidden');
         }
+        winHeader.textContent = defaultWinText;
+        replayButton.classList.remove('hidden');
+        goChallengesButton.classList.remove('hidden');
         winScreen.classList.remove("hidden");
       }
 
       function hideWinScreen() {
         winScreen.classList.add("hidden");
         gamePaused = false;
+        winHeader.textContent = defaultWinText;
+        replayButton.classList.remove('hidden');
+        goChallengesButton.classList.add('hidden');
+      }
+
+      function showChallengeWin(name) {
+        gamePaused = true;
+        musicManager.stop(true);
+        winHeader.textContent = `You won ${name}`;
+        replayButton.classList.add('hidden');
+        goChallengesButton.classList.remove('hidden');
+        winScreen.classList.remove('hidden');
       }
 
       replayButton.addEventListener("click", () => {
@@ -5382,12 +5382,23 @@
         hideClearStoragePrompt();
       });
 
-      clearNo.addEventListener("click", hideClearStoragePrompt);
+        clearNo.addEventListener("click", hideClearStoragePrompt);
+
+        function recordHardModeStar() {
+          if (levels[currentLevel].stage === 4) return;
+          if (currentMode === "hard") {
+            let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
+            if (!hardModeStars.includes(currentLevel)) {
+              hardModeStars.push(currentLevel);
+              localStorage.setItem('hardModeStars', JSON.stringify(hardModeStars));
+              updateStarProgress();
+            }
+          }
+        }
 
 
-
-      // -------------------------------------------------
-      // 20. Difficulty Selection Buttons (At the Bottom of Main Menu)
+        // -------------------------------------------------
+        // 20. Difficulty Selection Buttons (At the Bottom of Main Menu)
       // -------------------------------------------------
       const easyModeButton = document.getElementById("easyModeButton");
       const normalModeButton = document.getElementById("normalModeButton");
@@ -5409,7 +5420,8 @@
       function updateStarProgress() {
         const hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
         const finalAwarded = localStorage.getItem('finalStarAwarded') === 'true';
-        const totalStars = levels.length + 1;
+        const mainLevelCount = levels.filter(l => l.stage !== 4).length;
+        const totalStars = mainLevelCount + 1;
         const count = hardModeStars.length + (finalAwarded ? 1 : 0);
         if (count > 0) {
           starProgress.classList.remove('hidden');
@@ -5423,7 +5435,7 @@
           starProgress.classList.add('hidden');
         }
 
-        if (!finalAwarded && hardModeStars.length === levels.length) {
+        if (!finalAwarded && hardModeStars.length === mainLevelCount) {
           awardFinalStar();
         }
       }
