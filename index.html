@@ -322,11 +322,12 @@
 
     <!-- ======================================================
          Win Screen Overlay: Displays when the player wins the game.
-         Contains only a Replay button.
+         Contains a Replay button and link to challenges.
          ====================================================== -->
     <div id="winScreen" class="overlay hidden">
       <h1 style="font-size:64px; margin-bottom:40px;">You Win!</h1>
-      <div class="bigButton" id="replayButton">Replay?</div>
+      <div class="bigButton" id="replayButton">Replay</div>
+      <div class="bigButton hidden" id="goChallengesButton" style="margin-top:20px;">Go to Challenges</div>
     </div>
 
     <!-- ======================================================
@@ -661,6 +662,10 @@
 
       // Flag to indicate if the level selector was accessed from the main menu
       let levelSelectorFromMainMenu = false;
+
+      // Track if the extra challenges have been unlocked
+      let extraChallengesUnlocked = localStorage.getItem('extraChallengesUnlocked') === 'true';
+      let maxStageUnlocked = extraChallengesUnlocked ? 4 : 3;
 
       // -------------------------------------------------
       // 0.5 Teleport Parameters (for Stage 2 Level 1 and beyond)
@@ -5190,7 +5195,8 @@
             levelSelectorContainer.appendChild(btn);
           }
         });
-        document.getElementById("stageHeader").textContent = "Stage " + currentStage + " - Select Level";
+        const header = currentStage === 4 ? "Extra Challenges" : "Stage " + currentStage;
+        document.getElementById("stageHeader").textContent = header + " - Select Level";
       }
 
       function backToMainMenu() {
@@ -5204,6 +5210,7 @@
       function showLevelSelector(unlockAll = false, fromMainMenu = false) {
         allLevelsUnlocked = unlockAll;
         levelSelectorFromMainMenu = fromMainMenu;
+        maxStageUnlocked = extraChallengesUnlocked ? 4 : 3;
         levelSelectorActive = true;
         gamePaused = true;
         musicManager.stop(true);
@@ -5239,7 +5246,7 @@
         populateLevelSelector();
       });
       document.getElementById("stageRight").addEventListener("click", () => {
-        currentStage++;
+        currentStage = Math.min(maxStageUnlocked, currentStage + 1);
         populateLevelSelector();
       });
 
@@ -5248,9 +5255,17 @@
       // -------------------------------------------------
       const winScreen = document.getElementById("winScreen");
       const replayButton = document.getElementById("replayButton");
+      const goChallengesButton = document.getElementById("goChallengesButton");
 
       function showWinScreen() {
         gamePaused = true;
+        musicManager.stop(true);
+        if (currentLevel >= levels.length) {
+          extraChallengesUnlocked = true;
+          localStorage.setItem('extraChallengesUnlocked', 'true');
+          maxStageUnlocked = 4;
+          goChallengesButton.classList.remove('hidden');
+        }
         winScreen.classList.remove("hidden");
       }
 
@@ -5262,6 +5277,17 @@
       replayButton.addEventListener("click", () => {
         window.location.reload();
       });
+
+      function showChallenges() {
+        hideWinScreen();
+        showLevelSelector(false, true);
+        currentStage = 4;
+        populateLevelSelector();
+        resumeButton.textContent = "Back";
+        resumeButton.onclick = () => { hideLevelSelector(); showWinScreen(); };
+      }
+
+      goChallengesButton.addEventListener("click", showChallenges);
 
       // -------------------------------------------------
       // 19. Main Menu and Clear Storage Prompt Functions
@@ -5352,6 +5378,8 @@
       clearYes.addEventListener("click", () => {
         localStorage.clear();
         maxUnlockedLevel = 0;
+        extraChallengesUnlocked = false;
+        maxStageUnlocked = 3;
         updateStarProgress();
         hideClearStoragePrompt();
       });
@@ -5480,6 +5508,11 @@
       toggleMusic.checked = settings.music;
       toggleLightMode.checked = settings.lightMode;
       updateStarProgress();
+
+      if (extraChallengesUnlocked) {
+        goChallengesButton.classList.remove('hidden');
+        maxStageUnlocked = 4;
+      }
 
       // Also, if music is off, pause both BG tracks immediately
       if (!settings.music) {
