@@ -4680,13 +4680,17 @@
           let spawnInterval = 1000;
           let spawnCount = 1;
           if (remaining > 30000) {
-            spawnCount = 1; // 45s-31s
+            spawnInterval = 2000; // 45s-31s
+            spawnCount = 1;
           } else if (remaining > 15000) {
-            spawnCount = 2; // 30s-16s
+            spawnInterval = 1000; // 30s-16s
+            spawnCount = 1;
           } else if (remaining > 5000) {
-            spawnCount = 3; // 15s-6s
+            spawnInterval = 1000; // 15s-6s
+            spawnCount = 2;
           } else {
-            spawnCount = 4; // last 5s
+            spawnInterval = 500; // last 5s
+            spawnCount = 1;
           }
           if (now - bulletHellLastSpawn >= spawnInterval) {
             for (let i = 0; i < spawnCount; i++) {
