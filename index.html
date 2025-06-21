@@ -328,6 +328,7 @@
       <h1 id="winTitle" style="font-size:64px; margin-bottom:40px;">You Win!</h1>
       <div class="bigButton" id="replayButton">Replay</div>
       <div class="bigButton hidden" id="goChallengesButton" style="margin-top:20px;">Go to Challenges</div>
+      <div id="extraChallengesText" class="hidden" style="margin-top:20px;font-size:24px;">Extra Challenges unlocked in level selector</div>
     </div>
 
     <!-- ======================================================
@@ -4677,16 +4678,20 @@
 
           let elapsed = (now - bulletHellStartTime) - challengePausedTime;
           let remaining = bulletHellDuration - elapsed;
-          let spawnInterval = 1000;
-          let spawnCount = 1;
-          if (remaining > 30000) {
-            spawnCount = 1; // 45s-31s
-          } else if (remaining > 15000) {
-            spawnCount = 2; // 30s-16s
-          } else if (remaining > 5000) {
-            spawnCount = 3; // 15s-6s
-          } else {
-            spawnCount = 4; // last 5s
+          let spawnInterval;
+          let spawnCount;
+          if (remaining > 30000) { // 45s - 31s
+            spawnInterval = 1000;
+            spawnCount = 2;
+          } else if (remaining > 15000) { // 30s - 16s
+            spawnInterval = 1000;
+            spawnCount = 3;
+          } else if (remaining > 5000) { // 15s - 6s
+            spawnInterval = 1000;
+            spawnCount = 5;
+          } else { // last 5s
+            spawnInterval = 500;
+            spawnCount = 5;
           }
           if (now - bulletHellLastSpawn >= spawnInterval) {
             for (let i = 0; i < spawnCount; i++) {
@@ -5319,6 +5324,7 @@
       const winScreen = document.getElementById("winScreen");
       const replayButton = document.getElementById("replayButton");
       const goChallengesButton = document.getElementById("goChallengesButton");
+      const extraChallengesText = document.getElementById("extraChallengesText");
 
       const winTitle = document.getElementById("winTitle");
 
@@ -5326,6 +5332,7 @@
         gamePaused = true;
         musicManager.stop(true);
 
+        extraChallengesText.classList.add('hidden');
         if (challengeName) {
           winTitle.textContent = `You Win ${challengeName}!`;
           replayButton.classList.add('hidden');
@@ -5334,10 +5341,13 @@
           winTitle.textContent = "You Win!";
           replayButton.classList.remove('hidden');
           if (currentLevel >= levels.length) {
-            extraChallengesUnlocked = true;
-            localStorage.setItem('extraChallengesUnlocked', 'true');
-            maxStageUnlocked = 4;
-            goChallengesButton.classList.remove('hidden');
+            if (!extraChallengesUnlocked) {
+              extraChallengesUnlocked = true;
+              localStorage.setItem('extraChallengesUnlocked', 'true');
+              maxStageUnlocked = 4;
+              extraChallengesText.classList.remove('hidden');
+            }
+            goChallengesButton.classList.add('hidden');
           } else {
             goChallengesButton.classList.add('hidden');
           }
@@ -5348,6 +5358,7 @@
 
       function hideWinScreen() {
         winScreen.classList.add("hidden");
+        extraChallengesText.classList.add('hidden');
         gamePaused = false;
       }
 
