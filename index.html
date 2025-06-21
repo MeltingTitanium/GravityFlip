@@ -5344,6 +5344,8 @@
             if (!extraChallengesUnlocked) {
               extraChallengesUnlocked = true;
               localStorage.setItem('extraChallengesUnlocked', 'true');
+              maxUnlockedLevel = levels.length - 1;
+              localStorage.setItem('maxUnlockedLevel', maxUnlockedLevel);
               maxStageUnlocked = 4;
               extraChallengesText.classList.remove('hidden');
             }
