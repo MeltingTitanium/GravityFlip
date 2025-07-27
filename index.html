@@ -759,6 +759,20 @@
       let bulletHellStartTime = 0;
       let bulletHellLastSpawn = 0;
       let bulletHellBlocks = [];
+      // Globals for the Three Colors challenge
+      let threeColorLines = [];
+      let lastThreeColorSpawn = 0;
+      let threeColorRedSpawned = false;
+      let threeColorUnlocked = false;
+      let threeColorCheckpoint = false;
+      const threeColorSpeedMap = {1: 1.7, 2: 1.8, 3: 1.9, 4: 2};
+
+      function getUniqueThreeColorSpeed() {
+        const used = new Set(threeColorLines.map(l => l.speed));
+        const pool = [1, 2, 3, 4].filter(s => !used.has(s));
+        if (pool.length === 0) return null;
+        return pool[Math.floor(Math.random() * pool.length)];
+      }
       // Timeout handle for the delayed hazard in Stage 3 Level 3
       let stage3Level3HazardTimeout = null;
       // Timeout handle for the delayed hazard in Stage 3 Level 9
@@ -2191,6 +2205,23 @@
           noDash: true,
           platforms: [],
           hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // EXTRA CHALLENGE: Three Colors
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.5 },
+          target: { x: 0.5, y: 0.5 },
+          threeColorsChallenge: true,
+          colorLevel: true,
+          chargingTarget: true,
+          chargeTime: 55000,
+          targetSizeMultiplier: 1.5,
+          noMovement: true,
+          stage: 4,
+          challengeName: "Three Colors",
+          platforms: [],
+          hazards: []
         }
       ];
 
@@ -2292,6 +2323,9 @@
         if (index === 30 && prevLevel !== 30) {
           teleportCheckpoint = false;
           checkpointPopupTime = 0;
+        }
+        if (lvl.threeColorsChallenge && prevLevel !== index) {
+          threeColorCheckpoint = false;
         }
         document.getElementById("checkpointPopup").classList.add("hidden");
         cube.x = lvl.spawn.x * canvas.width;
@@ -2395,6 +2429,17 @@
           lastColorRedSpawn = Date.now();
           chargeProgress = 0;
           chargeDuration = lvl.chargeTime || 5000;
+        } else if (lvl.threeColorsChallenge) {
+          const extraMsg = document.getElementById("extraColorMessage");
+          extraMsg.classList.add("hidden");
+          target = { x: cube.x, y: cube.y, size: cube.size * (lvl.targetSizeMultiplier || 1) };
+          threeColorLines = [];
+          lastThreeColorSpawn = Date.now();
+          threeColorRedSpawned = threeColorCheckpoint;
+          threeColorUnlocked = threeColorCheckpoint;
+          if (threeColorCheckpoint) {
+            chargeProgress = chargeDuration * 0.33;
+          }
         } else if (lvl.challengeBulletHell) {
           target = null;
           bulletHellStartTime = Date.now();
@@ -3013,11 +3058,12 @@
         }
 
         // Teleport or dash logic
-        if (levels[currentLevel].teleportLevel && e.key === " " && !isTeleporting) {
+        if (levels[currentLevel].teleportLevel && e.key === " " && !isTeleporting && !levels[currentLevel].noMovement) {
           attemptTeleport();
         }
         else if (levels[currentLevel].colorLevel && e.key === " ") {
-          if (levels[currentLevel].extracolor) {
+          const threeColors = levels[currentLevel].threeColorsChallenge && threeColorUnlocked;
+          if (levels[currentLevel].extracolor || threeColors) {
             if (outlineColor === "cyan") outlineColor = "yellow";
             else if (outlineColor === "yellow") outlineColor = "red";
             else outlineColor = "cyan";
@@ -3025,9 +3071,9 @@
             outlineColor = outlineColor === "cyan" ? "yellow" : "cyan";
           }
         }
-        else if (currentLevel >= 7 && e.key === " " && !isDashing && !levels[currentLevel].noDash) {
+        else if (!levels[currentLevel].noMovement && currentLevel >= 7 && e.key === " " && !isDashing && !levels[currentLevel].noDash) {
           attemptDash();
-        } else {
+        } else if (!levels[currentLevel].noMovement) {
           switch (e.key) {
             case "ArrowUp":
               lastDirection = "up";
@@ -3369,7 +3415,10 @@
         } 
         // Normal movement
         else {
-          if (lastDirection === "up") {
+          if (levels[currentLevel].noMovement) {
+            cube.vx = 0;
+            cube.vy = 0;
+          } else if (lastDirection === "up") {
             cube.vy -= currentAcceleration;
             cube.vx = 0;
             arrowDirX = 0;
@@ -4666,6 +4715,79 @@
           }
         }
 
+        // Handle Three Colors challenge logic
+        if (levels[currentLevel].threeColorsChallenge) {
+          const pct = chargeProgress / chargeDuration;
+          if (!threeColorRedSpawned && pct >= 0.25) {
+            const thickness = 20;
+            const speed = 1;
+            threeColorLines.push({
+              x: canvas.width,
+              y: 0,
+              width: thickness,
+              height: canvas.height,
+              vx: -threeColorSpeedMap[speed],
+              vy: 0,
+              color: "red",
+              speed
+            });
+            threeColorRedSpawned = true;
+            threeColorUnlocked = true;
+            const msg = document.getElementById("extraColorMessage");
+            msg.textContent = "Third Color Unlocked";
+            msg.classList.remove("hidden");
+            setTimeout(() => msg.classList.add("hidden"), 1500);
+          }
+          if (!threeColorCheckpoint && pct >= 0.30) {
+            threeColorCheckpoint = true;
+            checkpointPopupTime = Date.now();
+            const cp = document.getElementById("checkpointPopup");
+            cp.classList.remove("hidden");
+            setTimeout(() => cp.classList.add("hidden"), 1500);
+          }
+          let spawnInterval = null;
+          if (pct < 0.2) spawnInterval = 3000; // first 20%
+          else if (pct >= 0.33 && pct < 0.5) spawnInterval = 2250; // 20–50%
+          else if (pct >= 0.5 && pct < 0.75) spawnInterval = 1750;  // 50–75%
+          else if (pct >= 0.75 && pct < 0.9) spawnInterval = 1250; // 75–90%
+          else if (pct >= 0.9) spawnInterval = 1000; // final 10%
+          const availableColors = threeColorUnlocked ? ["cyan","yellow","red"] : ["cyan","yellow"];
+          if (spawnInterval && now - lastThreeColorSpawn >= spawnInterval) {
+            const speed = getUniqueThreeColorSpeed();
+            if (speed !== null) {
+              const color = availableColors[Math.floor(Math.random() * availableColors.length)];
+              const thickness = 20;
+              const side = Math.floor(Math.random() * 4);
+              let line = { x:0, y:0, width:0, height:0, vx:0, vy:0, color, speed };
+              const vel = threeColorSpeedMap[speed];
+              if (side === 0) { line.x=0; line.y=-thickness; line.width=canvas.width; line.height=thickness; line.vy=vel; }
+              else if (side === 1) { line.x=0; line.y=canvas.height; line.width=canvas.width; line.height=thickness; line.vy=-vel; }
+              else if (side === 2) { line.x=-thickness; line.y=0; line.width=thickness; line.height=canvas.height; line.vx=vel; }
+              else { line.x=canvas.width; line.y=0; line.width=thickness; line.height=canvas.height; line.vx=-vel; }
+              threeColorLines.push(line);
+              lastThreeColorSpawn = now;
+            }
+          }
+          for (let i = threeColorLines.length - 1; i >= 0; i--) {
+            let l = threeColorLines[i];
+            l.x += l.vx;
+            l.y += l.vy;
+            if (l.x > canvas.width || l.x + l.width < 0 || l.y > canvas.height || l.y + l.height < 0) {
+              threeColorLines.splice(i, 1);
+              continue;
+            }
+            let rect = { x: l.x, y: l.y, width: l.width, height: l.height };
+            if (rectIntersect(cubeRect, rect)) {
+              if (outlineColor !== l.color) {
+                deathSound.currentTime = 0;
+                deathSound.play();
+                loadLevel(currentLevel);
+                return;
+              }
+            }
+          }
+        }
+
         // Handle Bullet Hell challenge logic
         if (levels[currentLevel].challengeBulletHell) {
           if (!document.hidden && !gamePaused) {
@@ -4950,6 +5072,15 @@
           }
         }
       }
+
+      function drawThreeColorLines() {
+        if (levels[currentLevel].threeColorsChallenge) {
+          for (let line of threeColorLines) {
+            ctx.fillStyle = line.color;
+            ctx.fillRect(line.x, line.y, line.width, line.height);
+          }
+        }
+      }
       function drawChallengeGreyBlocks() {
         if (levels[currentLevel].challengeTeleportLevel) {
           ctx.fillStyle = "purple";
@@ -5014,6 +5145,8 @@
           } else {
             ctx.fillText("Challenge Of Colors 1/3", 10, 40);
           }
+        } else if (levels[currentLevel].threeColorsChallenge) {
+          ctx.fillText("Three Colors", 10, 40);
         } else if (levels[currentLevel].challengeBulletHell) {
           ctx.fillText("Bullet Hell", 10, 40);
           let elapsed = Date.now() - bulletHellStartTime - challengePausedTime;
@@ -5178,6 +5311,7 @@
       drawStage3Level15Lines();
       drawStage3Level5Line();
       drawColorChallengeLines();
+      drawThreeColorLines();
       drawBlues();
       drawBrowns();
         drawLifts();
