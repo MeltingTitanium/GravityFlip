@@ -4712,12 +4712,13 @@
           const pct = chargeProgress / chargeDuration;
           if (!threeColorRedSpawned && pct >= 0.25) {
             const thickness = 20;
+            const speed = Math.floor(Math.random() * 4) + 1;
             threeColorLines.push({
               x: canvas.width,
               y: 0,
               width: thickness,
               height: canvas.height,
-              vx: -1,
+              vx: -speed,
               vy: 0,
               color: "red"
             });
@@ -4746,8 +4747,8 @@
             const color = availableColors[Math.floor(Math.random() * availableColors.length)];
             const thickness = 20;
             const side = Math.floor(Math.random() * 4);
+            const speed = Math.floor(Math.random() * 4) + 1;
             let line = { x:0, y:0, width:0, height:0, vx:0, vy:0, color };
-            const speed = 2;
             if (side === 0) { line.x=0; line.y=-thickness; line.width=canvas.width; line.height=thickness; line.vy=speed; }
             else if (side === 1) { line.x=0; line.y=canvas.height; line.width=canvas.width; line.height=thickness; line.vy=-speed; }
             else if (side === 2) { line.x=-thickness; line.y=0; line.width=thickness; line.height=canvas.height; line.vx=speed; }
