@@ -7,7 +7,7 @@ Play it here: <https://meltingtitanium.github.io/GravityFlip/>
 ## Controls
 
 - **Arrow keys** &ndash; flip gravity
-- **Space** (configurable) &ndash; use the current gimmick
+- **Space**  &ndash; use the current gimmick
 - **R** &ndash; restart the current level
 
 ## Features
