@@ -786,6 +786,11 @@
       let spacePressTimes = [];
       let lastSpamColorChange = 0;
 
+      function getRandomThreeColorSpeed() {
+        const pool = [1, 2, 3, 4];
+        return pool[Math.floor(Math.random() * pool.length)];
+      }
+
       function getUniqueThreeColorSpeed() {
         const used = new Set(threeColorLines.map(l => l.speed));
         const pool = [1, 2, 3, 4].filter(s => !used.has(s));
@@ -2350,9 +2355,15 @@
         cube.x = lvl.spawn.x * canvas.width;
         cube.y = lvl.spawn.y * canvas.height;
 
-        const extraMsg = document.getElementById("extraColorMessage");
-        if (lvl.extracolor) extraMsg.classList.remove("hidden");
-        else extraMsg.classList.add("hidden");
+       const extraMsg = document.getElementById("extraColorMessage");
+       if (lvl.extracolor) extraMsg.classList.remove("hidden");
+       else extraMsg.classList.add("hidden");
+
+        // Reset spam space ability and hide the prompt
+        spamAbilityUnlocked = false;
+        spamActive = false;
+        spacePressTimes = [];
+        document.getElementById("spamSpaceMessage").classList.add("hidden");
 
         cube.vx = 0;
         cube.vy = 0;
@@ -4793,13 +4804,14 @@
           else if (pct >= 0.9) spawnInterval = 100; // final 10%
           const availableColors = threeColorUnlocked ? ["cyan","yellow","red"] : ["cyan","yellow"];
           if (spawnInterval && now - lastThreeColorSpawn >= spawnInterval) {
-            const speed = getUniqueThreeColorSpeed();
+            const speed = pct >= 0.9 ? getRandomThreeColorSpeed() : getUniqueThreeColorSpeed();
             if (speed !== null) {
               const color = availableColors[Math.floor(Math.random() * availableColors.length)];
               const thickness = 20;
               const side = Math.floor(Math.random() * 4);
               let line = { x:0, y:0, width:0, height:0, vx:0, vy:0, color, speed };
-              const vel = threeColorSpeedMap[speed];
+              let vel = threeColorSpeedMap[speed];
+              if (pct >= 0.9) vel *= 2;
               if (side === 0) { line.x=0; line.y=-thickness; line.width=canvas.width; line.height=thickness; line.vy=vel; }
               else if (side === 1) { line.x=0; line.y=canvas.height; line.width=canvas.width; line.height=thickness; line.vy=-vel; }
               else if (side === 2) { line.x=-thickness; line.y=0; line.width=thickness; line.height=canvas.height; line.vx=vel; }
@@ -5553,6 +5565,11 @@
       goChallengesButton.addEventListener("click", showChallenges);
 
       function levelComplete() {
+        // Hide spam prompt and reset spam state
+        document.getElementById("spamSpaceMessage").classList.add("hidden");
+        spamAbilityUnlocked = false;
+        spamActive = false;
+        spacePressTimes = [];
         if (levels[currentLevel].stage === 4) {
           winSound.currentTime = 0;
           winSound.play();
