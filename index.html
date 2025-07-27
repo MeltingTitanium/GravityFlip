@@ -205,6 +205,19 @@
         pointer-events: none;
       }
 
+      #spamSpaceMessage {
+        position: absolute;
+        top: 10px;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        font-size: 48px;
+        font-family: "Press Start 2P", monospace;
+        color: white;
+        z-index: 50;
+        pointer-events: none;
+      }
+
       #starProgress.gold {
         color: gold;
       }
@@ -360,6 +373,7 @@
     <div id="checkpointPopup" class="overlay hidden">Checkpoint Reached</div>
     <div id="autoColorMessage" class="hidden">automatic color switching unlocked</div>
     <div id="extraColorMessage" class="hidden">New Color Unlocked</div>
+    <div id="spamSpaceMessage" class="hidden">SPAM SPACE AS FAST AS YOU CAN</div>
 
     <!-- ======================================================
          JavaScript Section: Contains all game logic and functionality.
@@ -766,6 +780,11 @@
       let threeColorUnlocked = false;
       let threeColorCheckpoint = false;
       const threeColorSpeedMap = {1: 1.7, 2: 1.8, 3: 1.9, 4: 2};
+
+      let spamAbilityUnlocked = false;
+      let spamActive = false;
+      let spacePressTimes = [];
+      let lastSpamColorChange = 0;
 
       function getUniqueThreeColorSpeed() {
         const used = new Set(threeColorLines.map(l => l.speed));
@@ -2968,6 +2987,9 @@
       // 10. Key Handling (No Diagonals) + Special Keys for Level Selector, Clear Storage, and "R" to die
       // -------------------------------------------------
       document.addEventListener("keydown", e => {
+        if (e.key === " " && spamAbilityUnlocked) {
+          spacePressTimes.push(Date.now());
+        }
         if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
           autoColorBuffer += e.key.toLowerCase();
           if (!autoColorCode.startsWith(autoColorBuffer)) {
@@ -3343,6 +3365,18 @@
       function update() {
         if (gamePaused) return;
         const now = Date.now();
+        if (spamAbilityUnlocked) {
+          spacePressTimes = spacePressTimes.filter(t => now - t <= 1000);
+          spamActive = spacePressTimes.length >= 3;
+          if (spamActive && now - lastSpamColorChange >= 50) {
+            if (outlineColor === "cyan") outlineColor = "yellow";
+            else if (outlineColor === "yellow") outlineColor = "red";
+            else outlineColor = "cyan";
+            lastSpamColorChange = now;
+          }
+        } else {
+          spamActive = false;
+        }
         let obstacles = [...platforms, ...browns, ...lifts];
         if (levels[currentLevel].fallingBrownLevel) {
           obstacles = obstacles.concat(fallingBrownBlocks);
@@ -4718,6 +4752,12 @@
         // Handle Three Colors challenge logic
         if (levels[currentLevel].threeColorsChallenge) {
           const pct = chargeProgress / chargeDuration;
+          const spamMsg = document.getElementById("spamSpaceMessage");
+          if (pct >= 0.85) spamMsg.classList.remove("hidden");
+          else spamMsg.classList.add("hidden");
+          if (!spamAbilityUnlocked && pct >= 0.86) {
+            spamAbilityUnlocked = true;
+          }
           if (!threeColorRedSpawned && pct >= 0.25) {
             const thickness = 20;
             const speed = 1;
@@ -4750,7 +4790,7 @@
           else if (pct >= 0.33 && pct < 0.5) spawnInterval = 2250; // 20–50%
           else if (pct >= 0.5 && pct < 0.75) spawnInterval = 1750;  // 50–75%
           else if (pct >= 0.75 && pct < 0.9) spawnInterval = 1250; // 75–90%
-          else if (pct >= 0.9) spawnInterval = 1000; // final 10%
+          else if (pct >= 0.9) spawnInterval = 100; // final 10%
           const availableColors = threeColorUnlocked ? ["cyan","yellow","red"] : ["cyan","yellow"];
           if (spawnInterval && now - lastThreeColorSpawn >= spawnInterval) {
             const speed = getUniqueThreeColorSpeed();
@@ -4778,7 +4818,7 @@
             }
             let rect = { x: l.x, y: l.y, width: l.width, height: l.height };
             if (rectIntersect(cubeRect, rect)) {
-              if (outlineColor !== l.color) {
+              if (!spamActive && outlineColor !== l.color) {
                 deathSound.currentTime = 0;
                 deathSound.play();
                 loadLevel(currentLevel);
