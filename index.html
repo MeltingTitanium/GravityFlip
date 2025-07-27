@@ -366,6 +366,17 @@
           <input type="checkbox" id="toggleLightMode"> Light Mode
         </label>
       </div>
+      <div style="font-size:24px; margin:20px;">
+        <label>Action Button:
+          <select id="actionButtonSelect">
+            <option value="Space">Space</option>
+            <option value="Z">Z</option>
+            <option value="X">X</option>
+            <option value="LeftClick">Left Click</option>
+            <option value="RightClick">Right Click</option>
+          </select>
+        </label>
+      </div>
       <div style="margin-top:30px;">
         <div id="settingsBackButton" class="bigButton">Back</div>
       </div>
@@ -505,7 +516,8 @@
       let settings = {
         soundEffects: true,
         music: true,
-        lightMode: false
+        lightMode: false,
+        actionButton: "Space"
       };
 
       // Override the Audio play method so that sound effects and music respect the settings
@@ -2995,12 +3007,60 @@
       }
 
       // -------------------------------------------------
-      // 10. Key Handling (No Diagonals) + Special Keys for Level Selector, Clear Storage, and "R" to die
+      // Helper functions for configurable action button
       // -------------------------------------------------
-      document.addEventListener("keydown", e => {
-        if (e.key === " " && spamAbilityUnlocked) {
+      function isActionButtonKey(e) {
+        switch (settings.actionButton) {
+          case "Space":
+            return e.key === " ";
+          case "Z":
+            return e.key === "z" || e.key === "Z";
+          case "X":
+            return e.key === "x" || e.key === "X";
+        }
+        return false;
+      }
+
+      function isActionButtonMouse(e) {
+        switch (settings.actionButton) {
+          case "LeftClick":
+            return e.button === 0;
+          case "RightClick":
+            return e.button === 2;
+        }
+        return false;
+      }
+
+      function recordActionPress() {
+        if (spamAbilityUnlocked) {
           spacePressTimes.push(Date.now());
         }
+      }
+
+      function processActionButton() {
+        if (levels[currentLevel].teleportLevel && !isTeleporting && !levels[currentLevel].noMovement) {
+          attemptTeleport();
+        } else if (levels[currentLevel].colorLevel) {
+          const threeColors = levels[currentLevel].threeColorsChallenge && threeColorUnlocked;
+          if (levels[currentLevel].extracolor || threeColors) {
+            if (outlineColor === "cyan") outlineColor = "yellow";
+            else if (outlineColor === "yellow") outlineColor = "red";
+            else outlineColor = "cyan";
+          } else {
+            outlineColor = outlineColor === "cyan" ? "yellow" : "cyan";
+          }
+        } else if (!levels[currentLevel].noMovement && currentLevel >= 7 && !isDashing && !levels[currentLevel].noDash) {
+          attemptDash();
+        }
+      }
+
+      // -------------------------------------------------
+      // 10. Key Handling (No Diagonals) + Special Keys for Level Selector, Clear Storage, and "R" to die
+      // -------------------------------------------------
+        document.addEventListener("keydown", e => {
+          if (isActionButtonKey(e)) {
+            recordActionPress();
+          }
         if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
           autoColorBuffer += e.key.toLowerCase();
           if (!autoColorCode.startsWith(autoColorBuffer)) {
@@ -3091,10 +3151,10 @@
         }
 
         // Teleport or dash logic
-        if (levels[currentLevel].teleportLevel && e.key === " " && !isTeleporting && !levels[currentLevel].noMovement) {
+        if (levels[currentLevel].teleportLevel && isActionButtonKey(e) && !isTeleporting && !levels[currentLevel].noMovement) {
           attemptTeleport();
         }
-        else if (levels[currentLevel].colorLevel && e.key === " ") {
+        else if (levels[currentLevel].colorLevel && isActionButtonKey(e)) {
           const threeColors = levels[currentLevel].threeColorsChallenge && threeColorUnlocked;
           if (levels[currentLevel].extracolor || threeColors) {
             if (outlineColor === "cyan") outlineColor = "yellow";
@@ -3104,7 +3164,7 @@
             outlineColor = outlineColor === "cyan" ? "yellow" : "cyan";
           }
         }
-        else if (!levels[currentLevel].noMovement && currentLevel >= 7 && e.key === " " && !isDashing && !levels[currentLevel].noDash) {
+        else if (!levels[currentLevel].noMovement && currentLevel >= 7 && isActionButtonKey(e) && !isDashing && !levels[currentLevel].noDash) {
           attemptDash();
         } else if (!levels[currentLevel].noMovement) {
           switch (e.key) {
@@ -5648,6 +5708,7 @@
       const toggleSoundEffects = document.getElementById("toggleSoundEffects");
       const toggleMusic = document.getElementById("toggleMusic");
       const toggleLightMode = document.getElementById("toggleLightMode");
+      const actionButtonSelect = document.getElementById("actionButtonSelect");
 
 
       settingsButton.addEventListener("click", () => {
@@ -5686,6 +5747,32 @@
       toggleLightMode.addEventListener("change", function() {
         settings.lightMode = this.checked;
         // Save to localStorage whenever changed
+        localStorage.setItem('gravityFlipperSettings', JSON.stringify(settings));
+      });
+
+      document.addEventListener("mousedown", e => {
+        if (!document.getElementById("mainMenu").classList.contains("hidden")) return;
+        if (showGimmickPopup ||
+            document.getElementById("teleportPopup").style.display === "block" ||
+            document.getElementById("colorPopup").style.display === "block" ||
+            levelSelectorActive) {
+          return;
+        }
+        if (isActionButtonMouse(e)) {
+          e.preventDefault();
+          recordActionPress();
+          processActionButton();
+        }
+      });
+
+      document.addEventListener("contextmenu", e => {
+        if (settings.actionButton === "RightClick") {
+          e.preventDefault();
+        }
+      });
+
+      actionButtonSelect.addEventListener("change", function() {
+        settings.actionButton = this.value;
         localStorage.setItem('gravityFlipperSettings', JSON.stringify(settings));
       });
 
@@ -5819,7 +5906,7 @@
       const savedSettings = JSON.parse(localStorage.getItem('gravityFlipperSettings'));
       if (savedSettings) {
         // Overwrite the default settings with what was saved
-        settings = savedSettings;
+        settings = Object.assign(settings, savedSettings);
       }
 
       const savedMode = localStorage.getItem('gravityFlipperMode');
@@ -5832,6 +5919,7 @@
       toggleSoundEffects.checked = settings.soundEffects;
       toggleMusic.checked = settings.music;
       toggleLightMode.checked = settings.lightMode;
+      actionButtonSelect.value = settings.actionButton;
       updateStarProgress();
 
       if (challengeOfColorsBeaten) {
