@@ -4811,7 +4811,7 @@
               const side = Math.floor(Math.random() * 4);
               let line = { x:0, y:0, width:0, height:0, vx:0, vy:0, color, speed };
               let vel = threeColorSpeedMap[speed];
-              if (pct >= 0.9) vel *= 2;
+              if (pct >= 0.9) vel *= .5;
               if (side === 0) { line.x=0; line.y=-thickness; line.width=canvas.width; line.height=thickness; line.vy=vel; }
               else if (side === 1) { line.x=0; line.y=canvas.height; line.width=canvas.width; line.height=thickness; line.vy=-vel; }
               else if (side === 2) { line.x=-thickness; line.y=0; line.width=thickness; line.height=canvas.height; line.vx=vel; }
