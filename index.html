@@ -5132,6 +5132,8 @@
           } else {
             ctx.fillText("Challenge Of Colors 1/3", 10, 40);
           }
+        } else if (levels[currentLevel].threeColorsChallenge) {
+          ctx.fillText("Three Colors", 10, 40);
         } else if (levels[currentLevel].challengeBulletHell) {
           ctx.fillText("Bullet Hell", 10, 40);
           let elapsed = Date.now() - bulletHellStartTime - challengePausedTime;
