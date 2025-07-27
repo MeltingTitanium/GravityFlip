@@ -773,6 +773,9 @@
       let bulletHellStartTime = 0;
       let bulletHellLastSpawn = 0;
       let bulletHellBlocks = [];
+      // Globals for Challenge of 2
+      const challengeTwoDuration = 45000; // 45 seconds
+      let twoPlayerInfoStart = 0;
       // Globals for the Three Colors challenge
       let threeColorLines = [];
       let lastThreeColorSpawn = 0;
@@ -935,8 +938,14 @@
         vy: 0
       };
 
+      // Second player cube (used in Challenge of 2)
+      const cube2 = { x: 0, y: 0, size: 80, vx: 0, vy: 0 };
+
+      
       // Variable to store the last movement direction to prevent diagonal movement
       let lastDirection = null;
+      // Movement direction for second cube
+      let lastDirection2 = null;
 
       // -------------------------------------------------
       // 3. Dash and Teleport Gimmicks
@@ -957,6 +966,8 @@
       // -------------------------------------------------
       let arrowDirX = 0;
       let arrowDirY = -1;
+      let arrowDirX2 = 0;
+      let arrowDirY2 = -1;
 
       // -------------------------------------------------
       // 5. Display Cooldown (Displayed at the Top-Left Corner)
@@ -2232,6 +2243,19 @@
         },
         {
           // -------------------------------------------------
+          // EXTRA CHALLENGE: Challenge of 2
+          // -------------------------------------------------
+          spawn: { x: 0.55, y: 0.5 },
+          spawn2: { x: 0.45, y: 0.5 },
+          challengeTwoLevel: true,
+          stage: 4,
+          challengeName: "Challenge of 2",
+          noDash: true,
+          platforms: [],
+          hazards: []
+        },
+        {
+          // -------------------------------------------------
           // EXTRA CHALLENGE: Three Colors
           // -------------------------------------------------
           spawn: { x: 0.5, y: 0.5 },
@@ -2400,7 +2424,7 @@
         chargeDuration = lvl.chargeTime || 3000;
 
         // Special handling for challenge levels or levels with unique behavior
-        if (lvl.challengeDashingLevel) {
+        if (lvl.challengeDashingLevel || lvl.challengeTwoLevel) {
           target = null;
           challengeStartTime = Date.now();
           lastChallengeLineSpawn = Date.now();
@@ -2416,6 +2440,18 @@
           challengePausedTime = 0;
           isChallengePaused = false;
           lastChallengePauseStart = 0;
+          cube.size = lvl.challengeTwoLevel ? 40 : 80;
+          cube2.size = lvl.challengeTwoLevel ? 40 : 80;
+          cube.x = lvl.spawn.x * canvas.width;
+          cube.y = lvl.spawn.y * canvas.height;
+          cube2.x = (lvl.spawn2 ? lvl.spawn2.x : 0.45) * canvas.width;
+          cube2.y = (lvl.spawn2 ? lvl.spawn2.y : lvl.spawn.y) * canvas.height;
+          lastDirection = null;
+          lastDirection2 = null;
+          arrowDirX = 0;
+          arrowDirY = -1;
+          arrowDirX2 = 0; arrowDirY2 = -1;
+          twoPlayerInfoStart = Date.now();
         } else if (lvl.challengeTeleportLevel) {
             target = null;
             challengeStartTime = Date.now();
@@ -3107,19 +3143,52 @@
         else if (!levels[currentLevel].noMovement && currentLevel >= 7 && e.key === " " && !isDashing && !levels[currentLevel].noDash) {
           attemptDash();
         } else if (!levels[currentLevel].noMovement) {
-          switch (e.key) {
-            case "ArrowUp":
-              lastDirection = "up";
-              break;
-            case "ArrowDown":
-              lastDirection = "down";
-              break;
-            case "ArrowLeft":
-              lastDirection = "left";
-              break;
-            case "ArrowRight":
-              lastDirection = "right";
-              break;
+          if (levels[currentLevel].challengeTwoLevel) {
+            switch (e.key) {
+              case "ArrowUp":
+                lastDirection = "up";
+                break;
+              case "ArrowDown":
+                lastDirection = "down";
+                break;
+              case "ArrowLeft":
+                lastDirection = "left";
+                break;
+              case "ArrowRight":
+                lastDirection = "right";
+                break;
+              case "w":
+              case "W":
+                lastDirection2 = "up";
+                break;
+              case "s":
+              case "S":
+                lastDirection2 = "down";
+                break;
+              case "a":
+              case "A":
+                lastDirection2 = "left";
+                break;
+              case "d":
+              case "D":
+                lastDirection2 = "right";
+                break;
+            }
+          } else {
+            switch (e.key) {
+              case "ArrowUp":
+                lastDirection = "up";
+                break;
+              case "ArrowDown":
+                lastDirection = "down";
+                break;
+              case "ArrowLeft":
+                lastDirection = "left";
+                break;
+              case "ArrowRight":
+                lastDirection = "right";
+                break;
+            }
           }
         }
       });
@@ -3373,6 +3442,59 @@
       // -------------------------------------------------
       // 14. The Core UPDATE Logic
       // -------------------------------------------------
+
+      function moveCube(obj, lastDir, arrowDir, obstacles, accelScale = 1) {
+        if (levels[currentLevel].noMovement) {
+          obj.vx = 0;
+          obj.vy = 0;
+        } else if (lastDir === "up") {
+          obj.vy -= currentAcceleration * accelScale;
+          obj.vx = 0;
+          arrowDir.x = 0; arrowDir.y = -1;
+        } else if (lastDir === "down") {
+          obj.vy += currentAcceleration * accelScale;
+          obj.vx = 0;
+          arrowDir.x = 0; arrowDir.y = 1;
+        } else if (lastDir === "left") {
+          obj.vx -= currentAcceleration * accelScale;
+          obj.vy = 0;
+          arrowDir.x = -1; arrowDir.y = 0;
+        } else if (lastDir === "right") {
+          obj.vx += currentAcceleration * accelScale;
+          obj.vy = 0;
+          arrowDir.x = 1; arrowDir.y = 0;
+        }
+        obj.vx *= 0.88;
+        obj.vy *= 0.88;
+
+        let newX = obj.x + obj.vx;
+        let candX = { x: newX - obj.size / 2, y: obj.y - obj.size / 2, width: obj.size, height: obj.size };
+        if (!obstacles.some(p => {
+            let pRect = { x: p.x, y: p.y, width: p.width, height: p.height };
+            return rectIntersect(candX, pRect);
+        })) {
+          obj.x = newX;
+        } else {
+          obj.vx = 0;
+        }
+
+        let newY = obj.y + obj.vy;
+        let candY = { x: obj.x - obj.size / 2, y: newY - obj.size / 2, width: obj.size, height: obj.size };
+        if (!obstacles.some(p => {
+            let pRect = { x: p.x, y: p.y, width: p.width, height: p.height };
+            return rectIntersect(candY, pRect);
+        })) {
+          obj.y = newY;
+        } else {
+          obj.vy = 0;
+        }
+
+        if (obj.x - obj.size / 2 < 0) { obj.x = obj.size / 2; obj.vx = 0; }
+        else if (obj.x + obj.size / 2 > canvas.width) { obj.x = canvas.width - obj.size / 2; obj.vx = 0; }
+        if (obj.y - obj.size / 2 < 0) { obj.y = obj.size / 2; obj.vy = 0; }
+        else if (obj.y + obj.size / 2 > canvas.height) { obj.y = canvas.height - obj.size / 2; obj.vy = 0; }
+      }
+
       function update() {
         if (gamePaused) return;
         const now = Date.now();
@@ -3460,67 +3582,13 @@
         } 
         // Normal movement
         else {
-          if (levels[currentLevel].noMovement) {
-            cube.vx = 0;
-            cube.vy = 0;
-          } else if (lastDirection === "up") {
-            cube.vy -= currentAcceleration;
-            cube.vx = 0;
-            arrowDirX = 0;
-            arrowDirY = -1;
-          } else if (lastDirection === "down") {
-            cube.vy += currentAcceleration;
-            cube.vx = 0;
-            arrowDirX = 0;
-            arrowDirY = 1;
-          } else if (lastDirection === "left") {
-            cube.vx -= currentAcceleration;
-            cube.vy = 0;
-            arrowDirX = -1;
-            arrowDirY = 0;
-          } else if (lastDirection === "right") {
-            cube.vx += currentAcceleration;
-            cube.vy = 0;
-            arrowDirX = 1;
-            arrowDirY = 0;
-          }
-          cube.vx *= 0.88;
-          cube.vy *= 0.88;
-
-          // Attempt X movement
-          let newX = cube.x + cube.vx;
-          let candidateX = {
-            x: newX - cube.size / 2,
-            y: cube.y - cube.size / 2,
-            width: cube.size,
-            height: cube.size
-          };
-          if (!obstacles.some(p => {
-            // Treat lifts as obstacles even when stationary
-            let pRect = { x: p.x, y: p.y, width: p.width, height: p.height };
-            return rectIntersect(candidateX, pRect);
-          })) {
-            cube.x = newX;
-          } else {
-            cube.vx = 0;
-          }
-
-          // Attempt Y movement
-          let newY = cube.y + cube.vy;
-          let candidateY = {
-            x: cube.x - cube.size / 2,
-            y: newY - cube.size / 2,
-            width: cube.size,
-            height: cube.size
-          };
-          if (!obstacles.some(p => {
-            // Treat lifts as obstacles even when stationary
-            let pRect = { x: p.x, y: p.y, width: p.width, height: p.height };
-            return rectIntersect(candidateY, pRect);
-          })) {
-            cube.y = newY;
-          } else {
-            cube.vy = 0;
+          let dir1 = {x: arrowDirX, y: arrowDirY};
+          moveCube(cube, lastDirection, dir1, obstacles, 1);
+          arrowDirX = dir1.x; arrowDirY = dir1.y;
+          if (levels[currentLevel].challengeTwoLevel) {
+            let dir2 = {x: arrowDirX2, y: arrowDirY2};
+            moveCube(cube2, lastDirection2, dir2, obstacles, 0.5);
+            arrowDirX2 = dir2.x; arrowDirY2 = dir2.y;
           }
         }
 
@@ -4216,8 +4284,8 @@
         updateBrownParticles();
         updateGreyParticles();
 
-        // Handle any challenge-dashing-level logic (Level 18)
-        if (levels[currentLevel].challengeDashingLevel) {
+        // Handle any challenge-dashing-level logic (Level 18) and Challenge of 2
+        if (levels[currentLevel].challengeDashingLevel || levels[currentLevel].challengeTwoLevel) {
 
           // === NEW CODE to freeze the challenge timer if the game is paused or the tab is hidden ===
           if (!document.hidden && !gamePaused) {
@@ -4243,7 +4311,8 @@
           // Instead of just "now - challengeStartTime", we subtract challengePausedTime
           let rawElapsed = now - challengeStartTime;
           let elapsed = rawElapsed - challengePausedTime;
-          let remaining = challengeDuration - elapsed;
+          let duration = levels[currentLevel].challengeTwoLevel ? challengeTwoDuration : challengeDuration;
+          let remaining = duration - elapsed;
 
           let spawnInterval = 3500;
           if (remaining <= 22500 && remaining > 18500) {
@@ -4329,29 +4398,11 @@
               continue;
             }
             let blockRect = { x: block.x, y: block.y, width: block.width, height: block.height };
-            if (rectIntersect(cubeRect, blockRect)) {
-              deathSound.currentTime = 0;
-              deathSound.play();
-              loadLevel(currentLevel);
-              return;
-            }
-          }
-
-          // When the timer expires in phase 3, spawn the green block so the
-          // player can finish the challenge.
-          if (challengePhase === 3 && remaining <= 0 && !challengeGreenBlock) {
-            challengeGreenBlock = {
-              x: canvas.width / 2,
-              y: canvas.height / 2,
-              size: 200
-            };
-          }
-
-          // Check collisions between lines and player
-          for (let line of challengeLines) {
-            let lineRect = { x: line.x, y: line.y, width: line.width, height: line.height };
-            if (rectIntersect(cubeRect, lineRect)) {
-              if (!(isDashing || now < dashGraceUntil)) {
+            let players = [cube];
+            if (levels[currentLevel].challengeTwoLevel) players.push(cube2);
+            for (let p of players) {
+              let cRect = { x: p.x - p.size/2, y: p.y - p.size/2, width: p.size, height: p.size };
+              if (rectIntersect(cRect, blockRect)) {
                 deathSound.currentTime = 0;
                 deathSound.play();
                 loadLevel(currentLevel);
@@ -4360,15 +4411,50 @@
             }
           }
 
+          // When the timer expires in phase 3, spawn the green block so the
+          // player can finish the challenge.
+          if (challengePhase === 3 && remaining <= 0 && !challengeGreenBlock) {
+            let gSize = 200;
+            if (levels[currentLevel].challengeTwoLevel) {
+              gSize = Math.min(cube.size * 30, canvas.width - 100, canvas.height - 100);
+            }
+            challengeGreenBlock = {
+              x: canvas.width / 2,
+              y: canvas.height / 2,
+              size: gSize
+            };
+          }
+
+          // Check collisions between lines and player
+          for (let line of challengeLines) {
+            let lineRect = { x: line.x, y: line.y, width: line.width, height: line.height };
+            let players = [cube];
+            if (levels[currentLevel].challengeTwoLevel) players.push(cube2);
+            for (let p of players) {
+              let cRect = { x: p.x - p.size/2, y: p.y - p.size/2, width: p.size, height: p.size };
+              if (rectIntersect(cRect, lineRect)) {
+                if (!(isDashing || now < dashGraceUntil)) {
+                  deathSound.currentTime = 0;
+                  deathSound.play();
+                  loadLevel(currentLevel);
+                  return;
+                }
+              }
+            }
+          }
+
           // Check collisions with the giant green block
           if (challengeGreenBlock) {
-            let greenRect = { 
-              x: challengeGreenBlock.x - challengeGreenBlock.size / 2, 
-              y: challengeGreenBlock.y - challengeGreenBlock.size / 2, 
-              width: challengeGreenBlock.size, 
-              height: challengeGreenBlock.size 
+            let greenRect = {
+              x: challengeGreenBlock.x - challengeGreenBlock.size / 2,
+              y: challengeGreenBlock.y - challengeGreenBlock.size / 2,
+              width: challengeGreenBlock.size,
+              height: challengeGreenBlock.size
             };
-            if (rectIntersect(cubeRect, greenRect)) {
+            let players = [cube];
+            if (levels[currentLevel].challengeTwoLevel) players.push(cube2);
+            let touched = players.some(p => rectIntersect({x:p.x-p.size/2,y:p.y-p.size/2,width:p.size,height:p.size}, greenRect));
+            if (touched) {
               // NEW CODE ADDED: star if Hard Mode
               if (currentMode === "hard") {
                 let hardModeStars = JSON.parse(localStorage.getItem('hardModeStars')) || [];
@@ -5085,8 +5171,8 @@
         }
       }
       function drawChallengeLines() {
-        if (levels[currentLevel].challengeDashingLevel) {
-          ctx.fillStyle = "orange";
+        if (levels[currentLevel].challengeDashingLevel || levels[currentLevel].challengeTwoLevel) {
+          ctx.fillStyle = levels[currentLevel].challengeTwoLevel ? "red" : "orange";
           for (let line of challengeLines) {
             ctx.fillRect(line.x, line.y, line.width, line.height);
           }
@@ -5169,7 +5255,17 @@
         ctx.fillStyle = "#fff";
         ctx.font = "30px sans-serif";
         ctx.textAlign = "left";
-        if (levels[currentLevel].challengeDashingLevel) {
+        if (levels[currentLevel].challengeTwoLevel) {
+          ctx.fillText("Challenge of 2", 10, 40);
+          let elapsed = Date.now() - challengeStartTime - challengePausedTime;
+          let remainingSec = Math.max(0, Math.ceil((challengeTwoDuration - elapsed) / 1000));
+          ctx.textAlign = "center";
+          ctx.fillText(remainingSec + "s", canvas.width / 2, 40);
+          if (Date.now() - twoPlayerInfoStart < 4000) {
+            ctx.fillText("Control The Green Arrow with WASD, control the red arrow with Arrow Keys", canvas.width/2, 80);
+          }
+          ctx.textAlign = "left";
+        } else if (levels[currentLevel].challengeDashingLevel) {
           ctx.fillText("Challenge Of Dashing", 10, 40);
           let elapsed = Date.now() - challengeStartTime - challengePausedTime;
           let remainingSec = Math.max(0, Math.ceil((challengeDuration - elapsed) / 1000));
@@ -5252,48 +5348,35 @@
         }
       }
       function drawCube() {
-        ctx.fillStyle = (isDashing || isTeleporting) ? "blue" : "#fff";
-        ctx.fillRect(cube.x - cube.size / 2, cube.y - cube.size / 2, cube.size, cube.size);
-        if (levels[currentLevel].colorLevel) {
-          ctx.lineWidth = 6;
-          ctx.strokeStyle = outlineColor || "cyan";
-          ctx.strokeRect(cube.x - cube.size / 2 - 3, cube.y - cube.size / 2 - 3, cube.size + 6, cube.size + 6);
+        function drawSingle(obj, dirX, dirY, aColor) {
+          ctx.fillStyle = "#fff";
+          ctx.fillRect(obj.x - obj.size/2, obj.y - obj.size/2, obj.size, obj.size);
+          ctx.fillStyle = aColor;
+          let mag = Math.hypot(dirX, dirY);
+          let uX = dirX, uY = dirY;
+          if (mag === 0) { uX = 0; uY = -1; }
+          const angle = Math.atan2(uY, uX);
+          const a = obj.size * 0.3;
+          const b = obj.size * 0.15;
+          const cVal = obj.size * 0.3;
+          function rotPt(x,y,ang){return {x:x*Math.cos(ang)-y*Math.sin(ang),y:x*Math.sin(ang)+y*Math.cos(ang)}}
+          let tipRot=rotPt(a,0,angle); let blRot=rotPt(-b,cVal,angle); let brRot=rotPt(-b,-cVal,angle);
+          ctx.beginPath();
+          ctx.moveTo(obj.x+tipRot.x,obj.y+tipRot.y);
+          ctx.lineTo(obj.x+blRot.x,obj.y+blRot.y);
+          ctx.lineTo(obj.x+brRot.x,obj.y+brRot.y);
+          ctx.closePath();
+          ctx.fill();
         }
-        let arrowColor = "#000";
-        if (currentMode === "easy") {
-          arrowColor = "green";
-        } else if (currentMode === "hard") {
-          arrowColor = "red";
+
+        if (levels[currentLevel].challengeTwoLevel) {
+          drawSingle(cube2, arrowDirX2, arrowDirY2, "green");
+          drawSingle(cube, arrowDirX, arrowDirY, "red");
+        } else {
+          let color = "#000";
+          if (currentMode === "easy") color = "green"; else if (currentMode === "hard") color = "red";
+          drawSingle(cube, arrowDirX, arrowDirY, color);
         }
-        ctx.fillStyle = arrowColor;
-        let mag = Math.hypot(arrowDirX, arrowDirY);
-        let uX = arrowDirX, uY = arrowDirY;
-        if (mag === 0) { uX = 0; uY = -1; }
-        const angle = Math.atan2(uY, uX);
-        const a = cube.size * 0.3;
-        const b = cube.size * 0.15;
-        const cVal = cube.size * 0.3;
-        function rotPt(x, y, ang) {
-          return { x: x * Math.cos(ang) - y * Math.sin(ang), y: x * Math.sin(ang) + y * Math.cos(ang) };
-        }
-        let tipLocal = { x: a, y: 0 };
-        let baseLeft = { x: -b, y: cVal };
-        let baseRight = { x: -b, y: -cVal };
-        let tipRot = rotPt(tipLocal.x, tipLocal.y, angle);
-        let blRot = rotPt(baseLeft.x, baseLeft.y, angle);
-        let brRot = rotPt(baseRight.x, baseRight.y, angle);
-        const tipX = cube.x + tipRot.x;
-        const tipY = cube.y + tipRot.y;
-        const blX  = cube.x + blRot.x;
-        const blY  = cube.y + blRot.y;
-        const brX  = cube.x + brRot.x;
-        const brY  = cube.y + brRot.y;
-        ctx.beginPath();
-        ctx.moveTo(tipX, tipY);
-        ctx.lineTo(blX, blY);
-        ctx.lineTo(brX, brY);
-        ctx.closePath();
-        ctx.fill();
       }
       function spawnLevel13Pillars() {
         level13PillarsSpawned = true;
