@@ -780,6 +780,13 @@
       let threeColorUnlocked = false;
       let threeColorCheckpoint = false;
       const threeColorSpeedMap = {1: 1.7, 2: 1.8, 3: 1.9, 4: 2};
+      // Track axis and speed of last spawned line for the Three Colors challenge
+      // Axis is "vertical" for lines moving along the Y axis (spawned from the
+      // top or bottom) and "horizontal" for lines moving along the X axis
+      // (spawned from the left or right). Used to enforce that a line spawning
+      // on the opposite axis must be slower than the previous one.
+      let lastThreeColorAxis = null;
+      let lastThreeColorSpeed = null;
 
       let spamAbilityUnlocked = false;
       let spamActive = false;
@@ -4782,6 +4789,8 @@
               color: "red",
               speed
             });
+            lastThreeColorAxis = "horizontal";
+            lastThreeColorSpeed = speed;
             threeColorRedSpawned = true;
             threeColorUnlocked = true;
             const msg = document.getElementById("extraColorMessage");
@@ -4809,6 +4818,10 @@
               const color = availableColors[Math.floor(Math.random() * availableColors.length)];
               const thickness = 20;
               const side = Math.floor(Math.random() * 4);
+              const axis = (side === 0 || side === 1) ? "vertical" : "horizontal";
+              if (lastThreeColorAxis && axis !== lastThreeColorAxis && lastThreeColorSpeed !== null && speed >= lastThreeColorSpeed) {
+                // Skip this spawn since it isn't slower than the previous line on the opposite axis
+              } else {
               let line = { x:0, y:0, width:0, height:0, vx:0, vy:0, color, speed };
               let vel = threeColorSpeedMap[speed];
               if (pct >= 0.9) vel *= .5;
@@ -4817,7 +4830,10 @@
               else if (side === 2) { line.x=-thickness; line.y=0; line.width=thickness; line.height=canvas.height; line.vx=vel; }
               else { line.x=canvas.width; line.y=0; line.width=thickness; line.height=canvas.height; line.vx=-vel; }
               threeColorLines.push(line);
+              lastThreeColorAxis = axis;
+              lastThreeColorSpeed = speed;
               lastThreeColorSpawn = now;
+              }
             }
           }
           for (let i = threeColorLines.length - 1; i >= 0; i--) {
