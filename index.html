@@ -793,6 +793,10 @@
       let challengeTwoWhiteBlock = null;
       let challengeTwoGreenBlock = null;
       let challengeTwoInstructionUntil = 0;
+      let challengeTwoKeys = [
+        { up: false, down: false, left: false, right: false },
+        { up: false, down: false, left: false, right: false }
+      ];
 
       let spamAbilityUnlocked = false;
       let spamActive = false;
@@ -2407,6 +2411,10 @@
         const lvl = levels[index];
         if (!lvl.challengeTwo) {
           challengeTwoCheckpoint = 0;
+          challengeTwoKeys = [
+            { up: false, down: false, left: false, right: false },
+            { up: false, down: false, left: false, right: false }
+          ];
         } else if (prevLevel !== index) {
           challengeTwoCheckpoint = 0;
         }
@@ -2596,6 +2604,10 @@
           challengeTwoRedBlocks = [];
           challengeTwoWhiteBlock = null;
           challengeTwoGreenBlock = null;
+          challengeTwoKeys = [
+            { up: false, down: false, left: false, right: false },
+            { up: false, down: false, left: false, right: false }
+          ];
           challengeTwoPlayers = [
             { x: canvas.width / 2 - 60, y: canvas.height / 2, size: cube.size / 1.3, vx: 0, vy: 0, dir: null, arrowX: 0, arrowY: -1, color: "blue" },
             { x: canvas.width / 2 + 60, y: canvas.height / 2, size: cube.size / 1.3, vx: 0, vy: 0, dir: null, arrowX: 0, arrowY: -1, color: "yellow" }
@@ -3235,32 +3247,56 @@
           if (levels[currentLevel].challengeTwo) {
             switch (e.key) {
               case "ArrowUp":
-                if (challengeTwoPlayers[1]) challengeTwoPlayers[1].dir = "up";
+                if (challengeTwoPlayers[1]) {
+                  challengeTwoKeys[1].up = true;
+                  challengeTwoPlayers[1].dir = "up";
+                }
                 break;
               case "ArrowDown":
-                if (challengeTwoPlayers[1]) challengeTwoPlayers[1].dir = "down";
+                if (challengeTwoPlayers[1]) {
+                  challengeTwoKeys[1].down = true;
+                  challengeTwoPlayers[1].dir = "down";
+                }
                 break;
               case "ArrowLeft":
-                if (challengeTwoPlayers[1]) challengeTwoPlayers[1].dir = "left";
+                if (challengeTwoPlayers[1]) {
+                  challengeTwoKeys[1].left = true;
+                  challengeTwoPlayers[1].dir = "left";
+                }
                 break;
               case "ArrowRight":
-                if (challengeTwoPlayers[1]) challengeTwoPlayers[1].dir = "right";
+                if (challengeTwoPlayers[1]) {
+                  challengeTwoKeys[1].right = true;
+                  challengeTwoPlayers[1].dir = "right";
+                }
                 break;
               case "w":
               case "W":
-                if (challengeTwoPlayers[0]) challengeTwoPlayers[0].dir = "up";
+                if (challengeTwoPlayers[0]) {
+                  challengeTwoKeys[0].up = true;
+                  challengeTwoPlayers[0].dir = "up";
+                }
                 break;
               case "s":
               case "S":
-                if (challengeTwoPlayers[0]) challengeTwoPlayers[0].dir = "down";
+                if (challengeTwoPlayers[0]) {
+                  challengeTwoKeys[0].down = true;
+                  challengeTwoPlayers[0].dir = "down";
+                }
                 break;
               case "a":
               case "A":
-                if (challengeTwoPlayers[0]) challengeTwoPlayers[0].dir = "left";
+                if (challengeTwoPlayers[0]) {
+                  challengeTwoKeys[0].left = true;
+                  challengeTwoPlayers[0].dir = "left";
+                }
                 break;
               case "d":
               case "D":
-                if (challengeTwoPlayers[0]) challengeTwoPlayers[0].dir = "right";
+                if (challengeTwoPlayers[0]) {
+                  challengeTwoKeys[0].right = true;
+                  challengeTwoPlayers[0].dir = "right";
+                }
                 break;
             }
           } else {
@@ -3286,20 +3322,72 @@
         if (levels[currentLevel].challengeTwo) {
           switch (e.key) {
             case "ArrowUp":
+              if (challengeTwoPlayers[1]) {
+                challengeTwoKeys[1].up = false;
+                if (challengeTwoPlayers[1].dir === "up") {
+                  challengeTwoPlayers[1].dir = dirFromKeys(challengeTwoKeys[1]);
+                }
+              }
+              break;
             case "ArrowDown":
+              if (challengeTwoPlayers[1]) {
+                challengeTwoKeys[1].down = false;
+                if (challengeTwoPlayers[1].dir === "down") {
+                  challengeTwoPlayers[1].dir = dirFromKeys(challengeTwoKeys[1]);
+                }
+              }
+              break;
             case "ArrowLeft":
+              if (challengeTwoPlayers[1]) {
+                challengeTwoKeys[1].left = false;
+                if (challengeTwoPlayers[1].dir === "left") {
+                  challengeTwoPlayers[1].dir = dirFromKeys(challengeTwoKeys[1]);
+                }
+              }
+              break;
             case "ArrowRight":
-              if (challengeTwoPlayers[1]) challengeTwoPlayers[1].dir = null;
+              if (challengeTwoPlayers[1]) {
+                challengeTwoKeys[1].right = false;
+                if (challengeTwoPlayers[1].dir === "right") {
+                  challengeTwoPlayers[1].dir = dirFromKeys(challengeTwoKeys[1]);
+                }
+              }
               break;
             case "w":
             case "W":
+              if (challengeTwoPlayers[0]) {
+                challengeTwoKeys[0].up = false;
+                if (challengeTwoPlayers[0].dir === "up") {
+                  challengeTwoPlayers[0].dir = dirFromKeys(challengeTwoKeys[0]);
+                }
+              }
+              break;
             case "s":
             case "S":
+              if (challengeTwoPlayers[0]) {
+                challengeTwoKeys[0].down = false;
+                if (challengeTwoPlayers[0].dir === "down") {
+                  challengeTwoPlayers[0].dir = dirFromKeys(challengeTwoKeys[0]);
+                }
+              }
+              break;
             case "a":
             case "A":
+              if (challengeTwoPlayers[0]) {
+                challengeTwoKeys[0].left = false;
+                if (challengeTwoPlayers[0].dir === "left") {
+                  challengeTwoPlayers[0].dir = dirFromKeys(challengeTwoKeys[0]);
+                }
+              }
+              break;
             case "d":
             case "D":
-              if (challengeTwoPlayers[0]) challengeTwoPlayers[0].dir = null;
+              if (challengeTwoPlayers[0]) {
+                challengeTwoKeys[0].right = false;
+                if (challengeTwoPlayers[0].dir === "right") {
+                  challengeTwoPlayers[0].dir = dirFromKeys(challengeTwoKeys[0]);
+                }
+              }
               break;
           }
         }
@@ -3550,6 +3638,14 @@
       }
       return color;
     }
+
+      function dirFromKeys(k) {
+        if (k.up) return "up";
+        if (k.down) return "down";
+        if (k.left) return "left";
+        if (k.right) return "right";
+        return null;
+      }
 
       function updateChallengeTwo(now) {
         const accel = currentAcceleration * 0.5;
@@ -5964,6 +6060,10 @@
         spamAbilityUnlocked = false;
         spamActive = false;
         spacePressTimes = [];
+        challengeTwoKeys = [
+          { up: false, down: false, left: false, right: false },
+          { up: false, down: false, left: false, right: false }
+        ];
         challengeTwoCheckpoint = 0;
         if (levels[currentLevel].stage === 4) {
           winSound.currentTime = 0;
