@@ -4971,6 +4971,7 @@
               return;
             }
           }
+        }
       function updateChallengeTwo(now) {
         const accel = currentAcceleration * 0.5;
         const blue = challengeTwoBlue;
@@ -5055,6 +5056,7 @@
           let rect={x:challengeTwoGreenBlock.x-challengeTwoGreenBlock.size/2,y:challengeTwoGreenBlock.y-challengeTwoGreenBlock.size/2,width:challengeTwoGreenBlock.size,height:challengeTwoGreenBlock.size};
           if(rectIntersect(rect,bRect)||rectIntersect(rect,yRect)){levelComplete();}
         }
+      }
       // -------------------------------------------------
       // 15. Drawing Functions
       // -------------------------------------------------
@@ -5269,6 +5271,7 @@
             ctx.fillRect(line.x, line.y, line.width, line.height);
           }
         }
+      }
       function drawChallengeTwoLines() {
         ctx.fillStyle = "yellow";
         for (let line of challengeTwoLines) {
@@ -5301,8 +5304,6 @@
           ctx.fillRect(p.x, p.y, 5,5);
         }
         ctx.globalAlpha = 1.0;
-      }
-
       }
       function drawChallengeGreyBlocks() {
         if (levels[currentLevel].challengeTeleportLevel) {
