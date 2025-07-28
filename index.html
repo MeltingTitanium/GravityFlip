@@ -773,6 +773,21 @@
       let bulletHellStartTime = 0;
       let bulletHellLastSpawn = 0;
       let bulletHellBlocks = [];
+      // Globals for Challenge of Two
+      let challengeTwoPhase = 1;
+      let challengeTwoStart = 0;
+      let challengeTwoLevelStart = 0;
+      let challengeTwoLines = [];
+      let challengeTwoReds = [];
+      let challengeTwoWhite = null;
+      let challengeTwoLastLine = 0;
+      let challengeTwoLastRed = 0;
+      const cubeBlue = { x: 0, y: 0, size: 40, vx: 0, vy: 0 };
+      const cubeYellow = { x: 0, y: 0, size: 40, vx: 0, vy: 0 };
+      let dirBlueX = 0, dirBlueY = -1;
+      let dirYellowX = 0, dirYellowY = -1;
+      let lastDirBlue = null;
+      let lastDirYellow = null;
       // Globals for the Three Colors challenge
       let threeColorLines = [];
       let lastThreeColorSpawn = 0;
@@ -1000,6 +1015,8 @@
       // -------------------------------------------------
       let brownParticles = []; // Array to hold particle objects
       let greyParticles = []; // Array for disappearing pillar particles
+      let blueParticles = [];  // Particles for blue lines
+      let yellowParticles = []; // Particles for yellow lines
 
       function spawnBrownParticles(obstacle) {
         const centerX = obstacle.x + obstacle.width / 2;
@@ -1032,6 +1049,21 @@
         }
       }
 
+      function spawnColorParticles(x, y, color) {
+        const arr = color === "blue" ? blueParticles : yellowParticles;
+        for (let i = 0; i < 20; i++) {
+          arr.push({
+            x: x,
+            y: y,
+            vx: (Math.random() - 0.5) * 4,
+            vy: -Math.random() * 3,
+            alpha: 1.0,
+            size: 5,
+            color: color
+          });
+        }
+      }
+
       function updateBrownParticles() {
         for (let i = brownParticles.length - 1; i >= 0; i--) {
           const p = brownParticles[i];
@@ -1058,6 +1090,20 @@
         }
       }
 
+      function updateColorParticles() {
+        const groups = [blueParticles, yellowParticles];
+        for (let arr of groups) {
+          for (let i = arr.length - 1; i >= 0; i--) {
+            const p = arr[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.2;
+            p.alpha -= 0.02;
+            if (p.alpha <= 0) arr.splice(i, 1);
+          }
+        }
+      }
+
       function drawBrownParticles() {
         ctx.fillStyle = "brown";
         brownParticles.forEach(p => {
@@ -1074,6 +1120,17 @@
           ctx.fillRect(p.x, p.y, p.size, p.size);
         });
         ctx.globalAlpha = 1.0;
+      }
+
+      function drawColorParticles() {
+        for (let arr of [blueParticles, yellowParticles]) {
+          ctx.fillStyle = arr === blueParticles ? "blue" : "yellow";
+          for (let p of arr) {
+            ctx.globalAlpha = p.alpha;
+            ctx.fillRect(p.x, p.y, p.size, p.size);
+          }
+          ctx.globalAlpha = 1.0;
+        }
       }
 
       // -------------------------------------------------
@@ -2246,6 +2303,19 @@
           challengeName: "Three Colors",
           platforms: [],
           hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // EXTRA CHALLENGE: Challenge Of Two
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.5 },
+          challengeTwoLevel: true,
+          stage: 4,
+          challengeName: "Challenge Of Two",
+          noDash: true,
+          noMovement: false,
+          platforms: [],
+          hazards: []
         }
       ];
 
@@ -2390,6 +2460,8 @@
         // Clear particles and falling objects from previous level
         brownParticles = [];
         greyParticles = [];
+        blueParticles = [];
+        yellowParticles = [];
         fallingOranges = [];
         lastFallingOrangeSpawn = Date.now();
         blues = [];
@@ -2470,6 +2542,23 @@
           if (threeColorCheckpoint) {
             chargeProgress = chargeDuration * 0.33;
           }
+        } else if (lvl.challengeTwoLevel) {
+          challengeTwoPhase = 1;
+          challengeTwoLines = [];
+          challengeTwoReds = [];
+          challengeTwoWhite = null;
+          challengeTwoStart = Date.now();
+          challengeTwoLevelStart = challengeTwoStart;
+          challengeTwoLastLine = challengeTwoStart;
+          challengeTwoLastRed = challengeTwoStart;
+          cubeBlue.x = canvas.width/2 - 60;
+          cubeBlue.y = canvas.height/2;
+          cubeBlue.vx = cubeBlue.vy = 0;
+          cubeYellow.x = canvas.width/2 + 60;
+          cubeYellow.y = canvas.height/2;
+          cubeYellow.vx = cubeYellow.vy = 0;
+          dirBlueX = 0; dirBlueY = -1; dirYellowX = 0; dirYellowY = -1;
+          lastDirBlue = null; lastDirYellow = null;
         } else if (lvl.challengeBulletHell) {
           target = null;
           bulletHellStartTime = Date.now();
@@ -3107,19 +3196,32 @@
         else if (!levels[currentLevel].noMovement && currentLevel >= 7 && e.key === " " && !isDashing && !levels[currentLevel].noDash) {
           attemptDash();
         } else if (!levels[currentLevel].noMovement) {
-          switch (e.key) {
-            case "ArrowUp":
-              lastDirection = "up";
-              break;
-            case "ArrowDown":
-              lastDirection = "down";
-              break;
-            case "ArrowLeft":
-              lastDirection = "left";
-              break;
-            case "ArrowRight":
-              lastDirection = "right";
-              break;
+          if (levels[currentLevel].challengeTwoLevel) {
+            switch (e.key) {
+              case "ArrowUp": lastDirYellow = "up"; dirYellowX=0; dirYellowY=-1; break;
+              case "ArrowDown": lastDirYellow = "down"; dirYellowX=0; dirYellowY=1; break;
+              case "ArrowLeft": lastDirYellow = "left"; dirYellowX=-1; dirYellowY=0; break;
+              case "ArrowRight": lastDirYellow = "right"; dirYellowX=1; dirYellowY=0; break;
+              case "w": case "W": lastDirBlue="up"; dirBlueX=0; dirBlueY=-1; break;
+              case "s": case "S": lastDirBlue="down"; dirBlueX=0; dirBlueY=1; break;
+              case "a": case "A": lastDirBlue="left"; dirBlueX=-1; dirBlueY=0; break;
+              case "d": case "D": lastDirBlue="right"; dirBlueX=1; dirBlueY=0; break;
+            }
+          } else {
+            switch (e.key) {
+              case "ArrowUp":
+                lastDirection = "up";
+                break;
+              case "ArrowDown":
+                lastDirection = "down";
+                break;
+              case "ArrowLeft":
+                lastDirection = "left";
+                break;
+              case "ArrowRight":
+                lastDirection = "right";
+                break;
+            }
           }
         }
       });
@@ -4215,6 +4317,7 @@
 
         updateBrownParticles();
         updateGreyParticles();
+        updateColorParticles();
 
         // Handle any challenge-dashing-level logic (Level 18)
         if (levels[currentLevel].challengeDashingLevel) {
@@ -4916,6 +5019,101 @@
             }
           }
         }
+        // Handle Challenge of Two logic
+        if (levels[currentLevel].challengeTwoLevel) {
+          let elapsed = Date.now() - challengeTwoStart;
+          const durations = [25000, 30000, 40000];
+          const lineIntervals = [3000, 2000, 1500];
+          const redIntervals = [Infinity, 1000, 500];
+
+          // Movement update
+          function updateCubeMovement(cubeObj, dir) {
+            if (dir === "up") cubeObj.vy -= currentAcceleration * 0.5;
+            else if (dir === "down") cubeObj.vy += currentAcceleration * 0.5;
+            else if (dir === "left") cubeObj.vx -= currentAcceleration * 0.5;
+            else if (dir === "right") cubeObj.vx += currentAcceleration * 0.5;
+            cubeObj.vx *= 0.88; cubeObj.vy *= 0.88;
+            cubeObj.x += cubeObj.vx; cubeObj.y += cubeObj.vy;
+            if (cubeObj.x - cubeObj.size/2 < 0) { cubeObj.x = cubeObj.size/2; cubeObj.vx = 0; }
+            if (cubeObj.x + cubeObj.size/2 > canvas.width) { cubeObj.x = canvas.width - cubeObj.size/2; cubeObj.vx = 0; }
+            if (cubeObj.y - cubeObj.size/2 < 0) { cubeObj.y = cubeObj.size/2; cubeObj.vy = 0; }
+            if (cubeObj.y + cubeObj.size/2 > canvas.height) { cubeObj.y = canvas.height - cubeObj.size/2; cubeObj.vy = 0; }
+          }
+
+          updateCubeMovement(cubeBlue, lastDirBlue);
+          updateCubeMovement(cubeYellow, lastDirYellow);
+
+          // Spawn lines
+          if (Date.now() - challengeTwoLastLine >= lineIntervals[challengeTwoPhase-1]) {
+            const side = Math.floor(Math.random()*4);
+            const color = Math.random()<0.5?"blue":"yellow";
+            const t=20;
+            let obj={x:0,y:0,width:0,height:0,vx:0,vy:0,color};
+            if(side===0){obj.x=0;obj.y=-t;obj.width=canvas.width;obj.height=t;obj.vy=2;}
+            else if(side===1){obj.x=0;obj.y=canvas.height;obj.width=canvas.width;obj.height=t;obj.vy=-2;}
+            else if(side===2){obj.x=-t;obj.y=0;obj.width=t;obj.height=canvas.height;obj.vx=2;}
+            else{obj.x=canvas.width;obj.y=0;obj.width=t;obj.height=canvas.height;obj.vx=-2;}
+            challengeTwoLines.push(obj);
+            challengeTwoLastLine = Date.now();
+          }
+
+          if (challengeTwoPhase >= 2 && Date.now() - challengeTwoLastRed >= redIntervals[challengeTwoPhase-1]) {
+            const count = challengeTwoPhase === 3 ? 2 : 1;
+            for(let i=0;i<count;i++){
+              let side=Math.floor(Math.random()*4);
+              let b={width:cubeBlue.size,height:cubeBlue.size,vx:0,vy:0,x:0,y:0};
+              const speed=2;
+              if(side===0){b.x=Math.random()*(canvas.width-cubeBlue.size);b.y=-cubeBlue.size;b.vy=speed;}
+              else if(side===1){b.x=Math.random()*(canvas.width-cubeBlue.size);b.y=canvas.height;b.vy=-speed;}
+              else if(side===2){b.x=-cubeBlue.size;b.y=Math.random()*(canvas.height-cubeBlue.size);b.vx=speed;}
+              else{b.x=canvas.width;b.y=Math.random()*(canvas.height-cubeBlue.size);b.vx=-speed;}
+              challengeTwoReds.push(b);
+            }
+            challengeTwoLastRed = Date.now();
+          }
+
+          for (let i=challengeTwoLines.length-1;i>=0;i--) {
+            let l=challengeTwoLines[i];
+            l.x+=l.vx; l.y+=l.vy;
+            if(l.x>canvas.width||l.x+l.width<0||l.y>canvas.height||l.y+l.height<0){challengeTwoLines.splice(i,1);continue;}
+            const rect={x:l.x,y:l.y,width:l.width,height:l.height};
+            const blueRect={x:cubeBlue.x-cubeBlue.size/2,y:cubeBlue.y-cubeBlue.size/2,width:cubeBlue.size,height:cubeBlue.size};
+            const yellowRect={x:cubeYellow.x-cubeYellow.size/2,y:cubeYellow.y-cubeYellow.size/2,width:cubeYellow.size,height:cubeYellow.size};
+            if(rectIntersect(blueRect,rect)){
+              if(l.color==="blue"){spawnColorParticles(l.x+l.width/2,l.y+l.height/2,"blue");challengeTwoLines.splice(i,1);}else{deathSound.currentTime=0;deathSound.play();loadLevel(currentLevel);return;}}
+            else if(rectIntersect(yellowRect,rect)){
+              if(l.color==="yellow"){spawnColorParticles(l.x+l.width/2,l.y+l.height/2,"yellow");challengeTwoLines.splice(i,1);}else{deathSound.currentTime=0;deathSound.play();loadLevel(currentLevel);return;}}
+          }
+
+          for(let i=challengeTwoReds.length-1;i>=0;i--){
+            let b=challengeTwoReds[i];
+            b.x+=b.vx; b.y+=b.vy;
+            if(b.x>canvas.width||b.x+b.width<0||b.y>canvas.height||b.y+b.height<0){challengeTwoReds.splice(i,1);continue;}
+            const rect={x:b.x,y:b.y,width:b.width,height:b.height};
+            const blueRect={x:cubeBlue.x-cubeBlue.size/2,y:cubeBlue.y-cubeBlue.size/2,width:cubeBlue.size,height:cubeBlue.size};
+            const yellowRect={x:cubeYellow.x-cubeYellow.size/2,y:cubeYellow.y-cubeYellow.size/2,width:cubeYellow.size,height:cubeYellow.size};
+            if(rectIntersect(rect,blueRect)||rectIntersect(rect,yellowRect)){deathSound.currentTime=0;deathSound.play();loadLevel(currentLevel);return;}
+          }
+
+          let duration=durations[challengeTwoPhase-1];
+          if(!challengeTwoWhite && elapsed>=duration && challengeTwoPhase<3){
+            challengeTwoWhite={x:canvas.width/2,y:canvas.height/2,size:120};
+          }
+          if(challengeTwoWhite){
+            const rect={x:challengeTwoWhite.x-challengeTwoWhite.size/2,y:challengeTwoWhite.y-challengeTwoWhite.size/2,width:challengeTwoWhite.size,height:challengeTwoWhite.size};
+            const blueRect={x:cubeBlue.x-cubeBlue.size/2,y:cubeBlue.y-cubeBlue.size/2,width:cubeBlue.size,height:cubeBlue.size};
+            const yellowRect={x:cubeYellow.x-cubeYellow.size/2,y:cubeYellow.y-cubeYellow.size/2,width:cubeYellow.size,height:cubeYellow.size};
+            if(rectIntersect(rect,blueRect)||rectIntersect(rect,yellowRect)){
+              challengeTwoPhase++; challengeTwoWhite=null; challengeTwoStart=Date.now(); challengeTwoLastLine=challengeTwoStart; challengeTwoLastRed=challengeTwoStart; challengeTwoLines=[]; challengeTwoReds=[];
+            }
+          }
+
+          if(challengeTwoPhase===3 && elapsed>=duration){
+            levelComplete();
+            return;
+          }
+
+        }
       }
 
       // -------------------------------------------------
@@ -5092,6 +5290,24 @@
           }
         }
       }
+
+      function drawChallengeTwoLines() {
+        if (levels[currentLevel].challengeTwoLevel) {
+          for (let line of challengeTwoLines) {
+            ctx.fillStyle = line.color;
+            ctx.fillRect(line.x, line.y, line.width, line.height);
+          }
+        }
+      }
+
+      function drawChallengeTwoReds() {
+        if (levels[currentLevel].challengeTwoLevel) {
+          ctx.fillStyle = "red";
+          for (let r of challengeTwoReds) {
+            ctx.fillRect(r.x, r.y, r.width, r.height);
+          }
+        }
+      }
       function drawChallengeTeleportLines() {
         if (levels[currentLevel].challengeTeleportLevel) {
           for (let line of challengeTeleportLines) {
@@ -5165,6 +5381,18 @@
           );
         }
       }
+
+      function drawChallengeTwoWhiteBlock() {
+        if (levels[currentLevel].challengeTwoLevel && challengeTwoWhite) {
+          ctx.fillStyle = "white";
+          ctx.fillRect(
+            challengeTwoWhite.x - challengeTwoWhite.size/2,
+            challengeTwoWhite.y - challengeTwoWhite.size/2,
+            challengeTwoWhite.size,
+            challengeTwoWhite.size
+          );
+        }
+      }
       function drawLevelText() {
         ctx.fillStyle = "#fff";
         ctx.font = "30px sans-serif";
@@ -5199,6 +5427,16 @@
           }
         } else if (levels[currentLevel].threeColorsChallenge) {
           ctx.fillText("Three Colors", 10, 40);
+        } else if (levels[currentLevel].challengeTwoLevel) {
+          ctx.fillText(`Challenge Of Two ${challengeTwoPhase}/3`, 10, 40);
+          let duration = challengeTwoPhase === 1 ? 25000 : challengeTwoPhase === 2 ? 30000 : 40000;
+          let remainingSec = Math.max(0, Math.ceil((duration - (Date.now() - challengeTwoStart)) / 1000));
+          ctx.textAlign = "center";
+          ctx.fillText(remainingSec + "s", canvas.width / 2, 40);
+          if (Date.now() - challengeTwoLevelStart < 4000) {
+            ctx.fillText("Control The Blue One with WASD, control the Yellow One with Arrow Keys", canvas.width/2, 80);
+          }
+          ctx.textAlign = "left";
         } else if (levels[currentLevel].challengeBulletHell) {
           ctx.fillText("Bullet Hell", 10, 40);
           let elapsed = Date.now() - bulletHellStartTime - challengePausedTime;
@@ -5295,6 +5533,28 @@
         ctx.closePath();
         ctx.fill();
       }
+
+      function drawCustomCube(cubeObj, dirX, dirY, color) {
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(cubeObj.x - cubeObj.size / 2, cubeObj.y - cubeObj.size / 2, cubeObj.size, cubeObj.size);
+        ctx.fillStyle = color;
+        const angle = Math.atan2(dirY, dirX);
+        const a = cubeObj.size * 0.3;
+        const b = cubeObj.size * 0.15;
+        const cVal = cubeObj.size * 0.3;
+        function rotPt(x, y, ang) {
+          return { x: x * Math.cos(ang) - y * Math.sin(ang), y: x * Math.sin(ang) + y * Math.cos(ang) };
+        }
+        let tipRot = rotPt(a, 0, angle);
+        let blRot = rotPt(-b, cVal, angle);
+        let brRot = rotPt(-b, -cVal, angle);
+        ctx.beginPath();
+        ctx.moveTo(cubeObj.x + tipRot.x, cubeObj.y + tipRot.y);
+        ctx.lineTo(cubeObj.x + blRot.x, cubeObj.y + blRot.y);
+        ctx.lineTo(cubeObj.x + brRot.x, cubeObj.y + brRot.y);
+        ctx.closePath();
+        ctx.fill();
+      }
       function spawnLevel13Pillars() {
         level13PillarsSpawned = true;
         const speedMult = levels[currentLevel].halfSpeedPillars ? .8 : 1;
@@ -5368,11 +5628,17 @@
       drawBrowns();
         drawLifts();
         drawFallingBrownBlocks();
-        if (levels[currentLevel].challengeTeleportLevel) {
+        if (levels[currentLevel].challengeTwoLevel) {
+          drawChallengeTwoLines();
+          drawChallengeTwoReds();
+          drawCustomCube(cubeBlue, dirBlueX, dirBlueY, "blue");
+          drawCustomCube(cubeYellow, dirYellowX, dirYellowY, "yellow");
+          drawColorParticles();
+        } else if (levels[currentLevel].challengeTeleportLevel) {
           drawChallengeGreyBlocks();
           drawChallengeTeleportLines();
         }
-        drawCube();
+        if (!levels[currentLevel].challengeTwoLevel) drawCube();
         drawBrownParticles();
         drawGreyParticles();
         drawLevelText();
@@ -5381,7 +5647,9 @@
       if (levels[currentLevel].targetOnTop && stage3Level10Teleported) {
         drawTarget();
       }
-        if (levels[currentLevel].challengeDashingLevel ||
+        if (levels[currentLevel].challengeTwoLevel) {
+          // red blocks handled separately above
+        } else if (levels[currentLevel].challengeDashingLevel ||
             (levels[currentLevel].challengeTeleportLevel && challengePhase >= 2)) {
           drawFallingRedBlocks();
         } else if (levels[currentLevel].challengeColorLevel) {
@@ -5397,6 +5665,8 @@
           if (challengePhase === 3) {
             drawChallengeGreenBlock();
           }
+        } else if (levels[currentLevel].challengeTwoLevel) {
+          drawChallengeTwoWhiteBlock();
         } else if (levels[currentLevel].challengeBulletHell) {
           drawChallengeGreenBlock();
         }
