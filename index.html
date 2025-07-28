@@ -797,6 +797,27 @@
         if (pool.length === 0) return null;
         return pool[Math.floor(Math.random() * pool.length)];
       }
+
+      function lineEnterTime(line) {
+        const vel = line.vx !== 0 ? Math.abs(line.vx) : Math.abs(line.vy);
+        return line.thickness / vel;
+      }
+
+      function wouldCreateImpossibleThreeColorLine(newLine, now) {
+        const newVertical = newLine.vx !== 0;
+        const newEnter = lineEnterTime(newLine);
+        const newCross = now + newEnter;
+        for (let l of threeColorLines) {
+          const existingVertical = l.vx !== 0;
+          if (newVertical === existingVertical) continue;
+          const existEnter = lineEnterTime(l);
+          const existCross = l.spawnTime + existEnter;
+          if (Math.abs(newCross - existCross) < 500 && l.color !== newLine.color) {
+            return true;
+          }
+        }
+        return false;
+      }
       // Timeout handle for the delayed hazard in Stage 3 Level 3
       let stage3Level3HazardTimeout = null;
       // Timeout handle for the delayed hazard in Stage 3 Level 9
@@ -4780,7 +4801,9 @@
               vx: -threeColorSpeedMap[speed],
               vy: 0,
               color: "red",
-              speed
+              speed,
+              spawnTime: now,
+              thickness
             });
             threeColorRedSpawned = true;
             threeColorUnlocked = true;
@@ -4808,16 +4831,24 @@
             if (speed !== null) {
               const color = availableColors[Math.floor(Math.random() * availableColors.length)];
               const thickness = 20;
-              const side = Math.floor(Math.random() * 4);
-              let line = { x:0, y:0, width:0, height:0, vx:0, vy:0, color, speed };
-              let vel = threeColorSpeedMap[speed];
-              if (pct >= 0.9) vel *= .5;
-              if (side === 0) { line.x=0; line.y=-thickness; line.width=canvas.width; line.height=thickness; line.vy=vel; }
-              else if (side === 1) { line.x=0; line.y=canvas.height; line.width=canvas.width; line.height=thickness; line.vy=-vel; }
-              else if (side === 2) { line.x=-thickness; line.y=0; line.width=thickness; line.height=canvas.height; line.vx=vel; }
-              else { line.x=canvas.width; line.y=0; line.width=thickness; line.height=canvas.height; line.vx=-vel; }
-              threeColorLines.push(line);
-              lastThreeColorSpawn = now;
+              let attempts = 0;
+              let spawned = false;
+              while (attempts < 4 && !spawned) {
+                const side = Math.floor(Math.random() * 4);
+                let line = { x:0, y:0, width:0, height:0, vx:0, vy:0, color, speed, spawnTime: now, thickness };
+                let vel = threeColorSpeedMap[speed];
+                if (pct >= 0.9) vel *= .5;
+                if (side === 0) { line.x=0; line.y=-thickness; line.width=canvas.width; line.height=thickness; line.vy=vel; }
+                else if (side === 1) { line.x=0; line.y=canvas.height; line.width=canvas.width; line.height=thickness; line.vy=-vel; }
+                else if (side === 2) { line.x=-thickness; line.y=0; line.width=thickness; line.height=canvas.height; line.vx=vel; }
+                else { line.x=canvas.width; line.y=0; line.width=thickness; line.height=canvas.height; line.vx=-vel; }
+                if (!wouldCreateImpossibleThreeColorLine(line, now)) {
+                  threeColorLines.push(line);
+                  lastThreeColorSpawn = now;
+                  spawned = true;
+                }
+                attempts++;
+              }
             }
           }
           for (let i = threeColorLines.length - 1; i >= 0; i--) {
