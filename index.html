@@ -781,6 +781,19 @@
       let threeColorCheckpoint = false;
       const threeColorSpeedMap = {1: 1.7, 2: 1.8, 3: 1.9, 4: 2};
 
+      // Globals for Challenge of Two
+      let challengeTwoPlayers = [];
+      let challengeTwoPhase = 1;
+      let challengeTwoCheckpoint = 0;
+      let challengeTwoStartTime = 0;
+      let challengeTwoLastLineSpawn = 0;
+      let challengeTwoLastRedSpawn = 0;
+      let challengeTwoLines = [];
+      let challengeTwoRedBlocks = [];
+      let challengeTwoWhiteBlock = null;
+      let challengeTwoGreenBlock = null;
+      let challengeTwoInstructionUntil = 0;
+
       let spamAbilityUnlocked = false;
       let spamActive = false;
       let spacePressTimes = [];
@@ -2246,6 +2259,17 @@
           challengeName: "Three Colors",
           platforms: [],
           hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // EXTRA CHALLENGE: Challenge of Two
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.5 },
+          challengeTwo: true,
+          stage: 4,
+          challengeName: "Challenge of Two",
+          platforms: [],
+          hazards: []
         }
       ];
 
@@ -2305,6 +2329,11 @@
         currentLevel = index;
         updateUnlockedProgress();
         const lvl = levels[index];
+        if (!lvl.challengeTwo) {
+          challengeTwoCheckpoint = 0;
+        } else if (prevLevel !== index) {
+          challengeTwoCheckpoint = 0;
+        }
 
         if (lvl.stage === 4) {
           if (currentMode !== "normal") {
@@ -2476,6 +2505,24 @@
           bulletHellLastSpawn = bulletHellStartTime;
           bulletHellBlocks = [];
           challengeGreenBlock = null;
+          challengePausedTime = 0;
+          isChallengePaused = false;
+          lastChallengePauseStart = 0;
+        } else if (lvl.challengeTwo) {
+          target = null;
+          challengeTwoPhase = challengeTwoCheckpoint + 1;
+          challengeTwoStartTime = Date.now();
+          challengeTwoLastLineSpawn = challengeTwoStartTime;
+          challengeTwoLastRedSpawn = challengeTwoStartTime;
+          challengeTwoLines = [];
+          challengeTwoRedBlocks = [];
+          challengeTwoWhiteBlock = null;
+          challengeTwoGreenBlock = null;
+          challengeTwoPlayers = [
+            { x: canvas.width / 2 - 60, y: canvas.height / 2, size: cube.size / 1.3, vx: 0, vy: 0, dir: null, arrowX: 0, arrowY: -1, color: "blue" },
+            { x: canvas.width / 2 + 60, y: canvas.height / 2, size: cube.size / 1.3, vx: 0, vy: 0, dir: null, arrowX: 0, arrowY: -1, color: "yellow" }
+          ];
+          challengeTwoInstructionUntil = Date.now() + 4000;
           challengePausedTime = 0;
           isChallengePaused = false;
           lastChallengePauseStart = 0;
@@ -3107,19 +3154,52 @@
         else if (!levels[currentLevel].noMovement && currentLevel >= 7 && e.key === " " && !isDashing && !levels[currentLevel].noDash) {
           attemptDash();
         } else if (!levels[currentLevel].noMovement) {
-          switch (e.key) {
-            case "ArrowUp":
-              lastDirection = "up";
-              break;
-            case "ArrowDown":
-              lastDirection = "down";
-              break;
-            case "ArrowLeft":
-              lastDirection = "left";
-              break;
-            case "ArrowRight":
-              lastDirection = "right";
-              break;
+          if (levels[currentLevel].challengeTwo) {
+            switch (e.key) {
+              case "ArrowUp":
+                if (challengeTwoPlayers[1]) challengeTwoPlayers[1].dir = "up";
+                break;
+              case "ArrowDown":
+                if (challengeTwoPlayers[1]) challengeTwoPlayers[1].dir = "down";
+                break;
+              case "ArrowLeft":
+                if (challengeTwoPlayers[1]) challengeTwoPlayers[1].dir = "left";
+                break;
+              case "ArrowRight":
+                if (challengeTwoPlayers[1]) challengeTwoPlayers[1].dir = "right";
+                break;
+              case "w":
+              case "W":
+                if (challengeTwoPlayers[0]) challengeTwoPlayers[0].dir = "up";
+                break;
+              case "s":
+              case "S":
+                if (challengeTwoPlayers[0]) challengeTwoPlayers[0].dir = "down";
+                break;
+              case "a":
+              case "A":
+                if (challengeTwoPlayers[0]) challengeTwoPlayers[0].dir = "left";
+                break;
+              case "d":
+              case "D":
+                if (challengeTwoPlayers[0]) challengeTwoPlayers[0].dir = "right";
+                break;
+            }
+          } else {
+            switch (e.key) {
+              case "ArrowUp":
+                lastDirection = "up";
+                break;
+              case "ArrowDown":
+                lastDirection = "down";
+                break;
+              case "ArrowLeft":
+                lastDirection = "left";
+                break;
+              case "ArrowRight":
+                lastDirection = "right";
+                break;
+            }
           }
         }
       });
@@ -3363,11 +3443,118 @@
           });
         }
 
-        let color = minCyan <= minYellow ? "cyan" : "yellow";
-        if (levels[currentLevel].extracolor && minRed < Math.min(minCyan, minYellow)) {
-          color = "red";
+      let color = minCyan <= minYellow ? "cyan" : "yellow";
+      if (levels[currentLevel].extracolor && minRed < Math.min(minCyan, minYellow)) {
+        color = "red";
+      }
+      return color;
+    }
+
+      function updateChallengeTwo(now) {
+        const accel = currentAcceleration * 0.5;
+        const lineIntervals = [3000, 2000, 1000];
+        const redIntervals = [Infinity, 1000, 1000];
+        const phaseDurations = [25000, 30000, 30000];
+
+        challengeTwoPlayers.forEach(p => {
+          if (!p.dir) return;
+          if (p.dir === "up") { p.vy -= accel; p.vx = 0; p.arrowX = 0; p.arrowY = -1; }
+          else if (p.dir === "down") { p.vy += accel; p.vx = 0; p.arrowX = 0; p.arrowY = 1; }
+          else if (p.dir === "left") { p.vx -= accel; p.vy = 0; p.arrowX = -1; p.arrowY = 0; }
+          else if (p.dir === "right") { p.vx += accel; p.vy = 0; p.arrowX = 1; p.arrowY = 0; }
+          p.vx *= 0.88; p.vy *= 0.88;
+          p.x += p.vx; p.y += p.vy;
+          if (p.x - p.size/2 < 0) { p.x = p.size/2; p.vx = 0; }
+          if (p.x + p.size/2 > canvas.width) { p.x = canvas.width - p.size/2; p.vx = 0; }
+          if (p.y - p.size/2 < 0) { p.y = p.size/2; p.vy = 0; }
+          if (p.y + p.size/2 > canvas.height) { p.y = canvas.height - p.size/2; p.vy = 0; }
+        });
+
+        if (now - challengeTwoLastLineSpawn >= lineIntervals[challengeTwoPhase-1]) {
+          const thickness = 20;
+          const horizontal = Math.random() < 0.5;
+          const color = Math.random() < 0.5 ? "blue" : "yellow";
+          let line = {x:0,y:0,width:0,height:0,vx:0,vy:0,color};
+          const side = Math.random() < 0.5;
+          if (horizontal) {
+            line.width = canvas.width; line.height = thickness;
+            if (side) { line.y = -thickness; line.vy = 2; }
+            else { line.y = canvas.height; line.vy = -2; }
+          } else {
+            line.height = canvas.height; line.width = thickness;
+            if (side) { line.x = -thickness; line.vx = 2; }
+            else { line.x = canvas.width; line.vx = -2; }
+          }
+          challengeTwoLines.push(line);
+          challengeTwoLastLineSpawn = now;
         }
-        return color;
+
+        if (challengeTwoPhase > 1 && now - challengeTwoLastRedSpawn >= redIntervals[challengeTwoPhase-1]) {
+          const size = challengeTwoPlayers[0].size;
+          let block = {width:size,height:size,vx:0,vy:0,x:0,y:0};
+          const side = Math.floor(Math.random()*4);
+          const speed = 2;
+          if (side===0){ block.x=-size; block.y=Math.random()*(canvas.height-size); block.vx=speed; }
+          else if (side===1){ block.x=canvas.width; block.y=Math.random()*(canvas.height-size); block.vx=-speed; }
+          else if (side===2){ block.x=Math.random()*(canvas.width-size); block.y=-size; block.vy=speed; }
+          else { block.x=Math.random()*(canvas.width-size); block.y=canvas.height; block.vy=-speed; }
+          challengeTwoRedBlocks.push(block);
+          challengeTwoLastRedSpawn = now;
+        }
+
+        challengeTwoLines.forEach((l,i)=>{
+          l.x += l.vx; l.y += l.vy;
+          if (l.x > canvas.width || l.x + l.width < 0 || l.y > canvas.height || l.y + l.height < 0) { challengeTwoLines.splice(i,1); return; }
+        });
+
+        challengeTwoRedBlocks.forEach((b,i)=>{
+          b.x += b.vx; b.y += b.vy;
+          if (b.x > canvas.width || b.x + b.width < 0 || b.y > canvas.height || b.y + b.height < 0) { challengeTwoRedBlocks.splice(i,1); return; }
+        });
+
+        const checkDeath = p => {
+          const rect = {x:p.x-p.size/2,y:p.y-p.size/2,width:p.size,height:p.size};
+          for (let l of challengeTwoLines) {
+            const lr = {x:l.x,y:l.y,width:l.width,height:l.height};
+            if (rectIntersect(rect, lr)) {
+              if ((p.color==="blue" && l.color!=="blue") || (p.color==="yellow" && l.color!=="yellow")) {
+                deathSound.currentTime = 0; deathSound.play();
+                loadLevel(currentLevel); return true;
+              } else {
+                const idx = challengeTwoLines.indexOf(l);
+                if (idx!==-1) challengeTwoLines.splice(idx,1);
+                break;
+              }
+            }
+          }
+          for (let b of challengeTwoRedBlocks) {
+            const br={x:b.x,y:b.y,width:b.width,height:b.height};
+            if (rectIntersect(rect, br)) {
+              deathSound.currentTime = 0; deathSound.play();
+              loadLevel(currentLevel); return true;
+            }
+          }
+          if (challengeTwoWhiteBlock) {
+            const wr={x:challengeTwoWhiteBlock.x-challengeTwoWhiteBlock.size/2,y:challengeTwoWhiteBlock.y-challengeTwoWhiteBlock.size/2,width:challengeTwoWhiteBlock.size,height:challengeTwoWhiteBlock.size};
+            if (rectIntersect(rect,wr)) {
+              challengeTwoPhase++; challengeTwoCheckpoint++; challengeTwoLines=[]; challengeTwoRedBlocks=[]; challengeTwoWhiteBlock=null; checkpointPopupTime = now; document.getElementById("checkpointPopup").classList.remove("hidden"); setTimeout(()=>document.getElementById("checkpointPopup").classList.add("hidden"),1500); challengeTwoStartTime = now; return true;
+            }
+          }
+          if (challengeTwoGreenBlock) {
+            const gr={x:challengeTwoGreenBlock.x-challengeTwoGreenBlock.size/2,y:challengeTwoGreenBlock.y-challengeTwoGreenBlock.size/2,width:challengeTwoGreenBlock.size,height:challengeTwoGreenBlock.size};
+            if (rectIntersect(rect,gr)) { challengeTwoCheckpoint=0; levelComplete(); return true; }
+          }
+          return false;
+        };
+
+        for (let p of challengeTwoPlayers) { if (checkDeath(p)) return; }
+
+        const elapsed = now - challengeTwoStartTime;
+        if (challengeTwoPhase <=2 && elapsed >= phaseDurations[challengeTwoPhase-1] && !challengeTwoWhiteBlock) {
+          challengeTwoWhiteBlock = {x:canvas.width/2,y:canvas.height/2,size:200};
+        } else if (challengeTwoPhase===3 && elapsed >= phaseDurations[2] && !challengeTwoGreenBlock) {
+          challengeTwoGreenBlock = {x:canvas.width/2,y:canvas.height/2,size:cube.size*3};
+        }
       }
 
       // -------------------------------------------------
@@ -3376,6 +3563,10 @@
       function update() {
         if (gamePaused) return;
         const now = Date.now();
+        if (levels[currentLevel].challengeTwo) {
+          updateChallengeTwo(now);
+          return;
+        }
         if (spamAbilityUnlocked) {
           spacePressTimes = spacePressTimes.filter(t => now - t <= 1000);
           spamActive = spacePressTimes.length >= 3;
@@ -5165,6 +5356,75 @@
           );
         }
       }
+
+      function drawChallengeTwoLines() {
+        if (levels[currentLevel].challengeTwo) {
+          for (let l of challengeTwoLines) {
+            ctx.fillStyle = l.color;
+            ctx.fillRect(l.x, l.y, l.width, l.height);
+          }
+        }
+      }
+
+      function drawChallengeTwoRedBlocks() {
+        if (levels[currentLevel].challengeTwo) {
+          ctx.fillStyle = "red";
+          for (let b of challengeTwoRedBlocks) {
+            ctx.fillRect(b.x, b.y, b.width, b.height);
+          }
+        }
+      }
+
+      function drawChallengeTwoPlayers() {
+        if (levels[currentLevel].challengeTwo) {
+          for (let p of challengeTwoPlayers) {
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+            ctx.fillStyle = p.color;
+            let mag = Math.hypot(p.arrowX, p.arrowY);
+            let uX = p.arrowX, uY = p.arrowY;
+            if (mag === 0) { uX = 0; uY = -1; }
+            const angle = Math.atan2(uY, uX);
+            const a = p.size * 0.3;
+            const b = p.size * 0.15;
+            const cVal = p.size * 0.3;
+            function rotPt(x,y,ang){return{ x:x*Math.cos(ang)-y*Math.sin(ang), y:x*Math.sin(ang)+y*Math.cos(ang) };}
+            let tipRot = rotPt(a,0,angle);
+            let blRot = rotPt(-b,cVal,angle);
+            let brRot = rotPt(-b,-cVal,angle);
+            ctx.beginPath();
+            ctx.moveTo(p.x + tipRot.x, p.y + tipRot.y);
+            ctx.lineTo(p.x + blRot.x, p.y + blRot.y);
+            ctx.lineTo(p.x + brRot.x, p.y + brRot.y);
+            ctx.closePath();
+            ctx.fill();
+          }
+        }
+      }
+
+      function drawChallengeTwoWhite() {
+        if (levels[currentLevel].challengeTwo && challengeTwoWhiteBlock) {
+          ctx.fillStyle = "white";
+          ctx.fillRect(
+            challengeTwoWhiteBlock.x - challengeTwoWhiteBlock.size / 2,
+            challengeTwoWhiteBlock.y - challengeTwoWhiteBlock.size / 2,
+            challengeTwoWhiteBlock.size,
+            challengeTwoWhiteBlock.size
+          );
+        }
+      }
+
+      function drawChallengeTwoGreen() {
+        if (levels[currentLevel].challengeTwo && challengeTwoGreenBlock) {
+          ctx.fillStyle = "green";
+          ctx.fillRect(
+            challengeTwoGreenBlock.x - challengeTwoGreenBlock.size / 2,
+            challengeTwoGreenBlock.y - challengeTwoGreenBlock.size / 2,
+            challengeTwoGreenBlock.size,
+            challengeTwoGreenBlock.size
+          );
+        }
+      }
       function drawLevelText() {
         ctx.fillStyle = "#fff";
         ctx.font = "30px sans-serif";
@@ -5206,6 +5466,19 @@
           ctx.textAlign = "center";
           ctx.fillText(remainingSec + "s", canvas.width / 2, 40);
           ctx.textAlign = "left";
+        } else if (levels[currentLevel].challengeTwo) {
+          ctx.fillText(`Challenge of Two ${challengeTwoPhase}/3`, 10, 40);
+          let elapsed = Date.now() - challengeTwoStartTime;
+          let phaseDur = [25000,30000,30000][challengeTwoPhase-1];
+          let remainingSec = Math.max(0, Math.ceil((phaseDur - elapsed)/1000));
+          ctx.textAlign = "center";
+          ctx.fillText(remainingSec + "s", canvas.width / 2, 40);
+          ctx.textAlign = "left";
+          if (challengeTwoPhase === 1 && Date.now() < challengeTwoInstructionUntil) {
+            ctx.textAlign = "center";
+            ctx.fillText("Control the Blue One with WASD, control the Yellow One with Arrow Keys.", canvas.width/2, 80);
+            ctx.textAlign = "left";
+          }
         } else {
           let stage = levels[currentLevel].stage || 1;
           let levelNumInStage = 1;
@@ -5343,10 +5616,20 @@
           ctx.fillStyle = "#CFCFC4"; 
           ctx.fillRect(0, 0, canvas.width, canvas.height);
         } else {
-          ctx.fillStyle = "#222"; 
+          ctx.fillStyle = "#222";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.fillStyle = "black";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        if (levels[currentLevel].challengeTwo) {
+          drawChallengeTwoLines();
+          drawChallengeTwoRedBlocks();
+          drawChallengeTwoPlayers();
+          drawChallengeTwoWhite();
+          drawChallengeTwoGreen();
+          drawLevelText();
+          requestAnimationFrame(gameLoop);
+          return;
         }
        if (!(levels[currentLevel].targetOnTop && stage3Level10Teleported)) {
          drawTarget();
@@ -5570,6 +5853,7 @@
         spamAbilityUnlocked = false;
         spamActive = false;
         spacePressTimes = [];
+        challengeTwoCheckpoint = 0;
         if (levels[currentLevel].stage === 4) {
           winSound.currentTime = 0;
           winSound.play();
