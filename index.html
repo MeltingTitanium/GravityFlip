@@ -2232,6 +2232,22 @@
         },
         {
           // -------------------------------------------------
+          // EXTRA CHALLENGE: Challenge of Only Dashes
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.05 },
+          challengeDashOnlyLevel: true,
+          stage: 4,
+          challengeName: "Challenge of Only Dashes",
+          accelerationOverride: 0.0000001,
+          dashCooldownOverride: 100,
+          platforms: [],
+          hazards: [],
+          oranges: [],
+          browns: []
+        },
+        {
+          // -------------------------------------------------
           // EXTRA CHALLENGE: Three Colors
           // -------------------------------------------------
           spawn: { x: 0.5, y: 0.5 },
@@ -2320,6 +2336,15 @@
           updateModeButtons();
         }
 
+        // Allow per-level overrides for movement acceleration
+        // and dash cooldown to customize challenge behavior
+        if (typeof lvl.accelerationOverride === "number") {
+          currentAcceleration = lvl.accelerationOverride;
+        }
+        if (typeof lvl.dashCooldownOverride === "number") {
+          currentDashCooldown = lvl.dashCooldownOverride;
+        }
+
         playMusicForStage(lvl.stage || 1);
 
         // Clear any pending checkpoint auto-kill
@@ -2400,7 +2425,7 @@
         chargeDuration = lvl.chargeTime || 3000;
 
         // Special handling for challenge levels or levels with unique behavior
-        if (lvl.challengeDashingLevel) {
+        if (lvl.challengeDashingLevel || lvl.challengeDashOnlyLevel) {
           target = null;
           challengeStartTime = Date.now();
           lastChallengeLineSpawn = Date.now();
@@ -2845,7 +2870,7 @@
             y: level13TargetPositions[level13Stage].y * canvas.height,
             size: cube.size * (lvl.targetSizeMultiplier || 1)
           };
-        } else if (!lvl.fallingBrownLevel && !lvl.challengeDashingLevel) {
+        } else if (!lvl.fallingBrownLevel && !lvl.challengeDashingLevel && !lvl.challengeDashOnlyLevel) {
           target = {
             x: lvl.target.x * canvas.width,
             y: lvl.target.y * canvas.height,
@@ -4217,7 +4242,7 @@
         updateGreyParticles();
 
         // Handle any challenge-dashing-level logic (Level 18)
-        if (levels[currentLevel].challengeDashingLevel) {
+        if (levels[currentLevel].challengeDashingLevel || levels[currentLevel].challengeDashOnlyLevel) {
 
           // === NEW CODE to freeze the challenge timer if the game is paused or the tab is hidden ===
           if (!document.hidden && !gamePaused) {
@@ -5176,6 +5201,13 @@
           ctx.textAlign = "center";
           ctx.fillText(remainingSec + "s", canvas.width / 2, 40);
           ctx.textAlign = "left";
+        } else if (levels[currentLevel].challengeDashOnlyLevel) {
+          ctx.fillText("Challenge of Only Dashes", 10, 40);
+          let elapsed = Date.now() - challengeStartTime - challengePausedTime;
+          let remainingSec = Math.max(0, Math.ceil((challengeDuration - elapsed) / 1000));
+          ctx.textAlign = "center";
+          ctx.fillText(remainingSec + "s", canvas.width / 2, 40);
+          ctx.textAlign = "left";
         } else if (levels[currentLevel].challengeTeleportLevel) {
           if (challengePhase === 3) {
             ctx.fillText("Challenge of Teleportation 3/3", 10, 40);
@@ -5382,6 +5414,7 @@
         drawTarget();
       }
         if (levels[currentLevel].challengeDashingLevel ||
+            levels[currentLevel].challengeDashOnlyLevel ||
             (levels[currentLevel].challengeTeleportLevel && challengePhase >= 2)) {
           drawFallingRedBlocks();
         } else if (levels[currentLevel].challengeColorLevel) {
@@ -5389,7 +5422,7 @@
         } else if (levels[currentLevel].challengeBulletHell) {
           drawBulletHellBlocks();
         }
-        if (levels[currentLevel].challengeDashingLevel) {
+        if (levels[currentLevel].challengeDashingLevel || levels[currentLevel].challengeDashOnlyLevel) {
           drawChallengeLines();
           drawChallengeGreenBlock();
         } else if (levels[currentLevel].challengeTeleportLevel) {
