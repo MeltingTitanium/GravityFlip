@@ -2246,6 +2246,21 @@
           challengeName: "Three Colors",
           platforms: [],
           hazards: []
+        },
+        {
+          // -------------------------------------------------
+          // EXTRA CHALLENGE: Only Dashes
+          // -------------------------------------------------
+          spawn: { x: 0.5, y: 0.95 },
+          target: { x: 0.5, y: 0.05 },
+          challengeDashingLevel: true,
+          challengeOnlyDash: true,
+          stage: 4,
+          challengeName: "Only Dashes",
+          platforms: [],
+          hazards: [],
+          oranges: [],
+          browns: []
         }
       ];
 
@@ -2416,6 +2431,10 @@
           challengePausedTime = 0;
           isChallengePaused = false;
           lastChallengePauseStart = 0;
+          if (lvl.challengeOnlyDash) {
+            currentAcceleration = 0.0000001;
+            currentDashCooldown = 100; // 0.1 seconds
+          }
         } else if (lvl.challengeTeleportLevel) {
             target = null;
             challengeStartTime = Date.now();
@@ -5169,7 +5188,14 @@
         ctx.fillStyle = "#fff";
         ctx.font = "30px sans-serif";
         ctx.textAlign = "left";
-        if (levels[currentLevel].challengeDashingLevel) {
+        if (levels[currentLevel].challengeOnlyDash) {
+          ctx.fillText("Challenge Of Only Dashes", 10, 40);
+          let elapsed = Date.now() - challengeStartTime - challengePausedTime;
+          let remainingSec = Math.max(0, Math.ceil((challengeDuration - elapsed) / 1000));
+          ctx.textAlign = "center";
+          ctx.fillText(remainingSec + "s", canvas.width / 2, 40);
+          ctx.textAlign = "left";
+        } else if (levels[currentLevel].challengeDashingLevel) {
           ctx.fillText("Challenge Of Dashing", 10, 40);
           let elapsed = Date.now() - challengeStartTime - challengePausedTime;
           let remainingSec = Math.max(0, Math.ceil((challengeDuration - elapsed) / 1000));
