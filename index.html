@@ -117,6 +117,21 @@
       .modeButton.selected {
         background-color: blue;
       }
+
+      .toggleButton {
+        display: inline-block;
+        margin: 0 10px;
+        padding: 5px 10px;
+        background-color: #444;
+        border: 3px solid #fff;
+        border-radius: 15px;
+        font-size: 20px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .toggleButton.selected {
+        background-color: blue;
+      }
       
       /* ======================================================
          Gimmick and Teleport Popups Styling
@@ -249,6 +264,8 @@
       <div id="menuLevelSelectorButton" class="bigButton">Level Selector</div>
       <!-- New Settings button added to the Main Menu -->
       <div id="settingsButton" class="bigButton">Settings</div>
+      <!-- Toggle for diagonal movement, shown after earning 50 stars -->
+      <div id="diagonalMovementButton" class="toggleButton hidden" style="position:absolute; bottom:80px;">Diagonal Movement</div>
       <!-- Difficulty selection buttons positioned at the bottom of the main menu -->
       <div style="position: absolute; bottom: 20px;">
         <div id="easyModeButton" class="modeButton">Easy Mode</div>
@@ -505,7 +522,8 @@
       let settings = {
         soundEffects: true,
         music: true,
-        lightMode: false
+        lightMode: false,
+        diagonalMovement: false
       };
 
       // Override the Audio play method so that sound effects and music respect the settings
@@ -937,6 +955,9 @@
 
       // Variable to store the last movement direction to prevent diagonal movement
       let lastDirection = null;
+
+      // Track which arrow keys are currently pressed for diagonal movement
+      const keyState = { up: false, down: false, left: false, right: false };
 
       // -------------------------------------------------
       // 3. Dash and Teleport Gimmicks
@@ -2396,6 +2417,7 @@
         arrowDirX = 0;
         arrowDirY = -1;
         lastDirection = null;
+        keyState.up = keyState.down = keyState.left = keyState.right = false;
 
         if (lvl.arrow) {
           arrowDirX = lvl.arrow.x;
@@ -3128,18 +3150,39 @@
         } else if (!levels[currentLevel].noMovement) {
           switch (e.key) {
             case "ArrowUp":
-              lastDirection = "up";
+              keyState.up = true;
+              if (!settings.diagonalMovement) lastDirection = "up";
               break;
             case "ArrowDown":
-              lastDirection = "down";
+              keyState.down = true;
+              if (!settings.diagonalMovement) lastDirection = "down";
               break;
             case "ArrowLeft":
-              lastDirection = "left";
+              keyState.left = true;
+              if (!settings.diagonalMovement) lastDirection = "left";
               break;
             case "ArrowRight":
-              lastDirection = "right";
+              keyState.right = true;
+              if (!settings.diagonalMovement) lastDirection = "right";
               break;
           }
+        }
+      });
+
+      document.addEventListener("keyup", e => {
+        switch (e.key) {
+          case "ArrowUp":
+            keyState.up = false;
+            break;
+          case "ArrowDown":
+            keyState.down = false;
+            break;
+          case "ArrowLeft":
+            keyState.left = false;
+            break;
+          case "ArrowRight":
+            keyState.right = false;
+            break;
         }
       });
 
@@ -3482,29 +3525,50 @@
           if (levels[currentLevel].noMovement) {
             cube.vx = 0;
             cube.vy = 0;
+          } else if (settings.diagonalMovement) {
+            let dx = (keyState.right ? 1 : 0) - (keyState.left ? 1 : 0);
+            let dy = (keyState.down ? 1 : 0) - (keyState.up ? 1 : 0);
+            if (dx !== 0 || dy !== 0) {
+              const mag = Math.hypot(dx, dy);
+              cube.vx += (dx / mag) * currentAcceleration;
+              cube.vy += (dy / mag) * currentAcceleration;
+              arrowDirX = dx / mag;
+              arrowDirY = dy / mag;
+            }
+            cube.vx *= 0.88;
+            cube.vy *= 0.88;
           } else if (lastDirection === "up") {
             cube.vy -= currentAcceleration;
             cube.vx = 0;
             arrowDirX = 0;
             arrowDirY = -1;
+            cube.vx *= 0.88;
+            cube.vy *= 0.88;
           } else if (lastDirection === "down") {
             cube.vy += currentAcceleration;
             cube.vx = 0;
             arrowDirX = 0;
             arrowDirY = 1;
+            cube.vx *= 0.88;
+            cube.vy *= 0.88;
           } else if (lastDirection === "left") {
             cube.vx -= currentAcceleration;
             cube.vy = 0;
             arrowDirX = -1;
             arrowDirY = 0;
+            cube.vx *= 0.88;
+            cube.vy *= 0.88;
           } else if (lastDirection === "right") {
             cube.vx += currentAcceleration;
             cube.vy = 0;
             arrowDirX = 1;
             arrowDirY = 0;
+            cube.vx *= 0.88;
+            cube.vy *= 0.88;
+          } else {
+            cube.vx *= 0.88;
+            cube.vy *= 0.88;
           }
-          cube.vx *= 0.88;
-          cube.vy *= 0.88;
 
           // Attempt X movement
           let newX = cube.x + cube.vx;
@@ -5646,6 +5710,7 @@
       const playButton = document.getElementById("playButton");
       const menuLevelSelectorButton = document.getElementById("menuLevelSelectorButton");
       const starProgress = document.getElementById("starProgress");
+      const diagonalMovementButton = document.getElementById("diagonalMovementButton");
       const finalStarOverlay = document.getElementById("finalStarOverlay");
       const finalStar = document.getElementById("finalStar");
       const clearStoragePrompt = document.getElementById("clearStoragePrompt");
@@ -5715,6 +5780,12 @@
         localStorage.setItem('gravityFlipperSettings', JSON.stringify(settings));
       });
 
+      diagonalMovementButton.addEventListener("click", () => {
+        settings.diagonalMovement = !settings.diagonalMovement;
+        localStorage.setItem('gravityFlipperSettings', JSON.stringify(settings));
+        updateStarProgress();
+      });
+
       function showClearStoragePrompt() {
         gamePaused = true;
         clearStoragePrompt.classList.remove("hidden");
@@ -5775,6 +5846,13 @@
         } else {
           starProgress.classList.add('hidden');
         }
+
+        if (count >= 50) {
+          diagonalMovementButton.classList.remove('hidden');
+        } else {
+          diagonalMovementButton.classList.add('hidden');
+        }
+        diagonalMovementButton.classList.toggle('selected', settings.diagonalMovement);
 
         if (!finalAwarded && hardModeStars.length === starEligible) {
           awardFinalStar();
@@ -5844,8 +5922,8 @@
       // Load any saved settings from localStorage
       const savedSettings = JSON.parse(localStorage.getItem('gravityFlipperSettings'));
       if (savedSettings) {
-        // Overwrite the default settings with what was saved
-        settings = savedSettings;
+        // Merge saved settings with defaults so new options get defaults
+        settings = Object.assign(settings, savedSettings);
       }
 
       const savedMode = localStorage.getItem('gravityFlipperMode');
