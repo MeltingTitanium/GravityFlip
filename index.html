@@ -797,6 +797,46 @@
         if (pool.length === 0) return null;
         return pool[Math.floor(Math.random() * pool.length)];
       }
+
+      const threeColorReactionWindow = 500; // ms allowed between intersecting lines
+
+      function timeToEnterThreeColorLine(line) {
+        const msPerFrame = step;
+        if (line.vx) {
+          const center = line.x + line.width / 2;
+          if (line.vx > 0) {
+            if (center >= 0) return 0;
+            return (0 - center) / line.vx * msPerFrame;
+          } else {
+            if (center <= canvas.width) return 0;
+            return (center - canvas.width) / (-line.vx) * msPerFrame;
+          }
+        } else {
+          const center = line.y + line.height / 2;
+          if (line.vy > 0) {
+            if (center >= 0) return 0;
+            return (0 - center) / line.vy * msPerFrame;
+          } else {
+            if (center <= canvas.height) return 0;
+            return (center - canvas.height) / (-line.vy) * msPerFrame;
+          }
+        }
+      }
+
+      function threeColorSpawnConflict(candidate) {
+        for (let existing of threeColorLines) {
+          const candHorizontal = candidate.width > candidate.height;
+          const existHorizontal = existing.width > existing.height;
+          if (candHorizontal === existHorizontal) continue;
+          const tCand = timeToEnterThreeColorLine(candidate);
+          const tExist = timeToEnterThreeColorLine(existing);
+          if (Math.abs(tCand - tExist) < threeColorReactionWindow &&
+              candidate.color !== existing.color) {
+            return true;
+          }
+        }
+        return false;
+      }
       // Timeout handle for the delayed hazard in Stage 3 Level 3
       let stage3Level3HazardTimeout = null;
       // Timeout handle for the delayed hazard in Stage 3 Level 9
@@ -4835,8 +4875,10 @@
               else if (side === 1) { line.x=0; line.y=canvas.height; line.width=canvas.width; line.height=thickness; line.vy=-vel; }
               else if (side === 2) { line.x=-thickness; line.y=0; line.width=thickness; line.height=canvas.height; line.vx=vel; }
               else { line.x=canvas.width; line.y=0; line.width=thickness; line.height=canvas.height; line.vx=-vel; }
-              threeColorLines.push(line);
-              lastThreeColorSpawn = now;
+              if (!threeColorSpawnConflict(line)) {
+                threeColorLines.push(line);
+                lastThreeColorSpawn = now;
+              }
             }
           }
           for (let i = threeColorLines.length - 1; i >= 0; i--) {
