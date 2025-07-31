@@ -117,6 +117,22 @@
       .modeButton.selected {
         background-color: blue;
       }
+
+      /* Tiny toggle button for extras */
+      .tinyButton {
+        display: inline-block;
+        margin: 5px;
+        padding: 5px 10px;
+        background-color: #444;
+        border: 2px solid #fff;
+        border-radius: 10px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .tinyButton.selected {
+        background-color: blue;
+      }
       
       /* ======================================================
          Gimmick and Teleport Popups Styling
@@ -249,6 +265,8 @@
       <div id="menuLevelSelectorButton" class="bigButton">Level Selector</div>
       <!-- New Settings button added to the Main Menu -->
       <div id="settingsButton" class="bigButton">Settings</div>
+      <!-- Toggle for diagonal movement, unlocked at 50 stars -->
+      <div id="diagonalToggle" class="tinyButton hidden">Diagonal Movement</div>
       <!-- Difficulty selection buttons positioned at the bottom of the main menu -->
       <div style="position: absolute; bottom: 20px;">
         <div id="easyModeButton" class="modeButton">Easy Mode</div>
@@ -957,6 +975,10 @@
       // -------------------------------------------------
       let arrowDirX = 0;
       let arrowDirY = -1;
+
+      // Diagonal movement toggle and key tracking
+      let diagonalMovement = false;
+      let keysPressed = {};
 
       // -------------------------------------------------
       // 5. Display Cooldown (Displayed at the Top-Left Corner)
@@ -3017,6 +3039,9 @@
       // 10. Key Handling (No Diagonals) + Special Keys for Level Selector, Clear Storage, and "R" to die
       // -------------------------------------------------
       document.addEventListener("keydown", e => {
+        if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)) {
+          keysPressed[e.key] = true;
+        }
         if (e.key === " " && spamAbilityUnlocked) {
           spacePressTimes.push(Date.now());
         }
@@ -3140,6 +3165,12 @@
               lastDirection = "right";
               break;
           }
+        }
+      });
+
+      document.addEventListener("keyup", e => {
+        if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)) {
+          delete keysPressed[e.key];
         }
       });
 
@@ -3482,6 +3513,21 @@
           if (levels[currentLevel].noMovement) {
             cube.vx = 0;
             cube.vy = 0;
+          } else if (diagonalMovement) {
+            let dirX = 0, dirY = 0;
+            if (keysPressed["ArrowUp"]) dirY -= 1;
+            if (keysPressed["ArrowDown"]) dirY += 1;
+            if (keysPressed["ArrowLeft"]) dirX -= 1;
+            if (keysPressed["ArrowRight"]) dirX += 1;
+            if (dirX !== 0 || dirY !== 0) {
+              const mag = Math.hypot(dirX, dirY);
+              dirX /= mag;
+              dirY /= mag;
+              cube.vx += dirX * currentAcceleration;
+              cube.vy += dirY * currentAcceleration;
+              arrowDirX = dirX;
+              arrowDirY = dirY;
+            }
           } else if (lastDirection === "up") {
             cube.vy -= currentAcceleration;
             cube.vx = 0;
@@ -5674,6 +5720,7 @@
       const toggleSoundEffects = document.getElementById("toggleSoundEffects");
       const toggleMusic = document.getElementById("toggleMusic");
       const toggleLightMode = document.getElementById("toggleLightMode");
+      const diagonalButton = document.getElementById("diagonalToggle");
 
 
       settingsButton.addEventListener("click", () => {
@@ -5713,6 +5760,16 @@
         settings.lightMode = this.checked;
         // Save to localStorage whenever changed
         localStorage.setItem('gravityFlipperSettings', JSON.stringify(settings));
+      });
+
+      diagonalButton.addEventListener("click", function() {
+        diagonalMovement = !diagonalMovement;
+        localStorage.setItem('diagonalMovement', diagonalMovement ? 'true' : 'false');
+        if (diagonalMovement) {
+          diagonalButton.classList.add('selected');
+        } else {
+          diagonalButton.classList.remove('selected');
+        }
       });
 
       function showClearStoragePrompt() {
@@ -5774,6 +5831,12 @@
           }
         } else {
           starProgress.classList.add('hidden');
+        }
+
+        const diagBtn = document.getElementById('diagonalToggle');
+        if (diagBtn) {
+          if (count >= 50) diagBtn.classList.remove('hidden');
+          else diagBtn.classList.add('hidden');
         }
 
         if (!finalAwarded && hardModeStars.length === starEligible) {
@@ -5853,6 +5916,12 @@
         currentMode = savedMode;
         updateModeParameters();
         updateModeButtons();
+      }
+
+      const savedDiagonal = localStorage.getItem('diagonalMovement');
+      if (savedDiagonal === 'true') {
+        diagonalMovement = true;
+        diagonalButton.classList.add('selected');
       }
       // Immediately reflect them on the checkboxes
       toggleSoundEffects.checked = settings.soundEffects;
